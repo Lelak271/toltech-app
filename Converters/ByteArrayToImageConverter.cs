@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
 
-namespace TOLTECH_APPLICATION.Converters
+namespace Toltech.App.Converters
 {
     public class ByteArrayToImageConverter : IValueConverter
     {

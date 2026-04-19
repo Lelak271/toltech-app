@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TOLTECH_APPLICATION.Services.Logging
+namespace Toltech.App.Services.Logging
 {
     public interface ILoggerService
     {

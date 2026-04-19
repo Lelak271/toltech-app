@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
 
-namespace TOLTECH_APPLICATION.Converters
+namespace Toltech.App.Converters
 {
     /// <summary>
     /// Convertit une valeur nulle (ou vide) en Visibility.

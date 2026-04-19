@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TOLTECH_APPLICATION.Services
+namespace Toltech.App.Services
 {
     public static class Constants
     {

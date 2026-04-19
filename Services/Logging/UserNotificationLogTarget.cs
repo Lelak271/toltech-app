@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace TOLTECH_APPLICATION.Services.Logging
+namespace Toltech.App.Services.Logging
 {
     public class UserNotificationLogTarget : ILogTarget
     {

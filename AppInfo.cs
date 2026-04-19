@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace TOLTECH_APPLICATION
+namespace Toltech.App
 {
     /// <summary>
     /// Fournit des informations globales et statiques sur l'application.

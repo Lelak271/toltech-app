@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Text.Json;
 
-namespace TOLTECH_APPLICATION.Properties
+namespace Toltech.App.Properties
 {
     /// <summary>
     /// Settings for UI / UX

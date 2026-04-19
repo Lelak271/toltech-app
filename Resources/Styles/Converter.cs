@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace TOLTECH_APPLICATION.Resources.Styles
+namespace Toltech.App.Resources.Styles
 {
     [ValueConversion(typeof(string), typeof(Visibility))]
     public class StringNullOrEmptyToVisibilityConverter : IMultiValueConverter

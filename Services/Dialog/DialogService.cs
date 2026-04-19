@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using Microsoft.Win32;
 
-namespace TOLTECH_APPLICATION.Services.Dialog
+namespace Toltech.App.Services.Dialog
 {
     public class DialogService : IDialogService
     {

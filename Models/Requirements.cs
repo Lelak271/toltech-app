@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 using DocumentFormat.OpenXml.EMMA;
 using DocumentFormat.OpenXml.Vml;
 using SQLite;
-using TOLTECH_APPLICATION.ViewModels;
-using TOLTECH_APPLICATION.Views;
+using Toltech.App.ViewModels;
+using Toltech.App.Views;
 
-namespace TOLTECH_APPLICATION.Models
+namespace Toltech.App.Models
 {
     public class Requirements : BaseViewModel
     {

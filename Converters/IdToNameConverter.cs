@@ -3,11 +3,11 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Data;
-using TOLTECH_APPLICATION.ViewModels;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Resources;
+using Toltech.App.ViewModels;
+using Toltech.App.Models;
+using Toltech.App.Resources;
 
-namespace TOLTECH_APPLICATION.Converters
+namespace Toltech.App.Converters
 {
     /// <summary>
     /// Convertit un Id de pièce (part) en son nom (NamePart)

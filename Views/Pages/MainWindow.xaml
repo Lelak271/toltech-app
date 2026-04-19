@@ -4,12 +4,12 @@
                      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                      xmlns:ui="http://schemas.toltech/ui"
                      xmlns:Fluent="urn:fluent-ribbon"
-                     x:Class="TOLTECH_APPLICATION.Views.MainWindow"
-                     xmlns:views="clr-namespace:TOLTECH_APPLICATION.Views"
-                     xmlns:controls="clr-namespace:TOLTECH_APPLICATION.FrontEnd.Controls"
-                     xmlns:vm="clr-namespace:TOLTECH_APPLICATION.ViewModels"
-                     xmlns:conv="clr-namespace:TOLTECH_APPLICATION.Converters"
-                     xmlns:lang="clr-namespace:TOLTECH_APPLICATION.Resources.Lang"
+                     x:Class="Toltech.App.Views.MainWindow"
+                     xmlns:views="clr-namespace:Toltech.App.Views"
+                     xmlns:controls="clr-namespace:Toltech.App.FrontEnd.Controls"
+                     xmlns:vm="clr-namespace:Toltech.App.ViewModels"
+                     xmlns:conv="clr-namespace:Toltech.App.Converters"
+                     xmlns:lang="clr-namespace:Toltech.App.Resources.Lang"
                      Width="1200"
                      Height="600"
                      FlowDirection="LeftToRight"
@@ -215,7 +215,7 @@
                                        />
                         <Button Width="30" Height="25" Margin="0,0,5,0" HorizontalAlignment="Left" ToolTip="{DynamicResource TipMoveModel}">
                             <Button.Background>
-                                <!--<ImageBrush ImageSource="C:\Users\louis\OneDrive\Desktop\Visual Studio\Toltech_V2\TOLTECH_APPLICATION\Asset\yellow_folder.png" Stretch="UniformToFill" />-->
+                                <!--<ImageBrush ImageSource="C:\Users\louis\OneDrive\Desktop\Visual Studio\Toltech_V2\Toltech.App\Asset\yellow_folder.png" Stretch="UniformToFill" />-->
                                 <ImageBrush  Stretch="UniformToFill" />
                             </Button.Background>
                         </Button>

@@ -4,22 +4,22 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Windows;
 using System.Windows.Input;
-using TOLTECH_APPLICATION.FrontEnd.Controls;
-using TOLTECH_APPLICATION.FrontEnd.Interfaces;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Properties;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.Services.Dialog;
-using TOLTECH_APPLICATION.Services.Logging;
-using TOLTECH_APPLICATION.ToltechCalculation.Helpers;
-using TOLTECH_APPLICATION.Utilities;
-using TOLTECH_APPLICATION.Views.Controls.TreeView;
-using static TOLTECH_APPLICATION.FrontEnd.Controls.TemplateCreateWindow;
-using TtCore = TOLTECH_APPLICATION.ViewModels;
+using Toltech.App.FrontEnd.Controls;
+using Toltech.App.FrontEnd.Interfaces;
+using Toltech.App.Models;
+using Toltech.App.Properties;
+using Toltech.App.Services;
+using Toltech.App.Services.Dialog;
+using Toltech.App.Services.Logging;
+using Toltech.App.ToltechCalculation.Helpers;
+using Toltech.App.Utilities;
+using Toltech.App.Views.Controls.TreeView;
+using static Toltech.App.FrontEnd.Controls.TemplateCreateWindow;
+using TtCore = Toltech.App.ViewModels;
 
 // TODO 
 // Rajouter refresh lors de suppresion via la fentre DB part si cela supprimme la piece en cours UI
-namespace TOLTECH_APPLICATION.ViewModels
+namespace Toltech.App.ViewModels
 {
     public class DatasViewModel : BaseViewModel
     {

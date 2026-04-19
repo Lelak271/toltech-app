@@ -3,9 +3,9 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Interop;
-using TOLTECH_APPLICATION.Services;
+using Toltech.App.Services;
 
-namespace TOLTECH_APPLICATION.Utilities
+namespace Toltech.App.Utilities
 {
     /// <summary>
     /// Contient des helpers pour la validation des données métier dans l’application Toltech.

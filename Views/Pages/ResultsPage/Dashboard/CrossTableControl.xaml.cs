@@ -5,12 +5,12 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using ClosedXML.Excel;
-using TOLTECH_APPLICATION.Views;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.ToltechCalculation.Resux;
+using Toltech.App.Views;
+using Toltech.App.Services;
+using Toltech.App.ToltechCalculation.Resux;
 using System.Windows.Data;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls.Dashboard
+namespace Toltech.App.FrontEnd.Controls.Dashboard
 {
     /// <summary>
     /// Logique d'interaction pour CrossTableControl.xaml
@@ -379,7 +379,7 @@ namespace TOLTECH_APPLICATION.FrontEnd.Controls.Dashboard
         // Chargement du template (inchangé)
         private XLWorkbook LoadTemplateExcelCdC()
         {
-            string PathTemplate = "TOLTECH_APPLICATION.Asset.Template_CdC_Excel_Toltech.xlsx";
+            string PathTemplate = "Toltech.App.Asset.Template_CdC_Excel_Toltech.xlsx";
             var assembly = Assembly.GetExecutingAssembly();
             Stream stream = assembly.GetManifestResourceStream(PathTemplate);
             if (stream == null)

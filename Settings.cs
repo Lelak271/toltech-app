@@ -1,4 +1,4 @@
-﻿namespace TOLTECH_APPLICATION.Properties {
+﻿namespace Toltech.App.Properties {
     
     
     // Cette classe vous permet de gérer des événements spécifiques dans la classe de paramètres :

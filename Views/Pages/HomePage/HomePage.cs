@@ -6,15 +6,15 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.VisualBasic;
 using QuickGraph;
-using TOLTECH_APPLICATION;
-using TOLTECH_APPLICATION.Resources;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.ToltechCalculation;
-using TOLTECH_APPLICATION.Z_Test;
-using TOLTECH_APPLICATION.ViewModels;
+using Toltech.App;
+using Toltech.App.Resources;
+using Toltech.App.Services;
+using Toltech.App.ToltechCalculation;
+using Toltech.App.Z_Test;
+using Toltech.App.ViewModels;
 
 
-namespace TOLTECH_APPLICATION.Views
+namespace Toltech.App.Views
 {
     public partial class HomePage : UserControl
     {

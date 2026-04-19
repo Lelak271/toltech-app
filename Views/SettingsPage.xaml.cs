@@ -4,12 +4,12 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using TOLTECH_APPLICATION.Resources;
-using TOLTECH_APPLICATION.Resources.ColorTheme;
-using TOLTECH_APPLICATION.Resources.Lang;
-using TOLTECH_APPLICATION.Utilities;
+using Toltech.App.Resources;
+using Toltech.App.Resources.ColorTheme;
+using Toltech.App.Resources.Lang;
+using Toltech.App.Utilities;
 
-namespace TOLTECH_APPLICATION.Views
+namespace Toltech.App.Views
 {
     public partial class SettingsPage : Window
     {

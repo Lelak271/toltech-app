@@ -1,12 +1,12 @@
 ﻿using System.IO;
 using System.Windows;
-using TOLTECH_APPLICATION.FrontEnd.Interfaces;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Services.Logging;
-using TOLTECH_APPLICATION.ToltechCalculation.Helpers;
-using TOLTECH_APPLICATION.Utilities;
+using Toltech.App.FrontEnd.Interfaces;
+using Toltech.App.Models;
+using Toltech.App.Services.Logging;
+using Toltech.App.ToltechCalculation.Helpers;
+using Toltech.App.Utilities;
 
-namespace TOLTECH_APPLICATION.Services
+namespace Toltech.App.Services
 {
     public class DomainService
     {

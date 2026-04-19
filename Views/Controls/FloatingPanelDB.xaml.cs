@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Resources;
+using Toltech.App.Services;
+using Toltech.App.Models;
+using Toltech.App.Resources;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls
+namespace Toltech.App.FrontEnd.Controls
 {
     public partial class FloatingPanelDB : Window
     {

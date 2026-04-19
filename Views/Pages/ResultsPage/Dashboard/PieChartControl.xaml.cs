@@ -8,10 +8,10 @@ using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.ToltechCalculation.Resux;
+using Toltech.App.Services;
+using Toltech.App.ToltechCalculation.Resux;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls.Dashboard
+namespace Toltech.App.FrontEnd.Controls.Dashboard
 {
     public partial class PieChartControl : UserControl
     {

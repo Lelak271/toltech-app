@@ -12,9 +12,9 @@
 //using System.Windows.Media.Imaging;
 //using System.Windows.Navigation;
 //using System.Windows.Shapes;
-//using TOLTECH_APPLICATION.Services;
+//using Toltech.App.Services;
 
-//namespace TOLTECH_APPLICATION
+//namespace Toltech.App
 //{
 //    /// <summary>
 //    /// Logique d'interaction pour Window_Delete_Req.xaml

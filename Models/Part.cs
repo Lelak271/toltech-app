@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SQLite;
 
-namespace TOLTECH_APPLICATION.Models
+namespace Toltech.App.Models
 {
     public class Part : INotifyPropertyChanged
     {

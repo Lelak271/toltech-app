@@ -5,16 +5,16 @@ using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
 using Toltech.ComputeEngine.Contracts;
-using TOLTECH_APPLICATION.FrontEnd.Controls;
-using TOLTECH_APPLICATION.FrontEnd.Interfaces;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.Services.Dialog;
-using TOLTECH_APPLICATION.ToltechCalculation.Helpers;
-using TOLTECH_APPLICATION.ToltechCalculation.Resux;
-using TOLTECH_APPLICATION.ViewModels;
+using Toltech.App.FrontEnd.Controls;
+using Toltech.App.FrontEnd.Interfaces;
+using Toltech.App.Models;
+using Toltech.App.Services;
+using Toltech.App.Services.Dialog;
+using Toltech.App.ToltechCalculation.Helpers;
+using Toltech.App.ToltechCalculation.Resux;
+using Toltech.App.ViewModels;
 
-namespace TOLTECH_APPLICATION.Views
+namespace Toltech.App.Views
 {
     public partial class PageResultats : UserControl
     {

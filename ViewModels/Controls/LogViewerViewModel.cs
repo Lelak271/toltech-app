@@ -8,9 +8,9 @@
 //using System.Windows.Input;
 //using OpenTK.Graphics.OpenGL;
 //using System.Collections.ObjectModel;
-//using TOLTECH_APPLICATION.Services.Logging;
+//using Toltech.App.Services.Logging;
 
-//namespace TOLTECH_APPLICATION.ViewModels
+//namespace Toltech.App.ViewModels
 //{
 //    public class LogViewerViewModel : BaseViewModel
 //    {

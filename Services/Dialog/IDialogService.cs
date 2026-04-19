@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TOLTECH_APPLICATION.Services.Dialog
+namespace Toltech.App.Services.Dialog
 {
     public interface IDialogService
     {

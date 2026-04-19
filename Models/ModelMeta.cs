@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using SQLite;
-using TOLTECH_APPLICATION.ViewModels;
+using Toltech.App.ViewModels;
 
-namespace TOLTECH_APPLICATION.Models
+namespace Toltech.App.Models
 {
     public class ModelMeta : BaseViewModel
     {

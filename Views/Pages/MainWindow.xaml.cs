@@ -3,15 +3,15 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
-using TOLTECH_APPLICATION.FrontEnd.Controls;
-using TOLTECH_APPLICATION.FrontEnd.GraphePage.Controls;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.ToltechCalculation.Helpers;
-using TOLTECH_APPLICATION.Utilities;
-using TOLTECH_APPLICATION.ViewModels;
+using Toltech.App.FrontEnd.Controls;
+using Toltech.App.FrontEnd.GraphePage.Controls;
+using Toltech.App.Services;
+using Toltech.App.ToltechCalculation.Helpers;
+using Toltech.App.Utilities;
+using Toltech.App.ViewModels;
 
 
-namespace TOLTECH_APPLICATION.Views
+namespace Toltech.App.Views
 {
     public partial class MainWindow : Window
     {

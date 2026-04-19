@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace TOLTECH_APPLICATION.Behaviors
+namespace Toltech.App.Behaviors
 {
     public static class PlaceholderService
     {

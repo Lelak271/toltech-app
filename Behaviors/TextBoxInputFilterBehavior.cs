@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace TOLTECH_APPLICATION.Behaviors
+namespace Toltech.App.Behaviors
 {
     /// <summary>
     /// Comportement attaché pour filtrer la saisie des TextBox.

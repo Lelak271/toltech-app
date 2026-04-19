@@ -1,14 +1,14 @@
 ﻿using System.Windows;
 using Toltech.ComputeEngine;
 using Toltech.ComputeEngine.Contracts;
-using TOLTECH_APPLICATION.FrontEnd.Interfaces;
-using TOLTECH_APPLICATION.Properties;
-using TOLTECH_APPLICATION.Resources;
-using TOLTECH_APPLICATION.Services.Dialog;
-using TOLTECH_APPLICATION.Services.Logging;
-using TOLTECH_APPLICATION.ViewModels;
+using Toltech.App.FrontEnd.Interfaces;
+using Toltech.App.Properties;
+using Toltech.App.Resources;
+using Toltech.App.Services.Dialog;
+using Toltech.App.Services.Logging;
+using Toltech.App.ViewModels;
 
-namespace TOLTECH_APPLICATION
+namespace Toltech.App
 {
     /// Interaction logic for App.xaml
     public partial class App : Application

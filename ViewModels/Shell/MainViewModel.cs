@@ -5,15 +5,15 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.ToltechCalculation.Helpers;
-using TOLTECH_APPLICATION.ToltechCalculation.Resux;
-using TOLTECH_APPLICATION.Views.Controls.TreeView;
-using TOLTECH_APPLICATION.Visualisateur;
+using Toltech.App.Models;
+using Toltech.App.Services;
+using Toltech.App.ToltechCalculation.Helpers;
+using Toltech.App.ToltechCalculation.Resux;
+using Toltech.App.Views.Controls.TreeView;
+using Toltech.App.Visualisateur;
 using  Toltech.ComputeEngine.Contracts;
 
-namespace TOLTECH_APPLICATION.ViewModels
+namespace Toltech.App.ViewModels
 {
     // <summary>
     /// ViewModel principal de l’application TOLTECH.

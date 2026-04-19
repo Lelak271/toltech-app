@@ -2,11 +2,11 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.ViewModels;
+using Toltech.App.Models;
+using Toltech.App.Services;
+using Toltech.App.ViewModels;
 
-namespace TOLTECH_APPLICATION.ViewModels
+namespace Toltech.App.ViewModels
 {
     public class ToleranceDBViewModel : BaseViewModel
     {

@@ -12,7 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Test
+namespace Toltech.App.FrontEnd.Test
 {
     /// <summary>
     /// Logique d'interaction pour TestPanelsWindow.xaml

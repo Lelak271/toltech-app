@@ -1,7 +1,7 @@
-﻿<Window x:Class="TOLTECH_APPLICATION.FrontEnd.Controls.RegisterModelWindow"
+﻿<Window x:Class="Toltech.App.FrontEnd.Controls.RegisterModelWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:lang="clr-namespace:TOLTECH_APPLICATION.Resources.Lang"
+        xmlns:lang="clr-namespace:Toltech.App.Resources.Lang"
         Title="{DynamicResource RegisterModelTitle}" 
         Height="500" 
         Width="800">

@@ -1,4 +1,4 @@
-namespace TOLTECH_APPLICATION.ToltechCalculation.Validation
+namespace Toltech.App.ToltechCalculation.Validation
 {
     public enum ValidationCategory
     {

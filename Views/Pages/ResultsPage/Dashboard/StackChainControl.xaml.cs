@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls.Dashboard
+namespace Toltech.App.FrontEnd.Controls.Dashboard
 {
     /// <summary>
     /// Logique d'interaction pour StackChainControl.xaml

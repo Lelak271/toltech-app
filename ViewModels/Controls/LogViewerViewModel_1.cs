@@ -2,10 +2,10 @@
 using System.Windows.Data;
 using System.Windows.Input;
 using OpenTK.Graphics.OpenGL;
-using TOLTECH_APPLICATION.Services.Logging;
-using TOLTECH_APPLICATION.Services;
+using Toltech.App.Services.Logging;
+using Toltech.App.Services;
 
-namespace TOLTECH_APPLICATION.ViewModels
+namespace Toltech.App.ViewModels
 {
     public class LogViewerViewModel : BaseViewModel
     {

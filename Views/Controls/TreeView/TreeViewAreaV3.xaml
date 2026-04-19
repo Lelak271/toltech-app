@@ -1,12 +1,12 @@
-﻿<UserControl x:Class="TOLTECH_APPLICATION.FrontEnd.Controls.TreeViewAreaV3"
+﻿<UserControl x:Class="Toltech.App.FrontEnd.Controls.TreeViewAreaV3"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:TOLTECH_APPLICATION.FrontEnd.Controls" 
-             xmlns:behaviors="clr-namespace:TOLTECH_APPLICATION.Behaviors" 
-             xmlns:vm="clr-namespace:TOLTECH_APPLICATION.Models"
-             xmlns:convtree="clr-namespace:TOLTECH_APPLICATION.Views.Controls.TreeView.Converters"
-             xmlns:conv="clr-namespace:TOLTECH_APPLICATION.Converters"
-             xmlns:lang="clr-namespace:TOLTECH_APPLICATION.Resources.Lang"
+             xmlns:local="clr-namespace:Toltech.App.FrontEnd.Controls" 
+             xmlns:behaviors="clr-namespace:Toltech.App.Behaviors" 
+             xmlns:vm="clr-namespace:Toltech.App.Models"
+             xmlns:convtree="clr-namespace:Toltech.App.Views.Controls.TreeView.Converters"
+             xmlns:conv="clr-namespace:Toltech.App.Converters"
+             xmlns:lang="clr-namespace:Toltech.App.Resources.Lang"
              >
 
     <UserControl.Resources>

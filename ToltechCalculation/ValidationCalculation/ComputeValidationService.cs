@@ -1,15 +1,15 @@
 using System.Diagnostics;
 using System.Windows;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.Services.Logging;
-using TOLTECH_APPLICATION.ToltechCalculation;
-using TOLTECH_APPLICATION.ToltechCalculation.Validation;
-using TOLTECH_APPLICATION.Utilities;
+using Toltech.App.Models;
+using Toltech.App.Services;
+using Toltech.App.Services.Logging;
+using Toltech.App.ToltechCalculation;
+using Toltech.App.ToltechCalculation.Validation;
+using Toltech.App.Utilities;
 using Toltech.ComputeEngine.Contracts;
 using Toltech.ComputeEngine;
 
-namespace TOLTECH_APPLICATION.ToltechCalculation.Helpers
+namespace Toltech.App.ToltechCalculation.Helpers
 {
     public class ComputeValidationService
     {

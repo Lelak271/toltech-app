@@ -5,16 +5,16 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using TOLTECH_APPLICATION.ViewModels;
-using TOLTECH_APPLICATION.FrontEnd.Interfaces;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Resources;
-using TOLTECH_APPLICATION.Services;
-using CST = TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.Utilities;
-using TOLTECH_APPLICATION.Services.Dialog;
+using Toltech.App.ViewModels;
+using Toltech.App.FrontEnd.Interfaces;
+using Toltech.App.Models;
+using Toltech.App.Resources;
+using Toltech.App.Services;
+using CST = Toltech.App.Services;
+using Toltech.App.Utilities;
+using Toltech.App.Services.Dialog;
 
-namespace TOLTECH_APPLICATION.ViewModels
+namespace Toltech.App.ViewModels
 {
     public class PartDBViewModel : BaseViewModel
     {

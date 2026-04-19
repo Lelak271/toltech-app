@@ -1,9 +1,9 @@
 ﻿using System.Threading.Tasks;
 using System.Windows.Controls;
-using TOLTECH_APPLICATION.Resources;
-using TOLTECH_APPLICATION.ViewModels;
+using Toltech.App.Resources;
+using Toltech.App.ViewModels;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Interfaces
+namespace Toltech.App.FrontEnd.Interfaces
 {
     public class NotificationService : INotificationService
     {

@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 
-namespace TOLTECH_APPLICATION.Z_Test
+namespace Toltech.App.Z_Test
 {
     public partial class MatrixRain : Window
     {

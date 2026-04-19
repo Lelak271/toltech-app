@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using SQLite;
 
-namespace TOLTECH_APPLICATION.Models
+namespace Toltech.App.Models
 {
     public class NodesDefinition : INotifyPropertyChanged
     {

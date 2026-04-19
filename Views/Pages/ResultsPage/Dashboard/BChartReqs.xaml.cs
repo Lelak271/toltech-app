@@ -9,14 +9,14 @@ using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
-using TOLTECH_APPLICATION.Views;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.ToltechCalculation.Resux;
-using static TOLTECH_APPLICATION.Views.PageResultats;
-using static TOLTECH_APPLICATION.ToltechCalculation.Resux.ResuxSerializer;
-using TOLTECH_APPLICATION.Utilities;
+using Toltech.App.Views;
+using Toltech.App.Services;
+using Toltech.App.ToltechCalculation.Resux;
+using static Toltech.App.Views.PageResultats;
+using static Toltech.App.ToltechCalculation.Resux.ResuxSerializer;
+using Toltech.App.Utilities;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls.Dashboard
+namespace Toltech.App.FrontEnd.Controls.Dashboard
 {
     public partial class BChartReqs : UserControl
     {

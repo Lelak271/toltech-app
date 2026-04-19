@@ -1,6 +1,6 @@
-﻿using static TOLTECH_APPLICATION.FrontEnd.Controls.TemplateCreateWindow;
+﻿using static Toltech.App.FrontEnd.Controls.TemplateCreateWindow;
 
-namespace TOLTECH_APPLICATION.Utilities
+namespace Toltech.App.Utilities
 {
     public static class RandomizeNaming
     {

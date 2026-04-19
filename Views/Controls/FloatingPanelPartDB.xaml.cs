@@ -11,10 +11,10 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using TOLTECH_APPLICATION.Resources;
-using TOLTECH_APPLICATION.ViewModels;
+using Toltech.App.Resources;
+using Toltech.App.ViewModels;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls
+namespace Toltech.App.FrontEnd.Controls
 {
     public partial class FloatingPanelPartDB : Window
     {

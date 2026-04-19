@@ -12,7 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls
+namespace Toltech.App.FrontEnd.Controls
 {
     /// <summary>
     /// Logique d'interaction pour PasswordWindow.xaml

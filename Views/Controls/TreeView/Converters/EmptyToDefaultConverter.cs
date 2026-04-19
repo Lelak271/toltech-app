@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace TOLTECH_APPLICATION.Views.Controls.TreeView.Converters
+namespace Toltech.App.Views.Controls.TreeView.Converters
 {
     public class EmptyToDefaultConverter : IValueConverter
     {

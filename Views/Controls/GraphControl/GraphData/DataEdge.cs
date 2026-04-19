@@ -1,6 +1,6 @@
 ﻿using Westermo.GraphX.Common.Models;
 
-namespace TOLTECH_APPLICATION.Views.Controls.GrapheControl.GraphData
+namespace Toltech.App.Views.Controls.GrapheControl.GraphData
 {
 
 

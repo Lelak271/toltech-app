@@ -6,9 +6,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
-using TOLTECH_APPLICATION.Resources.Lang;
+using Toltech.App.Resources.Lang;
 
-namespace TOLTECH_APPLICATION.Converters
+namespace Toltech.App.Converters
 {
     /// <summary>
     /// Retourne l'image du drapeau correspondant à la culture actuelle.

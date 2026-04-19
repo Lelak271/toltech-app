@@ -1,6 +1,6 @@
-﻿using TOLTECH_APPLICATION.Resources;
+﻿using Toltech.App.Resources;
 
-namespace TOLTECH_APPLICATION.ViewModels
+namespace Toltech.App.ViewModels
 {
     public class ResultsViewModel : BaseViewModel
     {

@@ -11,9 +11,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using TOLTECH_APPLICATION.Utilities;
+using Toltech.App.Utilities;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls
+namespace Toltech.App.FrontEnd.Controls
 {
     public partial class TemplateCreateWindow : Window
     {

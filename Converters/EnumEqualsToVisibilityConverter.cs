@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace TOLTECH_APPLICATION.Converters
+namespace Toltech.App.Converters
 {
     /// <summary>
     /// Compare une valeur enum avec un paramètre (string ou enum)

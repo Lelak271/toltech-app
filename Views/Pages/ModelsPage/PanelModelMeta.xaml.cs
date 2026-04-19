@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using TOLTECH_APPLICATION.Models;
+using Toltech.App.Models;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -12,10 +12,10 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
-using TOLTECH_APPLICATION.ViewModels;
-using TOLTECH_APPLICATION.Services;
+using Toltech.App.ViewModels;
+using Toltech.App.Services;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls
+namespace Toltech.App.FrontEnd.Controls
 {
     // Logique d'interaction pour PanelModelMeta.xaml
     public partial class PanelModelMeta : UserControl, INotifyPropertyChanged

@@ -1,7 +1,7 @@
 ﻿using QuikGraph;
-using TOLTECH_APPLICATION.Views.Controls.GrapheControl.GraphData;
+using Toltech.App.Views.Controls.GrapheControl.GraphData;
 
-namespace TOLTECH_APPLICATION.Views.Controls.GrapheControl
+namespace Toltech.App.Views.Controls.GrapheControl
 {
     public class GraphExample : BidirectionalGraph<DataVertex, DataEdge> { }
 }

@@ -3,13 +3,13 @@ using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using TOLTECH_APPLICATION.Converters;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.ToltechCalculation;
+using Toltech.App.Converters;
+using Toltech.App.Models;
+using Toltech.App.Services;
+using Toltech.App.ToltechCalculation;
 using Toltech.ComputeEngine.Contracts;  
 
-namespace TOLTECH_APPLICATION.ToltechCalculation.Resux
+namespace Toltech.App.ToltechCalculation.Resux
 {
     // =========================================================================
     // DTOs JSON — classes de sérialisation/désérialisation
@@ -313,7 +313,7 @@ namespace TOLTECH_APPLICATION.ToltechCalculation.Resux
                 return 0.0;
 
             double dirNorm = Math.Sqrt(dirU * dirU + dirV * dirV + dirW * dirW);
-            if (Math.Abs(dirNorm) < TOLTECH_APPLICATION.Services.Constants.EPSILON) return 0.0;
+            if (Math.Abs(dirNorm) < Toltech.App.Services.Constants.EPSILON) return 0.0;
 
             return (inflX * dirU + inflY * dirV + inflZ * dirW) / dirNorm;
         }
@@ -326,7 +326,7 @@ namespace TOLTECH_APPLICATION.ToltechCalculation.Resux
             double u, double v, double w)
         {
             double normSquared = u * u + v * v + w * w;
-            if (Math.Abs(normSquared) < TOLTECH_APPLICATION.Services.Constants.EPSILON)
+            if (Math.Abs(normSquared) < Toltech.App.Services.Constants.EPSILON)
                 throw new ArgumentException("Le vecteur directeur (u, v, w) ne peut pas être nul.");
 
             double k = (x * u + y * v + z * w) / normSquared;

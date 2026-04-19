@@ -12,10 +12,10 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using TOLTECH_APPLICATION.ViewModels;
+using Toltech.App.ViewModels;
 using System.ComponentModel;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls
+namespace Toltech.App.FrontEnd.Controls
 {
     /// <summary>
     /// Logique d'interaction pour LogViewerControl.xaml

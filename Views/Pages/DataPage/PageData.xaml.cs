@@ -3,13 +3,13 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
-using TOLTECH_APPLICATION.FrontEnd.Controls;
-using TOLTECH_APPLICATION.ViewModels;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.Utilities;
+using Toltech.App.FrontEnd.Controls;
+using Toltech.App.ViewModels;
+using Toltech.App.Models;
+using Toltech.App.Services;
+using Toltech.App.Utilities;
 
-namespace TOLTECH_APPLICATION.Views
+namespace Toltech.App.Views
 {
     public partial class PageData : UserControl
     {

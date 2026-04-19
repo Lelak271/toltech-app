@@ -1,4 +1,4 @@
-﻿<Window x:Class="TOLTECH_APPLICATION.Z_Test.MatrixRain"
+﻿<Window x:Class="Toltech.App.Z_Test.MatrixRain"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Matrix Rain" Width="800" Height="600"

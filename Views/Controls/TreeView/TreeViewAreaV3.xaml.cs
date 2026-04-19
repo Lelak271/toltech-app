@@ -5,15 +5,15 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using TOLTECH_APPLICATION.Behaviors;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Resources;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.Utilities;
-using TOLTECH_APPLICATION.Views.Controls.TreeView;
-using static TOLTECH_APPLICATION.Models.NodesDefinition;
+using Toltech.App.Behaviors;
+using Toltech.App.Models;
+using Toltech.App.Resources;
+using Toltech.App.Services;
+using Toltech.App.Utilities;
+using Toltech.App.Views.Controls.TreeView;
+using static Toltech.App.Models.NodesDefinition;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls
+namespace Toltech.App.FrontEnd.Controls
 {
     /// <summary>
     /// Logique d'interaction pour TreeViewAreaV3.xaml

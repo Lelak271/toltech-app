@@ -6,16 +6,16 @@ using System.Linq;
 using System.Resources;
 using System.Text;
 using System.Threading.Tasks;
+using Toltech.App.Resources;
 
-namespace TOLTECH_APPLICATION.Resources.Lang
+namespace Toltech.App.Resources.Lang
 {
     public class LocalizationManager : INotifyPropertyChanged
     {
         private static readonly LocalizationManager _instance = new();
         public static LocalizationManager Instance => _instance;
 
-        private readonly ResourceManager _resourceManager =
-            AppResources.ResourceManager;
+        private readonly ResourceManager _resourceManager = AppResources.ResourceManager;
 
         public CultureInfo CurrentCulture { get; private set; }
 

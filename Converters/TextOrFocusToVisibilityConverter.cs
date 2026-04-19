@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Data;
 
-namespace TOLTECH_APPLICATION.Converters
+namespace Toltech.App.Converters
 {
     /// <summary>
     /// Convertit la combinaison de la longueur du texte et de l'état de focus

@@ -4,11 +4,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TOLTECH_APPLICATION.Models;
+using Toltech.App.Models;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace TOLTECH_APPLICATION.Utilities
+namespace Toltech.App.Utilities
 {
     /// <summary>
     /// Comparateur personnalisé permettant de trier une collection de <see cref="Requirements"/>

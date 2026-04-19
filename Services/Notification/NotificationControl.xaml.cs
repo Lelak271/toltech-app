@@ -6,7 +6,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using DocumentFormat.OpenXml.ExtendedProperties;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Interfaces
+namespace Toltech.App.FrontEnd.Interfaces
 {
     public partial class NotificationControl : UserControl
     {

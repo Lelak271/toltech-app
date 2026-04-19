@@ -1,5 +1,5 @@
 ﻿<?xml version='1.0' encoding='utf-8'?>
-<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="TOLTECH_APPLICATION.Properties" GeneratedClassName="BarChartSettings">
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="Toltech.App.Properties" GeneratedClassName="BarChartSettings">
   <Profiles />
   <Settings>
     <Setting Name="ColumnFill1Argb" Type="System.Int32" Scope="User">

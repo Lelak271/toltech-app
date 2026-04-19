@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using SkiaSharp;
 using System.Drawing;
 
-namespace TOLTECH_APPLICATION.Utilities
+namespace Toltech.App.Utilities
 {
     // <summary>
     /// Utilitaires pour convertir et stocker des couleurs entre SKColor et System.Drawing.Color (ARGB int).

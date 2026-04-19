@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace TOLTECH_APPLICATION.Services.Logging
+namespace Toltech.App.Services.Logging
 {
     public class DevLogTarget : ILogTarget
     {

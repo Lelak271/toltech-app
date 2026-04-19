@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace TOLTECH_APPLICATION.Utilities
+namespace Toltech.App.Utilities
 {
     public static class ConversionHelper
     {

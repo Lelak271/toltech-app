@@ -6,9 +6,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
-using static TOLTECH_APPLICATION.Models.NodesDefinition;
+using static Toltech.App.Models.NodesDefinition;
 
-namespace TOLTECH_APPLICATION.Views.Controls.TreeView.Converters
+namespace Toltech.App.Views.Controls.TreeView.Converters
 {
     public class NodeTypeToIconConverter : IValueConverter
     {

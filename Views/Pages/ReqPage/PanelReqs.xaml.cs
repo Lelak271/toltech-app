@@ -4,13 +4,13 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using TOLTECH_APPLICATION.Front;
-using TOLTECH_APPLICATION.ViewModels;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Services;
+using Toltech.App.Front;
+using Toltech.App.ViewModels;
+using Toltech.App.Models;
+using Toltech.App.Services;
 
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls
+namespace Toltech.App.FrontEnd.Controls
 {
     public partial class PanelReqs : UserControl
     {

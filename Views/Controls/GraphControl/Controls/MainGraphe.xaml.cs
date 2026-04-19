@@ -3,15 +3,15 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.Views.Controls.GrapheControl;
-using TOLTECH_APPLICATION.Views.Controls.GrapheControl.GraphData;
+using Toltech.App.Services;
+using Toltech.App.Views.Controls.GrapheControl;
+using Toltech.App.Views.Controls.GrapheControl.GraphData;
 using Westermo.GraphX.Common.Enums;
 using Westermo.GraphX.Controls;
 using Westermo.GraphX.Logic.Algorithms.EdgeRouting;
 using Westermo.GraphX.Logic.Algorithms.LayoutAlgorithms;
 
-namespace TOLTECH_APPLICATION.FrontEnd.GraphePage.Controls
+namespace Toltech.App.FrontEnd.GraphePage.Controls
 {
     public partial class MainGraphe : IDisposable
     {

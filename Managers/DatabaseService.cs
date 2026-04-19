@@ -3,15 +3,15 @@ using System.IO;
 using System.Windows;
 using DocumentFormat.OpenXml.Drawing;
 using SQLite;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Services.Logging;
-using static TOLTECH_APPLICATION.Models.NodesDefinition;
+using Toltech.App.Models;
+using Toltech.App.Services.Logging;
+using static Toltech.App.Models.NodesDefinition;
 
 // DatabaseService
 // Description : Ce fichier gère toutes les opérations CRUD (Créer, Lire, Mettre à jour, Supprimer) avec la base de données SQLite.
 // Il fournit des méthodes pour initialiser la base de données, insérer des données, récupérer des données, et filtrer des données en fonction de critères spécifiques.
 
-namespace TOLTECH_APPLICATION.Services
+namespace Toltech.App.Services
 {
     // Classe DatabaseService
     public class DatabaseService

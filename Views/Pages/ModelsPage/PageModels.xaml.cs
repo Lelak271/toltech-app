@@ -1,9 +1,9 @@
 ﻿using System.Windows.Controls;
-using TOLTECH_APPLICATION.FrontEnd.Controls;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.Views;
+using Toltech.App.FrontEnd.Controls;
+using Toltech.App.Services;
+using Toltech.App.Views;
 
-namespace TOLTECH_APPLICATION.Views
+namespace Toltech.App.Views
 {
 
     // TODO : Créer une zone list de virtualizatioin UI pour fluidifier la vue des nombreux modele

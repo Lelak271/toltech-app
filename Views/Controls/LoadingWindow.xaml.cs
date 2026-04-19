@@ -15,7 +15,7 @@ using System.Windows.Threading;
 using System.Media;
 using System.Windows;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls
+namespace Toltech.App.FrontEnd.Controls
 {
     /// <summary>
     /// Logique d'interaction pour LoadingWindow.xaml

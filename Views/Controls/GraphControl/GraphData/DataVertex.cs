@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Media.Imaging;
 using Westermo.GraphX.Common.Models;
 
-namespace TOLTECH_APPLICATION.Views.Controls.GrapheControl.GraphData
+namespace Toltech.App.Views.Controls.GrapheControl.GraphData
 {
     public class DataVertex : VertexBase, INotifyPropertyChanged
     {

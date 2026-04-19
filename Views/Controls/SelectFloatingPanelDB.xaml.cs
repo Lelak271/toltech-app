@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.Models;
+using Toltech.App.Services;
+using Toltech.App.Models;
 
-namespace TOLTECH_APPLICATION.Front
+namespace Toltech.App.Front
 {
     public partial class SelectFloatingPanelDB : Window
     {

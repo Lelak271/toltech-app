@@ -3,13 +3,13 @@
 //using System.Globalization;
 //using System.IO;
 //using MathNet.Numerics.LinearAlgebra;
-//using TOLTECH_APPLICATION.Services;
-//using TOLTECH_APPLICATION.ToltechCalculation;
-//using static TOLTECH_APPLICATION.ToltechCalculation.MainCompute;
-//using TOLTECH_APPLICATION.Models;
-//using TOLTECH_APPLICATION.Converters;
+//using Toltech.App.Services;
+//using Toltech.App.ToltechCalculation;
+//using static Toltech.App.ToltechCalculation.MainCompute;
+//using Toltech.App.Models;
+//using Toltech.App.Converters;
 
-//namespace TOLTECH_APPLICATION.ToltechCalculation.Resux
+//namespace Toltech.App.ToltechCalculation.Resux
 //{
 //    public class ResuxSerializer
 //    {

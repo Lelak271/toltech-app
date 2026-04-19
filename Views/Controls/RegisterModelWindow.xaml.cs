@@ -4,11 +4,11 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using TOLTECH_APPLICATION.ViewModels;
-using TOLTECH_APPLICATION.Resources;
-using TOLTECH_APPLICATION.Services.Dialog;
+using Toltech.App.ViewModels;
+using Toltech.App.Resources;
+using Toltech.App.Services.Dialog;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls
+namespace Toltech.App.FrontEnd.Controls
 {
     public partial class RegisterModelWindow : Window
     {

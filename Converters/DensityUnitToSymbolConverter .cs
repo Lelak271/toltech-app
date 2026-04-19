@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Data;
-using TOLTECH_APPLICATION.Resources;
+using Toltech.App.Resources;
 
-namespace TOLTECH_APPLICATION.Converters
+namespace Toltech.App.Converters
 {
     /// <summary>
     /// Convertit un SupportedDensityUnit en sa représentation scientifique lisible (kg/m³, g/cm³, lb/ft³, lb/in³) pour l’affichage dans l’UI WPF.

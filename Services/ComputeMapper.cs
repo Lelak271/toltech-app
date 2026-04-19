@@ -1,8 +1,8 @@
-﻿using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.ToltechCalculation;
+﻿using Toltech.App.Models;
+using Toltech.App.ToltechCalculation;
 using Toltech.ComputeEngine.Contracts;
 
-namespace TOLTECH_APPLICATION.Services
+namespace Toltech.App.Services
 {
     public static class ComputeMapper
     {

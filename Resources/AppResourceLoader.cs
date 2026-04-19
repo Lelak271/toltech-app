@@ -4,14 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using TOLTECH_APPLICATION.Properties;
-using TOLTECH_APPLICATION.Resources;
-using TOLTECH_APPLICATION.Resources.ColorTheme;
-using TOLTECH_APPLICATION.Resources.Lang;
+using Toltech.App.Properties;
+using Toltech.App.Resources;
+using Toltech.App.Resources.ColorTheme;
+using Toltech.App.Resources.Lang;
 
-namespace TOLTECH_APPLICATION.Resources
+namespace Toltech.App.Resources
 {
-
 
     #region Other ressources
     /// <summary>

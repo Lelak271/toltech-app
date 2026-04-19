@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Dragablz;
 
-namespace TOLTECH_APPLICATION.Utilities
+namespace Toltech.App.Utilities
 {
     public class ToltechInterTabClient : IInterTabClient
     {

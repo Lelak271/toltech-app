@@ -5,7 +5,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using Microsoft.Xaml.Behaviors;
 
-namespace TOLTECH_APPLICATION.Converters
+namespace Toltech.App.Converters
 {
     public class BoolToDynamicResourceConverter : IValueConverter
     {

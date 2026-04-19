@@ -18,20 +18,20 @@ using System.Windows.Markup;
 
 //[assembly: XmlnsDefinition(
 //    "http://schemas.toltech/ui",
-//    "TOLTECH_APPLICATION.Resources.Lang"
+//    "Toltech.App.Resources.Lang"
 //)]
 
 //[assembly: XmlnsDefinition(
 //    "http://schemas.toltech/ui",
-//    "TOLTECH_APPLICATION.Converters"
+//    "Toltech.App.Converters"
 //)]
 
 //[assembly: XmlnsDefinition(
 //    "http://schemas.toltech/ui",
-//    "TOLTECH_APPLICATION.FrontEnd.Controls"
+//    "Toltech.App.FrontEnd.Controls"
 //)]
 
 [assembly: XmlnsDefinition(
     "http://schemas.toltech/ui",
-    "TOLTECH_APPLICATION.FrontEnd.Behaviors"
+    "Toltech.App.FrontEnd.Behaviors"
 )]

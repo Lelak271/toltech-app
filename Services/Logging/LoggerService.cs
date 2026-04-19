@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 
-namespace TOLTECH_APPLICATION.Services.Logging
+namespace Toltech.App.Services.Logging
 {
 
 

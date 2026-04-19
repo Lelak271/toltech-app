@@ -2,10 +2,10 @@
 using System.IO;
 using System.Windows;
 using SQLite;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Services.Logging;
+using Toltech.App.Models;
+using Toltech.App.Services.Logging;
 
-namespace TOLTECH_APPLICATION.Services
+namespace Toltech.App.Services
 {
     public class DbModelService
     {

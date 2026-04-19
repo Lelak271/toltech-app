@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace TOLTECH_APPLICATION.Behaviors
+namespace Toltech.App.Behaviors
 {
     public static class DataGridSelectedItemsBehavior
     {

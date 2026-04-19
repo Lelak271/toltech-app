@@ -1,4 +1,4 @@
-﻿<Window x:Class="TOLTECH_APPLICATION.FrontEnd.Controls.Dashboard.SupplementaryParamsBarChart"
+﻿<Window x:Class="Toltech.App.FrontEnd.Controls.Dashboard.SupplementaryParamsBarChart"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"

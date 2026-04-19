@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using TOLTECH_APPLICATION.FrontEnd.Controls;
+using Toltech.App.FrontEnd.Controls;
 
-namespace TOLTECH_APPLICATION.Services
+namespace Toltech.App.Services
 {
     public static class ModelManager
     {

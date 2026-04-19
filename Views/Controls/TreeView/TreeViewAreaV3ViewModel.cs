@@ -3,14 +3,14 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.ViewModels;
-using static TOLTECH_APPLICATION.FrontEnd.Controls.Dashboard.BarChartControl;
-using static TOLTECH_APPLICATION.Models.NodesDefinition;
+using Toltech.App.Models;
+using Toltech.App.Services;
+using Toltech.App.ViewModels;
+using static Toltech.App.FrontEnd.Controls.Dashboard.BarChartControl;
+using static Toltech.App.Models.NodesDefinition;
 
 
-namespace TOLTECH_APPLICATION.Views.Controls.TreeView
+namespace Toltech.App.Views.Controls.TreeView
 {
     public class TreeViewAreaV3ViewModel : INotifyPropertyChanged // TODO passé en BaseVm
     {

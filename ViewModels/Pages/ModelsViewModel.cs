@@ -5,17 +5,17 @@ using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Win32;// Nécessaire pour OpenFileDialog
-using TOLTECH_APPLICATION.FrontEnd.Controls;
-using TOLTECH_APPLICATION.FrontEnd.Interfaces;
-using TOLTECH_APPLICATION.Models;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.Services.Dialog;
-using TOLTECH_APPLICATION.Services.Logging;
-using TOLTECH_APPLICATION.Utilities;
-using static TOLTECH_APPLICATION.FrontEnd.Controls.TemplateCreateWindow;
-using TtCore = TOLTECH_APPLICATION.ViewModels;
+using Toltech.App.FrontEnd.Controls;
+using Toltech.App.FrontEnd.Interfaces;
+using Toltech.App.Models;
+using Toltech.App.Services;
+using Toltech.App.Services.Dialog;
+using Toltech.App.Services.Logging;
+using Toltech.App.Utilities;
+using static Toltech.App.FrontEnd.Controls.TemplateCreateWindow;
+using TtCore = Toltech.App.ViewModels;
 
-namespace TOLTECH_APPLICATION.ViewModels
+namespace Toltech.App.ViewModels
 {
     public class ModelsViewModel : BaseViewModel
     {

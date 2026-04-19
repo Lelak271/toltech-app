@@ -2,9 +2,9 @@
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Markup;
-using TOLTECH_APPLICATION.Resources.Lang;
+using Toltech.App.Resources.Lang;
 
-namespace TOLTECH_APPLICATION.Resources.Lang
+namespace Toltech.App.Resources.Lang
 {
     /// <summary>
     /// MarkupExtension WPF permettant de lier dynamiquement une clé de localisation

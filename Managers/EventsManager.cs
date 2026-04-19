@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using TOLTECH_APPLICATION.Models;
+using Toltech.App.Models;
 
-namespace TOLTECH_APPLICATION.Services
+namespace Toltech.App.Services
 {
     public static class EventsManager
     {

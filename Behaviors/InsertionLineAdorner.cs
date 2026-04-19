@@ -8,7 +8,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Controls;
 
-namespace TOLTECH_APPLICATION.Behaviors
+namespace Toltech.App.Behaviors
 {
     public class InsertionLineAdorner : Adorner
     {

@@ -5,9 +5,9 @@ using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
-using static TOLTECH_APPLICATION.FrontEnd.Controls.Dashboard.BarChartControl;
+using static Toltech.App.FrontEnd.Controls.Dashboard.BarChartControl;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls.Dashboard
+namespace Toltech.App.FrontEnd.Controls.Dashboard
 {
     public partial class SupplementaryParamsBarChart : Window
     {

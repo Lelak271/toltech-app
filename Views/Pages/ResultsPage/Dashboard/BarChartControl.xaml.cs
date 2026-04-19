@@ -8,14 +8,14 @@ using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
-using TOLTECH_APPLICATION.Views;
-using TOLTECH_APPLICATION.Properties;
-using TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.ToltechCalculation.Resux;
-using CST = TOLTECH_APPLICATION.Services;
-using TOLTECH_APPLICATION.Utilities;
+using Toltech.App.Views;
+using Toltech.App.Properties;
+using Toltech.App.Services;
+using Toltech.App.ToltechCalculation.Resux;
+using CST = Toltech.App.Services;
+using Toltech.App.Utilities;
 
-namespace TOLTECH_APPLICATION.FrontEnd.Controls.Dashboard
+namespace Toltech.App.FrontEnd.Controls.Dashboard
 {
     // Logique d'interaction pour BarChartControl.xaml
     public partial class BarChartControl : UserControl

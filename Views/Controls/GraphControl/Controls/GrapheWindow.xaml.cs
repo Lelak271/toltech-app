@@ -7,7 +7,7 @@
 //using SimpleGraph.Models;
 
 
-//namespace TOLTECH_APPLICATION
+//namespace Toltech.App
 //{
 //    public partial class GrapheWindow : Window, IDisposable
 //    {

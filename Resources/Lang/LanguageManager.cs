@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 
-namespace TOLTECH_APPLICATION.Resources.Lang
+namespace Toltech.App.Resources.Lang
 {
     public enum SupportedLanguage
     {

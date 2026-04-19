@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TOLTECH_APPLICATION.FrontEnd.Controls;
+using Toltech.App.FrontEnd.Controls;
 
-namespace TOLTECH_APPLICATION.Security
+namespace Toltech.App.Security
 {
     class AccessControl
     {

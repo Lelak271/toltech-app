@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 
-namespace TOLTECH_APPLICATION.Resources.ColorTheme
+namespace Toltech.App.Resources.ColorTheme
 {
     public enum AppTheme
     {
@@ -110,7 +110,7 @@ namespace TOLTECH_APPLICATION.Resources.ColorTheme
             var merged = Application.Current.Resources.MergedDictionaries;
 
             string fileName = GetThemeFileName(theme);
-            string uri = $"pack://application:,,,/TOLTECH_APPLICATION;component/Resources/ColorTheme/{fileName}";
+            string uri = $"pack://application:,,,/Toltech.App;component/Resources/ColorTheme/{fileName}";
 
             // Suppression des anciens thèmes couleur
             for (int i = merged.Count - 1; i >= 0; i--)

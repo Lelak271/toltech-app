@@ -8,9 +8,9 @@ using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using HelixToolkit.Wpf;
 using Microsoft.Win32;
-using TOLTECH_APPLICATION.Services;
+using Toltech.App.Services;
 
-namespace TOLTECH_APPLICATION.Visualisateur
+namespace Toltech.App.Visualisateur
 {
     public partial class VSTWindow : UserControl
     {
