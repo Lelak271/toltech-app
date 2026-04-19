@@ -1,0 +1,92 @@
+﻿<Window x:Class="TOLTECH_APPLICATION.FrontEnd.GraphePage.Controls.MainGraphe"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="https://westermo.com/graphx/"
+        xmlns:models="clr-namespace:TOLTECH_APPLICATION.Views.Controls.GrapheControl"
+        Title="Simple graph example. Read code comments for more info." Height="600" Width="825">
+
+    
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <Grid.Resources>
+            <ResourceDictionary>
+                <ResourceDictionary.MergedDictionaries>
+                    <ResourceDictionary Source="pack://application:,,,/TOLTECH_APPLICATION;component/Views/Controls/GraphControl/GraphStyle.xaml"/>
+                </ResourceDictionary.MergedDictionaries>
+            </ResourceDictionary>
+        </Grid.Resources>
+        
+        <!-- Here we create our GraphArea layout container wrapped into the Zoombox for vast zooming capabilities.
+             This is the standard approach for GraphX.-->
+        <controls:ZoomControl x:Name="zoomctrl" Grid.Column="0">
+            <models:GraphAreaExample x:Name="Area" />
+        </controls:ZoomControl>
+
+        <Grid Grid.Column="1" Margin="3" Grid.RowSpan="2">
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Center">
+                <Button Name="gg_but_randomgraph" Height="50" Margin="3" UseLayoutRounding="True" Click="gg_but_randomgraph_Click" ToolTip="Génère un graphe aléatoire">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="M0,0 L10,5 0,10 Z" Fill="White" Stretch="Uniform" Margin="0,0,5,0"/>
+                        <TextBlock Text="Random Graph" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <TextBlock Text="Type d'algo" DockPanel.Dock="Top" HorizontalAlignment="Center"  FontWeight="Bold"/>
+                <ComboBox IsReadOnly="True" Name="algo_choice" Margin="3" DockPanel.Dock="Top"/>
+                <TextBlock Text="Overlap removal" DockPanel.Dock="Top" HorizontalAlignment="Center" FontWeight="Bold"/>
+                <ComboBox IsReadOnly="True" Name="gg_oralgo" Margin="3" DockPanel.Dock="Top"/>
+                <TextBlock Text="Edge routing" DockPanel.Dock="Top" HorizontalAlignment="Center" FontWeight="Bold"/>
+                <ComboBox IsReadOnly="True" Name="gg_eralgo" Margin="3" DockPanel.Dock="Top"/>
+
+                <Slider x:Name="ImageHeightSlider" 
+                        Minimum="20" 
+                        Maximum="200" 
+                        Value="{Binding GlobalImageSize, 
+                       Mode=TwoWay,
+                       UpdateSourceTrigger=PropertyChanged
+                       }"
+                        TickFrequency="10" 
+                        IsSnapToTickEnabled="True" 
+                        Width="200"/>
+                <CheckBox Margin="3" Content="Align edge labels" x:Name="alignEdgeLabels"/>
+
+                <Button Name="gg_but_relayout" Height="50" Margin="3" UseLayoutRounding="True" Click="gg_but_relayout_Click" ToolTip="Re-calculer le layout">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="M0,0 L10,5 0,10 Z" Fill="White" Stretch="Uniform" Margin="0,0,5,0"/>
+                        <TextBlock Text="Relayout" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <Button Name="test" Height="50" Margin="3" UseLayoutRounding="True" Click="test_Click" ToolTip="Fonction de test">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Data="M0,0 L10,5 0,10 Z" Fill="White" Stretch="Uniform" Margin="0,0,5,0"/>
+                        <TextBlock Text="Test" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <CheckBox IsChecked="True" Checked="EdgeLabelsVisibility_Checked" Unchecked="EdgeLabelsVisibility_Checked" Content="Afficher les labels" Margin="5"/>
+
+                <StackPanel Orientation="Vertical" Margin="0,10,0,0">
+                    <TextBlock VerticalAlignment="Center" Text="Distance between the edges:" Margin="0,0,5,0"/>
+                    <TextBox Width="110"
+                             Height="45"
+                             VerticalContentAlignment="Center"
+                             Text="{Binding EdgeDistance, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PreviewTextInput="OnPreviewTextInput"
+                             />
+                    <CheckBox Height="25"
+                              x:Name="cbEnablePE"
+                              IsChecked="True"
+                              Content ="Enable parallel edges"
+                              ToolTip="Enable / disable parallel edges to see the difference"
+                              />
+                </StackPanel>
+
+                
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

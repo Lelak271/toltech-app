@@ -1,0 +1,69 @@
+﻿<Window x:Class="TOLTECH_APPLICATION.FrontEnd.Controls.RegisterModelWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:lang="clr-namespace:TOLTECH_APPLICATION.Resources.Lang"
+        Title="{DynamicResource RegisterModelTitle}" 
+        Height="500" 
+        Width="800">
+    <Grid Margin="10">
+        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Margin="10" Width="780">
+
+            <!-- EN-TÊTE D'EXPLICATION -->
+            <TextBlock Text="{lang:Loc RegisterModelHeader}"  FontWeight="Bold"  FontSize="20"   TextAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,0,12"/>
+            <TextBlock Text="{lang:Loc RegisterModelDescription}" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center"  Margin="0,0,0,20"/>
+
+            <!-- SECTION MODÈLE ACTIF -->
+            <TextBlock Text="{lang:Loc ModelActif}" FontWeight="Bold" Margin="0,0,0,8"   HorizontalAlignment="Center"  TextAlignment="Center"/>
+            <Button x:Name="BtnRegisterActiveModel"
+                    Width="auto"
+                    Height="auto"
+                    Margin="0,0,0,16"
+                    HorizontalAlignment="Center"
+                    Click="RegisterActiveModel_Click">
+
+                <StackPanel Orientation="Vertical"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+
+                    <!-- Texte principal -->
+                    <TextBlock Text="{lang:Loc RegisterActiveModelButton}"
+                   VerticalAlignment="Center"
+                   FontWeight="SemiBold"/>
+
+                    <!-- Texte secondaire -->
+                    <TextBlock x:Name="TxtActiveModel" Text="{Binding MainVM.ModelName}"
+                   VerticalAlignment="Center"
+                   Margin="8,0,0,0"
+                   Opacity="0.7"/>
+
+                </StackPanel>
+            </Button>
+
+
+
+            <!-- SECTION FICHIER LOCAL -->
+            <TextBlock Text="{lang:Loc LocalFolder}"  FontWeight="Bold"  Margin="0,0,0,8"  HorizontalAlignment="Center"  TextAlignment="Center"/>
+            <Button Content="{DynamicResource BrowseButton}"  Width="120"  Height="30"  Margin="0,0,0,16"  HorizontalAlignment="Center" Click="BtnBrowse_Click"/>
+
+            <!-- LISTE DES LECTEURS AVEC ICONES -->
+            <ListBox x:Name="ListDrives" 
+                     Height="200" 
+                     Width="780" 
+                     SelectionMode="Single" 
+                     SelectionChanged="ListDrives_SelectionChanged"
+                     HorizontalContentAlignment="Center" 
+                     ScrollViewer.VerticalScrollBarVisibility="Visible">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal" Margin="6" HorizontalAlignment="Center">
+                            <!-- Glyph explicite -->
+                            <TextBlock Text="{Binding IconGlyph}" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+        </StackPanel>
+    </Grid>
+</Window>

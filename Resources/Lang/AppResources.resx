@@ -1,0 +1,654 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Test" xml:space="preserve">
+    <value>TestNeutral</value>
+  </data>
+  <data name="AppTitle" xml:space="preserve">
+    <value>Toltech - Tolerance Modeling Application</value>
+  </data>
+  <data name="AppDescription1" xml:space="preserve">
+    <value>Toltech is an BETA application designed to model tolerance chains using modern mathematical methods (matrices, screw theory, graphs...).</value>
+  </data>
+  <data name="AppDescription2" xml:space="preserve">
+    <value>Developed with a user-centered approach, Toltech aims to make analyses accessible and automated, especially for SMEs.</value>
+  </data>
+  <data name="AppCreator" xml:space="preserve">
+    <value>Creator: [Your Name], passionate about mechanical engineering, software development, and design tool optimization.</value>
+  </data>
+  <data name="WelcomeText" xml:space="preserve">
+    <value>Welcome</value>
+  </data>
+  <data name="LanguageLabel" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="FrenchLabel" xml:space="preserve">
+    <value>French</value>
+  </data>
+  <data name="EnglishLabel" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="SaveModel" xml:space="preserve">
+    <value>Save model</value>
+  </data>
+  <data name="NoModelData1" xml:space="preserve">
+    <value>No data to display</value>
+  </data>
+  <data name="NoModelData2" xml:space="preserve">
+    <value>Create or display the model</value>
+  </data>
+  <data name="NoReqData1" xml:space="preserve">
+    <value>No data to display</value>
+  </data>
+  <data name="NoReqData2" xml:space="preserve">
+    <value>Create a new requirement</value>
+  </data>
+  <data name="UnitLabel" xml:space="preserve">
+    <value>Unit</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Statut" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Picture" xml:space="preserve">
+    <value>Picture</value>
+  </data>
+  <data name="Fixed" xml:space="preserve">
+    <value>Fixed</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Deleted" xml:space="preserve">
+    <value>Deleted</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="TabGeneral" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="TabModels" xml:space="preserve">
+    <value>Models</value>
+  </data>
+  <data name="TabModeling" xml:space="preserve">
+    <value>Modeling</value>
+  </data>
+  <data name="TabRequirements" xml:space="preserve">
+    <value>Requirements</value>
+  </data>
+  <data name="TabResults" xml:space="preserve">
+    <value>Results</value>
+  </data>
+  <data name="TabV3D" xml:space="preserve">
+    <value>V3D</value>
+  </data>
+  <data name="CreateWord" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="OpenWord" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="ModifyWord" xml:space="preserve">
+    <value>Modify</value>
+  </data>
+  <data name="Link" xml:space="preserve">
+    <value>Link</value>
+  </data>
+  <data name="DuplicateWord" xml:space="preserve">
+    <value>Duplicate</value>
+  </data>
+  <data name="DeleteWord" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="HideWord" xml:space="preserve">
+    <value>Hide</value>
+  </data>
+  <data name="ShowWord" xml:space="preserve">
+    <value>Show</value>
+  </data>
+  <data name="MoveWord" xml:space="preserve">
+    <value>Move</value>
+  </data>
+  <data name="CopyWord" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="InformationWord" xml:space="preserve">
+    <value>Information</value>
+  </data>
+  <data name="RibbonTabModel" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="GroupTOLTECH" xml:space="preserve">
+    <value>TOLTECH</value>
+  </data>
+  <data name="GroupModels" xml:space="preserve">
+    <value>Models</value>
+  </data>
+  <data name="GroupParts" xml:space="preserve">
+    <value>Part</value>
+  </data>
+  <data name="GroupRequirements" xml:space="preserve">
+    <value>Requirements</value>
+  </data>
+  <data name="GroupPathModel" xml:space="preserve">
+    <value>Model path -</value>
+  </data>
+  <data name="EditionModel" xml:space="preserve">
+    <value>Editing model -</value>
+  </data>
+  <data name="TipCreateModel" xml:space="preserve">
+    <value>Create a new model</value>
+  </data>
+  <data name="TipOpenModel" xml:space="preserve">
+    <value>Open a model</value>
+  </data>
+  <data name="TipModifyModel" xml:space="preserve">
+    <value>Modify a model</value>
+  </data>
+  <data name="TipLinkModel" xml:space="preserve">
+    <value>Link model to library</value>
+  </data>
+  <data name="TipDeleteModel" xml:space="preserve">
+    <value>Delete a model</value>
+  </data>
+  <data name="TipCreatePart" xml:space="preserve">
+    <value>Create a part</value>
+  </data>
+  <data name="TipDeletePart" xml:space="preserve">
+    <value>Delete a part</value>
+  </data>
+  <data name="TipCreateReq" xml:space="preserve">
+    <value>Create a requirement</value>
+  </data>
+  <data name="TipDeleteReq" xml:space="preserve">
+    <value>Delete a requirement</value>
+  </data>
+  <data name="TipMoveModel" xml:space="preserve">
+    <value>Move the file</value>
+  </data>
+  <data name="TipCopyPath" xml:space="preserve">
+    <value>Click to copy</value>
+  </data>
+  <data name="RibbonTabDatabase" xml:space="preserve">
+    <value>Database</value>
+  </data>
+  <data name="GroupDatabaseLinks" xml:space="preserve">
+    <value>DB Links</value>
+  </data>
+  <data name="GroupValidation" xml:space="preserve">
+    <value>Data Validation</value>
+  </data>
+  <data name="BtnTol" xml:space="preserve">
+    <value>Tol</value>
+  </data>
+  <data name="BtnExi" xml:space="preserve">
+    <value>Exi</value>
+  </data>
+  <data name="BtnMod" xml:space="preserve">
+    <value>Mod</value>
+  </data>
+  <data name="BtnPart" xml:space="preserve">
+    <value>Parts</value>
+  </data>
+  <data name="BtnSync" xml:space="preserve">
+    <value>Sync</value>
+  </data>
+  <data name="BtnIsostatisme" xml:space="preserve">
+    <value>Isostaticity</value>
+  </data>
+  <data name="BtnMatrixPreview" xml:space="preserve">
+    <value>MiP</value>
+  </data>
+  <data name="BtnGraph" xml:space="preserve">
+    <value>Graph</value>
+  </data>
+  <data name="RibbonTabParameter" xml:space="preserve">
+    <value>Parameter</value>
+  </data>
+  <data name="ParamSentence" xml:space="preserve">
+    <value>Preview of parameters:</value>
+  </data>
+  <data name="TipFixedPart" xml:space="preserve">
+    <value>The selected part corresponds to the fixed part of the system (Base).</value>
+  </data>
+  <data name="TipCheckActiveParts" xml:space="preserve">
+    <value>Ensure that no active part positions this one.</value>
+  </data>
+  <data name="Part1" xml:space="preserve">
+    <value>Part 1</value>
+  </data>
+  <data name="Part2" xml:space="preserve">
+    <value>Part 2</value>
+  </data>
+  <data name="Tolerance1" xml:space="preserve">
+    <value>Tolerance 1</value>
+  </data>
+  <data name="Tolerance2" xml:space="preserve">
+    <value>Tolerance 2</value>
+  </data>
+  <data name="Coordinate" xml:space="preserve">
+    <value>Coordinates</value>
+  </data>
+  <data name="Point" xml:space="preserve">
+    <value>Point</value>
+  </data>
+  <data name="Direction" xml:space="preserve">
+    <value>Direction</value>
+  </data>
+  <data name="ToleranceInt" xml:space="preserve">
+    <value>INT Tolerance</value>
+  </data>
+  <data name="IDWord" xml:space="preserve">
+    <value>ID</value>
+  </data>
+  <data name="Comment" xml:space="preserve">
+    <value>Comment</value>
+  </data>
+  <data name="Placeholder_NamePo" xml:space="preserve">
+    <value>Name of the punctual element</value>
+  </data>
+  <data name="Placeholder_NameReq" xml:space="preserve">
+    <value>Name of the requirement</value>
+  </data>
+  <data name="Placeholder_Tol1Name" xml:space="preserve">
+    <value>Name of tolerance 1</value>
+  </data>
+  <data name="Placeholder_TolIntName" xml:space="preserve">
+    <value>Name of intermediate tolerance</value>
+  </data>
+  <data name="Placeholder_Tol2Name" xml:space="preserve">
+    <value>Name of tolerance 2</value>
+  </data>
+  <data name="Placeholder_PointX" xml:space="preserve">
+    <value>Coord X</value>
+  </data>
+  <data name="Placeholder_PointY" xml:space="preserve">
+    <value>Coord Y</value>
+  </data>
+  <data name="Placeholder_PointZ" xml:space="preserve">
+    <value>Coord Z</value>
+  </data>
+  <data name="Placeholder_DirX" xml:space="preserve">
+    <value>Dir U</value>
+  </data>
+  <data name="Placeholder_DirY" xml:space="preserve">
+    <value>Dir V</value>
+  </data>
+  <data name="Placeholder_DirZ" xml:space="preserve">
+    <value>Dir W</value>
+  </data>
+  <data name="Placeholder_Tol1" xml:space="preserve">
+    <value>Tol 1</value>
+  </data>
+  <data name="Placeholder_TolInt" xml:space="preserve">
+    <value>Tol Int</value>
+  </data>
+  <data name="Placeholder_Tol2" xml:space="preserve">
+    <value>Tol 2</value>
+  </data>
+  <data name="Placeholder_Tol1Desc" xml:space="preserve">
+    <value>Tolerance 1 description</value>
+  </data>
+  <data name="Placeholder_TolIntDesc" xml:space="preserve">
+    <value>Intermediate tolerance description</value>
+  </data>
+  <data name="Placeholder_Tol2Desc" xml:space="preserve">
+    <value>Tolerance 2 description</value>
+  </data>
+  <data name="Placeholder_Comment" xml:space="preserve">
+    <value>Comment</value>
+  </data>
+  <data name="RegisterModelTitle" xml:space="preserve">
+    <value>Register Model</value>
+  </data>
+  <data name="RegisterModelHeader" xml:space="preserve">
+    <value>Register a Model</value>
+  </data>
+  <data name="RegisterModelDescription" xml:space="preserve">
+    <value>You can save the active model or select a local file (.tolx) to add to the database.</value>
+  </data>
+  <data name="ModelActif" xml:space="preserve">
+    <value>Active Model</value>
+  </data>
+  <data name="RegisterActiveModelButton" xml:space="preserve">
+    <value>Link Active Model</value>
+  </data>
+  <data name="LocalFolder" xml:space="preserve">
+    <value>Local File</value>
+  </data>
+  <data name="BrowseButton" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+  <data name="SelectTolxFile" xml:space="preserve">
+    <value>Select a .tolx file</value>
+  </data>
+  <data name="TolxFileFilter" xml:space="preserve">
+    <value>Tolx Files (*.tolx)|*.tolx</value>
+  </data>
+  <data name="FileSelectedMessage" xml:space="preserve">
+    <value>Selected file: {0}</value>
+  </data>
+  <data name="ModelAlreadyRegistered" xml:space="preserve">
+    <value>The active model is already registered</value>
+  </data>
+  <data name="RegisterActiveModel" xml:space="preserve">
+    <value>Register the active model</value>
+  </data>
+  <data name="Register_NoModel" xml:space="preserve">
+    <value>No valid active model</value>
+  </data>
+  <data name="SelectFolderPathDefault" xml:space="preserve">
+    <value>Select a folder</value>
+  </data>
+  <data name="LibraryToltech" xml:space="preserve">
+    <value>Toltech library</value>
+  </data>
+  <data name="Header_BarChart" xml:space="preserve">
+    <value>Bar Chart</value>
+  </data>
+  <data name="WorstCase" xml:space="preserve">
+    <value>Worst Case</value>
+  </data>
+  <data name="StatistiqueWord" xml:space="preserve">
+    <value>Statistical (RSS)</value>
+  </data>
+  <data name="FilterBy" xml:space="preserve">
+    <value>Filter by :</value>
+  </data>
+  <data name="ExcludNull" xml:space="preserve">
+    <value>Exclude 0</value>
+  </data>
+  <data name="AbsoluteValue" xml:space="preserve">
+    <value>Absolute value</value>
+  </data>
+  <data name="Filter_MaxInfluence_Content" xml:space="preserve">
+    <value>Maximum influence</value>
+  </data>
+  <data name="Filter_MinInfluence_Content" xml:space="preserve">
+    <value>Minimum influence</value>
+  </data>
+  <data name="Filter_TotalContribution_Content" xml:space="preserve">
+    <value>Total contribution</value>
+  </data>
+  <data name="Filter_OriginContribution_Content" xml:space="preserve">
+    <value>Origin contribution</value>
+  </data>
+  <data name="Filter_IntermediateContribution_Content" xml:space="preserve">
+    <value>Intermediate contribution</value>
+  </data>
+  <data name="Filter_EndContribution_Content" xml:space="preserve">
+    <value>End contribution</value>
+  </data>
+  <data name="Filter_MaxInfluence" xml:space="preserve">
+    <value>Displays the item with the highest influence value for each requirement.</value>
+  </data>
+  <data name="Filter_MinInfluence" xml:space="preserve">
+    <value>Displays the item with the lowest influence value for each requirement.</value>
+  </data>
+  <data name="Filter_TotalContribution" xml:space="preserve">
+    <value>Displays the sum of all components' contributions to the final requirement value.</value>
+  </data>
+  <data name="Filter_OriginContribution" xml:space="preserve">
+    <value>Displays only the contribution from the origin point of each component.</value>
+  </data>
+  <data name="Filter_IntermediateContribution" xml:space="preserve">
+    <value>Displays only the contribution from intermediate elements of each component.</value>
+  </data>
+  <data name="Filter_EndContribution" xml:space="preserve">
+    <value>Displays only the contribution from the end point of each component.</value>
+  </data>
+  <data name="NumberPart" xml:space="preserve">
+    <value>Nb part :</value>
+  </data>
+  <data name="NumberReq" xml:space="preserve">
+    <value>Nb requirement :</value>
+  </data>
+  <data name="ToolTipPart" xml:space="preserve">
+    <value>Active part information</value>
+  </data>
+  <data name="MasseVol" xml:space="preserve">
+    <value>Density</value>
+  </data>
+  <data name="Part_Fixed" xml:space="preserve">
+    <value>Fixed Part</value>
+  </data>
+  <data name="Part_NotFixed" xml:space="preserve">
+    <value>Not Fixed Part</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="ToolTipFlag" xml:space="preserve">
+    <value>The British flag, known as the Union Jack, combines elements of the flags of England, Scotland, and Ireland. It represents the historical union of these nations. The United Kingdom has had a profound global influence in science, literature, and industry. It is the birthplace of William Shakespeare, Isaac Newton, and the Industrial Revolution, and it continues to play a major role in international culture, finance, and education.</value>
+  </data>
+  <data name="AnalyseWord" xml:space="preserve">
+    <value>Analyse</value>
+  </data>
+  <data name="CalculsWord" xml:space="preserve">
+    <value>Calculs</value>
+  </data>
+  <data name="SentFilterBar" xml:space="preserve">
+    <value>Filter bar</value>
+  </data>
+  <data name="FilterByName" xml:space="preserve">
+    <value>Filter by name</value>
+  </data>
+  <data name="Drag_and_drop_an_image_here" xml:space="preserve">
+    <value>Drag and drop an image here</value>
+  </data>
+  <data name="Click_to_select_one" xml:space="preserve">
+    <value>Click to select one</value>
+  </data>
+  <data name="or" xml:space="preserve">
+    <value>or</value>
+  </data>
+  <data name="LauchWord" xml:space="preserve">
+    <value>Lauch</value>
+  </data>
+  <data name="Import_Resx" xml:space="preserve">
+    <value>Import (.Resx)</value>
+  </data>
+  <data name="Export_Resux" xml:space="preserve">
+    <value>Export (Resux)</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="FREE_DIR_Mode" xml:space="preserve">
+    <value>FREE-DIR Mode</value>
+  </data>
+  <data name="Influence" xml:space="preserve">
+    <value>Influence</value>
+  </data>
+  <data name="Contribution" xml:space="preserve">
+    <value>Contribution</value>
+  </data>
+  <data name="Sent_Select_the_requirements_to_be_calculated" xml:space="preserve">
+    <value>Select the requirements to be calculated:</value>
+  </data>
+  <data name="InfoTitle" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="Warning" xml:space="preserve">
+    <value>Warning</value>
+  </data>
+  <data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Debug" xml:space="preserve">
+    <value>Debug</value>
+  </data>
+  <data name="ApplicationTheme" xml:space="preserve">
+    <value>Application Theme</value>
+  </data>
+  <data name="DefaultUnit" xml:space="preserve">
+    <value>Default Unit</value>
+  </data>
+  <data name="Millimeters" xml:space="preserve">
+    <value>Millimeters (mm)</value>
+  </data>
+  <data name="Degree" xml:space="preserve">
+    <value>Degree (°)</value>
+  </data>
+  <data name="RadianRad" xml:space="preserve">
+    <value>Radian (rad)</value>
+  </data>
+  <data name="ApplicationParameter" xml:space="preserve">
+    <value>Application parameter</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Inche" xml:space="preserve">
+    <value>Inche (in)</value>
+  </data>
+  <data name="ModelCurrentlyBeingEdited" xml:space="preserve">
+    <value>🟢 Model Currently Being Edited</value>
+  </data>
+  <data name="ItalianLabel" xml:space="preserve">
+    <value>Italian</value>
+  </data>
+  <data name="Table_type" xml:space="preserve">
+    <value>Table type</value>
+  </data>
+  <data name="Model_analyzed" xml:space="preserve">
+    <value>Model analyzed</value>
+  </data>
+  <data name="Export_to_Excel" xml:space="preserve">
+    <value>Export to Excel</value>
+  </data>
+  <data name="Export_to_GSheet" xml:space="preserve">
+    <value>Export to GSheet</value>
+  </data>
+  <data name="Export_CrossTable_to_Google_Sheets" xml:space="preserve">
+    <value>Export CrossTable to Google Sheets</value>
+  </data>
+  <data name="Export_CrossTable_to_Excel" xml:space="preserve">
+    <value>Export Excel de la CrossTable</value>
+  </data>
+  <data name="ContributionsByRequirement" xml:space="preserve">
+    <value>Contributions by requirement</value>
+  </data>
+  <data name="Folder" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+</root>

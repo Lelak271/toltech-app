@@ -1,0 +1,297 @@
+﻿<UserControl x:Class="TOLTECH_APPLICATION.FrontEnd.Controls.PanelModelMeta"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:conv="clr-namespace:TOLTECH_APPLICATION.Converters"
+             xmlns:core="clr-namespace:TOLTECH_APPLICATION.Services"
+             xmlns:lang="clr-namespace:TOLTECH_APPLICATION.Resources.Lang"
+             mc:Ignorable="d"
+             x:Name="RootControl"
+             Width="1300"
+             d:DesignHeight="250"
+             d:DesignWidth="1200">
+
+    <!-- ===================== -->
+    <!-- Ressources et styles -->
+    <!-- ===================== -->
+    <UserControl.Resources>
+
+        <conv:ActiveModelToVisibilityConverter x:Key="ActiveModelToVisibilityConverter"/>
+        <conv:ActiveModelToBoolConverter x:Key="ActiveModelToBoolConverter"/>
+        <conv:ByteArrayToImageConverter x:Key="ByteArrayToImageConverter"/>
+        <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        
+        <!-- Border éditable -->
+        <Style x:Key="EditableBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource PanelModelMetaPrimaryBrush}"/>
+            <Setter Property="Cursor" Value="No"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsEditable, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource PanelModelMetaEditionBrush}"/>
+                    <Setter Property="Cursor" Value="Arrow"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- TextBox éditable -->
+        <Style TargetType="TextBox" BasedOn="{StaticResource BaseTextBox}">
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+            <Setter Property="Background" Value="{DynamicResource PanelModelMetaSecondaryBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsEditable, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                    <Setter Property="IsReadOnly" Value="False"/>
+                    <Setter Property="IsHitTestVisible" Value="True"/>
+                    <Setter Property="Background" Value="{DynamicResource PanelModelMetaEditionBrush2}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        
+        <!-- Button éditable -->
+        <Style TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+            <Setter Property="IsHitTestVisible" Value="False"/>
+            <Setter Property="Background" Value="{DynamicResource PanelModelMetaSecondaryBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsEditable, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                    <Setter Property="IsHitTestVisible" Value="True"/>
+                    <Setter Property="Background" Value="{DynamicResource PanelModelMetaEditionBrush2}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ComboBox éditable -->
+        <Style TargetType="ComboBox" BasedOn="{StaticResource ComboBoxMainStyle}" >
+            <Setter Property="IsEnabled" Value="False"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsEditable, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="True">
+                    <Setter Property="IsEnabled" Value="True"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+
+
+    </UserControl.Resources>
+
+    <!-- ===================== -->
+    <!-- Conteneur principal -->
+    <!-- ===================== -->
+    <Border BorderThickness="2"
+            CornerRadius="20"
+            Padding="10"
+            BorderBrush="{DynamicResource PrimaryBorderBrush}"
+            Style="{StaticResource EditableBorderStyle}">
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- ===================== -->
+            <!-- En-tête -->
+            <!-- ===================== -->
+            <Grid Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBox Grid.Column="0"
+                         Width="700"
+                         Height="30"
+                         FontSize="16"
+                         FontWeight="Bold"
+                         Padding="3"
+                         Text="{Binding NameData, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" >
+                    <TextBox.IsReadOnly>
+                        <MultiBinding Converter="{StaticResource ActiveModelToBoolConverter}">
+                            <Binding Source="{x:Static core:ModelManager.ModelActif}" />
+                            <Binding Path="FilePathModel" />
+                        </MultiBinding>
+                    </TextBox.IsReadOnly>
+                </TextBox>
+
+                    <TextBlock Grid.Column="1"
+                           Width="60"
+                           VerticalAlignment="Center"
+                           Text="{Binding IdModel}" />
+
+                <TextBlock x:Name="ActifModel" 
+                           Grid.Column="2"
+                           HorizontalAlignment="Right"
+                           Margin="0,0,10,0"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           Foreground="#2E7D32"
+                           Text="{lang:Loc ModelCurrentlyBeingEdited}">
+
+                     <TextBlock.Visibility>
+                        <MultiBinding Converter="{StaticResource ActiveModelToVisibilityConverter}">
+                            <Binding Source="{x:Static core:ModelManager.ModelActif}" />
+                            <Binding Path="FilePathModel" />
+                        </MultiBinding>
+                    </TextBlock.Visibility>
+                </TextBlock>
+            </Grid>
+
+            <!-- ===================== -->
+            <!-- Contenu principal -->
+            <!-- ===================== -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="200"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="250"/>
+                    <ColumnDefinition Width="100"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Image -->
+                <Border Grid.Column="0"
+                        Margin="5"
+                        BorderThickness="1"
+                        CornerRadius="5"
+                        BorderBrush="DarkSlateBlue"
+                        MouseLeftButtonUp="ImageBorder_MouseLeftButtonUp" 
+                        Drop="ImageBorder_Drop" 
+                        DragOver="ImageBorder_DragOver">
+                    <Grid>
+                        <Image x:Name="Image_Model"
+                               Stretch="Uniform"
+                               Opacity="0.8"
+                               Source="{Binding ImageData, Converter={StaticResource ByteArrayToImageConverter}}"/>
+                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" >
+                            <TextBlock Text="{lang:Loc Drag_and_drop_an_image_here}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontStyle="Italic"
+                                       Foreground="{DynamicResource SecondaryBorderBrush}"
+                                       Visibility="{Binding ImageData, Converter={StaticResource NullToVisibilityConverter}}"/>
+                            <TextBlock Text="{lang:Loc or}"       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontStyle="Italic"
+                                       Foreground="{DynamicResource SecondaryBorderBrush}"
+                                       Visibility="{Binding ImageData, Converter={StaticResource NullToVisibilityConverter}}"/>
+                            <TextBlock Text="{lang:Loc Click_to_select_one}" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontStyle="Italic"
+                                       Foreground="{DynamicResource SecondaryBorderBrush}"
+                                       Visibility="{Binding ImageData, Converter={StaticResource NullToVisibilityConverter}}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Description + chemin -->
+                <Grid Grid.Column="1" Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="25"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBox Grid.Row="0"
+                             VerticalAlignment="Stretch"
+                             Text="{Binding DescriptionModel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <TextBlock Grid.Row="1"
+                               VerticalAlignment="Center"
+                               Text="{Binding FilePathModel}"/>
+                </Grid>
+
+                <!-- Informations -->
+                <Grid Grid.Column="2" Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <TextBlock Text="{lang:Loc NumberPart}"/>
+                        <TextBlock Text="{Binding PartCount}"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1" Orientation="Horizontal">
+                        <TextBlock Text="{lang:Loc NumberReq}"/>
+                        <TextBlock Text="{Binding RequirementCount}"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="2" Text="Statut :"/>
+                    <ComboBox Grid.Row="2"
+                              Margin="5,8"
+                              SelectedValue="{Binding ModelStatus, Mode=TwoWay}"
+                              SelectedValuePath="Content">
+                        <ComboBoxItem Content="Nouveau"/>
+                        <ComboBoxItem Content="En cours"/>
+                        <ComboBoxItem Content="Terminé"/>
+                        <ComboBoxItem Content="Archivé"/>
+                    </ComboBox>
+
+                    <TextBlock Grid.Row="3" Text="Responsable :"/>
+                    <ComboBox Grid.Row="3"
+                              Margin="5,8"
+                              SelectedValue="{Binding ResponsibleEngineer, Mode=TwoWay}"
+                              SelectedValuePath="Content">
+                        <ComboBoxItem Content="PERIER Louis"/>
+                        <ComboBoxItem Content="BABAUD-DULAC Salomé"/>
+                        <ComboBoxItem Content="POTTER Hary"/>
+                        <ComboBoxItem Content="ZIDANE Zinédine"/>
+                    </ComboBox>
+                </Grid>
+
+                <!-- Boutons -->
+                <Grid Grid.Column="3" Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <Button 
+                            Command="{Binding DataContext.ToggleEditCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=UserControl}}"
+                            HorizontalAlignment="Stretch">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource ButtonBase}">
+                                <!-- Valeur par défaut -->
+                                <Setter Property="Content" Value="💾" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsEditable, RelativeSource={RelativeSource AncestorType=UserControl}}" Value="False">
+                                        <Setter Property="Content" Value="{lang:Loc Edit}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <TextBlock Text="*"
+                               Foreground="Black"
+                               FontWeight="Bold"
+                               Margin="25,-10,0,0"
+                               Visibility="{Binding IsDirty, Converter={StaticResource BoolToVisibilityConverter}}" />
+
+                    <Button Grid.Row="1" 
+                            Content="{lang:Loc OpenWord}" 
+                            Command="{Binding DataContext.OpenCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            CommandParameter="{Binding}" 
+                            HorizontalAlignment="Stretch"/>
+                    <Button Grid.Row="2" 
+                            Content="{lang:Loc DuplicateWord}"                        
+                            Command="{Binding DataContext.DuplicateCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            CommandParameter="{Binding}" 
+                            HorizontalAlignment="Stretch"/>
+                    <Button Grid.Row="3" 
+                            Content="{lang:Loc Deleted}"
+                            Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                            CommandParameter="{Binding}"
+                            HorizontalAlignment="Stretch"/>
+                </Grid>
+
+            </Grid>
+       
+        </Grid>
+    </Border>
+</UserControl>

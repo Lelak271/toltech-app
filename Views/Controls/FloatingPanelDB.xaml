@@ -1,0 +1,74 @@
+﻿<Window x:Class="TOLTECH_APPLICATION.FrontEnd.Controls.FloatingPanelDB"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:TOLTECH_APPLICATION.ViewModels"
+        xmlns:behaviors="clr-namespace:TOLTECH_APPLICATION.Behaviors"
+        mc:Ignorable="d"
+        Title="Tolérances"
+        Width="1000" Height="600"
+        WindowStartupLocation="CenterOwner"
+        Background="#F4F4F4"
+        FontFamily="Segoe UI"
+        >
+
+    <Window.DataContext>
+        <vm:ToleranceDBViewModel />
+    </Window.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Bandeau supérieur -->
+        <Border Background="#2D3E50" Padding="15" Margin="5" CornerRadius="6" Grid.Row="0">
+            <TextBlock Text="Liste des tolérances du modèle actif" Foreground="White" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"/>
+        </Border>
+
+        <!-- DataGrid -->
+        <DataGrid ItemsSource="{Binding Tolerances}" Grid.Row="1" Margin="15"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  SelectionMode="Extended"
+                  SelectionUnit="FullRow"
+                  behaviors:DataGridSelectedItemsBehavior.Enable="True"
+                  behaviors:DataGridSelectedItemsBehavior.SelectedItems="{Binding SelectedTolerances}"
+                  >
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="50"/>
+                <DataGridTextColumn Header="Nom" Binding="{Binding NameTolInt}"/>
+                <DataGridTextColumn Header="Description" Binding="{Binding DescriptionTolInt}"/>
+                <DataGridTextColumn Header="Tol Int" Binding="{Binding tolInt}"/>
+            </DataGrid.Columns>
+
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Ajouter" 
+                              Command="{Binding CreateCommand}"
+                              CommandParameter="{Binding}" />
+                    <MenuItem Header="Supprimer" 
+                              Command="{Binding DeleteCommand}"
+                              CommandParameter="{Binding}" />
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+
+        <!-- Boutons -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Grid.Row="2" FlowDirection="RightToLeft">
+            <Button Content="Enregistrer" Width="120" Height="30" Margin="10"
+                    Command="{Binding SaveCommand}" />
+            <Button Content="Créer" Width="120" Height="30" Margin="10"
+                    Command="{Binding CreateCommand}" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Grid.Row="2" FlowDirection="RightToLeft">
+            <Button Content="Supprimer" Width="120" Height="30" Margin="10"
+                    Command="{Binding DeleteCommand}" />
+ 
+        </StackPanel>
+    </Grid>
+</Window>

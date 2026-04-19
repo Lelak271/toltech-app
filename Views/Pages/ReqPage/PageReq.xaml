@@ -1,0 +1,280 @@
+﻿<UserControl x:Class="TOLTECH_APPLICATION.Views.PageReq"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:TOLTECH_APPLICATION.Views"
+      xmlns:racine="clr-namespace:TOLTECH_APPLICATION"
+      xmlns:models="clr-namespace:TOLTECH_APPLICATION.Models"
+      xmlns:localControls="clr-namespace:TOLTECH_APPLICATION.FrontEnd.Controls"
+      xmlns:mainVM="clr-namespace:TOLTECH_APPLICATION.Resources"
+      xmlns:conv="clr-namespace:TOLTECH_APPLICATION.Converters"
+      xmlns:lang="clr-namespace:TOLTECH_APPLICATION.Resources.Lang"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800" 
+      Loaded="Page_Loaded"
+      x:Name="ReqPage"
+             >
+
+    <UserControl.Resources>
+        <conv:EyeStateToImageConverter x:Key="EyeStateToImageConverter"/>
+        <conv:ZeroToVisibilityConverter x:Key="ZeroToVisibilityConverter"/>
+        <conv:EnumEqualsToVisibilityConverter x:Key="EnumEqualsToVisibilityConverter"/>
+    </UserControl.Resources>
+    
+    <DockPanel LastChildFill="True" >
+
+        <!-- Zone de l'arborescence du modèle (à gauche, largeur fixe) -->
+        <Border DockPanel.Dock="Left" Style="{DynamicResource BorderThemeStyle}">
+            <Grid Name="GridTreeViewReq" Width="250" >
+                <localControls:TreeViewAreaV3 x:Name="TreeViewReq" DataContext="{Binding TreeVM}"/>
+            </Grid>
+        </Border>
+
+        <Border Style="{DynamicResource BorderThemeStyle}" Margin="10,0,0,0">
+            <Grid  x:Name="MainGridReq"   ShowGridLines="False" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="70"/>
+                    <RowDefinition Height="1"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <Border x:Name="HeaderPageReq" Grid.Row="0"  Margin="5,15,5,0" CornerRadius="10">
+                    <Grid ShowGridLines="False" >
+                        <Grid.ColumnDefinitions >
+                            <ColumnDefinition Width="0"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Zone d'affichage des TextBlock -->
+                        <StackPanel Orientation="Horizontal" Grid.Column="1">
+                            <StackPanel Orientation="Vertical" Margin="10,0">
+                                <TextBlock Margin="10,0" FontSize="15" HorizontalAlignment="Left" >
+                                    <Run Text="{lang:Loc NumberPart}" />
+                                    <Run Text=" " /> 
+                                    <Run Text="{Binding MainVM.NumberOfParts}" />
+                                </TextBlock>
+
+                                <TextBlock Margin="10,0" FontSize="15" HorizontalAlignment="Left">
+                                    <Run Text="{lang:Loc NumberReq}" />
+                                    <Run Text=" " /> 
+                                    <Run Text="{Binding MainVM.NumberOfReq}" />
+                                </TextBlock>
+                            </StackPanel>
+
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal"  HorizontalAlignment="Center" Grid.Column="2">
+                            <StackPanel Orientation="Vertical" Margin="10,0">
+                                <TextBlock Margin="10,0" FontSize="15" HorizontalAlignment="Left" >
+                                    <Run Text="{lang:Loc Folder}" />
+                                    <Run Text=" : " />
+                                    <Run Text="{Binding CurrentFolder, UpdateSourceTrigger=PropertyChanged}" />
+
+                                </TextBlock>
+                            </StackPanel>
+
+                        </StackPanel>
+
+                        <!-- Groupe des boutons à droite -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0" Grid.Column="3">
+                            <Button x:Name="BtnCreateReq" Width="40" Height="40" Margin="0,0,0,0" Padding="2" Command="{Binding CreateRequirementCommand}" HorizontalContentAlignment="Center" 
+                                     VerticalContentAlignment="Center"  ToolTip="Création d'une pièce"  >
+                                <Image Source="/Asset/add_req2.png" Stretch="Uniform" />
+                            </Button>
+                            <Button x:Name="BtnDeleteReq" Width="40" Height="40" Margin="10,0,0,0" Padding="2"  Command="{Binding DeleteRequirementCommand}" HorizontalContentAlignment="Center" 
+                                      VerticalContentAlignment="Center"  ToolTip="{Binding ToolTipDeletePart}"  ToolTipService.ShowDuration="6000">
+                                <Image Source="/Asset/bin_req2.png" Stretch="Uniform" />
+                            </Button>
+
+                            <Border Style="{DynamicResource BorderThemeStyle}" Width="1" Height="40" Margin="10,0" />
+
+                            <Button x:Name="MultiEditButton" Width="40" Height="40" Margin="10,0,0,0" Padding="2"   Click="MultiEdit_Click"
+                                      HorizontalContentAlignment="Center" VerticalContentAlignment="Center"  ToolTip="Edition multiple des données" >
+                                <Viewbox Stretch="Uniform">
+                                    <Grid Margin="40">
+                                        <Image Source="/Asset/MultiEdit.png" Stretch="Uniform"/>
+                                    </Grid>
+                                </Viewbox>
+                            </Button>
+                            <Button x:Name="SaveButton"
+                                    Content="💾" 
+                                    FontSize="25"
+                                    Width="40" 
+                                    Height="40" 
+                                    Margin="10,0,0,0" 
+                                    Padding="0"  
+                                    Command="{Binding SaveCommand}"
+                                    ToolTip="Sauvegade totale" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="BarreReq" Grid.Row="1" >
+                    <Border.Effect>
+                        <DropShadowEffect Color="Black" Direction="270" ShadowDepth="3" BlurRadius="6" Opacity="0.4"/>
+                    </Border.Effect>
+                    <Border Style="{DynamicResource BorderThemeStyle}" Height="1" Margin="20,0,20,0" VerticalAlignment="Bottom"/>
+                </Border>
+                
+                <!-- Zone de saisie des valeurs -->
+                <Grid x:Name="GridItems" Grid.Row="2" ShowGridLines="False">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Zone principale : Liste (liste doit être dans Row=1) -->
+                    <Grid >
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        
+                        <StackPanel Grid.Row="0"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top">
+
+                            <TextBox Width="180"
+                                     Margin="0,0,10,0"
+                                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     Visibility="{Binding ViewMode,
+                                     Converter={StaticResource EnumEqualsToVisibilityConverter},
+                                     ConverterParameter=SearchOnly}"
+                                     />
+
+                            <ComboBox Width="160"
+                                      Margin="0,0,0,0"
+                                      ItemsSource="{Binding ViewModes}"
+                                      SelectedItem="{Binding ViewMode, Mode=TwoWay}" /> 
+                        </StackPanel>
+
+
+                        <!-- LISTE scrollable + virtualisée : on utilise ListBox (contient ScrollViewer) -->
+                        <ListBox Grid.Row="0"
+                                 x:Name="ListBoxReqs"
+                                 ItemsSource="{Binding FilteredRequirements}"
+                                 SelectedItem="{Binding SelectedRequirement, Mode=TwoWay}"
+                                 VirtualizingPanel.IsVirtualizing="True"
+                                 VirtualizingPanel.VirtualizationMode="Recycling"
+                                 VirtualizingPanel.ScrollUnit="Pixel"
+                                 ScrollViewer.CanContentScroll="True"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Focusable="False"
+                                 SelectionMode="Single"
+                                 Margin="0,30,0,0"
+                                 ItemContainerStyle="{DynamicResource ListBoxReqs}">    
+
+                            <!-- Panel virtualisant -->
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel />
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+
+                            <!-- Template de l'item (votre PanelReqs) -->
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:Requirements}">
+                                    <localControls:PanelReqs
+                                                    Requirement="{Binding}"
+                                                    ParentViewModel="{Binding DataContext, RelativeSource={RelativeSource AncestorType=local:PageReq}}"
+                                                    Margin="0,5,0,5"
+                                                    Padding="10"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- Empty panel : affiché seulement si pas d'items -->
+                        <Grid Grid.Row="0" Height="400" Margin="0,50,0,0" VerticalAlignment="Stretch"
+                          Visibility="{Binding Requirements.Count, Converter={StaticResource ZeroToVisibilityConverter}}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top">
+                                <TextBlock Text="{lang:Loc NoReqData1}" Style="{StaticResource EmptyDataTextBlockStyle}"/>
+                                <TextBlock Text="{lang:Loc NoReqData2}" Style="{StaticResource EmptyDataTextBlockStyle}"/>
+                                <Image Source="/Asset/ImageEmptyReqs.png" MaxWidth="700" Margin="0" Stretch="Fill"/>
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+
+                    <!-- Footer fixe (en dehors de la zone scrollable) -->
+                    <Grid Visibility="Collapsed" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Border Style="{DynamicResource BorderThemeStyle}" Height="1" Margin="10 0 10 0"/>
+                        <TextBlock Grid.Row="1" Text="Page de modélisation pour l'application TOLTECH - Développée par Louis PERIER"
+                   FontSize="20" HorizontalAlignment="Center" Margin="5"/>
+                    </Grid>
+
+                    <!--Header flottant-->  
+                    <Grid x:Name="FloatingHeader" Grid.Row="0" Height="Auto" VerticalAlignment="Top" Panel.ZIndex="10">
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="HeaderTransform" Y="0"/>
+                        </Grid.RenderTransform>
+
+                        <!-- votre StackHeaderButtons inchangé -->
+                        <StackPanel x:Name="StackHeaderButtons" MouseEnter="FloatingHeader_MouseEnter" MouseLeave="FloatingHeader_MouseLeave"
+                    Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,150,5">
+
+                            <ToggleButton Tag="1" IsChecked="{Binding IsEyeVisible1, Mode=TwoWay}" Opacity="0.8" Margin="0,0,10,0" Style="{DynamicResource ToggleButtonEye}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" >
+                                    <TextBlock Text="{lang:Loc Part1}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                                    <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
+                                        <Border.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible1, Converter={StaticResource EyeStateToImageConverter}}"
+                                                         Stretch="Uniform"/>
+                                        </Border.OpacityMask>
+                                    </Border>
+                                </StackPanel>
+                            </ToggleButton>
+
+                            <ToggleButton Tag="2" IsChecked="{Binding IsEyeVisible2, Mode=TwoWay}" Opacity="0.8" Margin="0,0,10,0" Style="{DynamicResource ToggleButtonEye}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{lang:Loc Part2}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
+                                        <Border.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible2, Converter={StaticResource EyeStateToImageConverter}}"
+                                                         Stretch="Uniform"/>
+                                        </Border.OpacityMask>
+                                    </Border>
+                                </StackPanel>
+                            </ToggleButton>
+
+                            <ToggleButton Tag="3" IsChecked="{Binding IsEyeVisible3, Mode=TwoWay}" Opacity="0.8" Margin="0,0,10,0" Style="{DynamicResource ToggleButtonEye}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{lang:Loc Coordinate}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
+                                        <Border.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible3, Converter={StaticResource EyeStateToImageConverter}}"
+                                                         Stretch="Uniform"/>
+                                        </Border.OpacityMask>
+                                    </Border>
+                                </StackPanel>
+                            </ToggleButton>
+
+                            <ToggleButton Tag="4" IsChecked="{Binding IsEyeVisible4, Mode=TwoWay}" Opacity="0.8" Margin="0,0,10,0" Style="{DynamicResource ToggleButtonEye}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{lang:Loc Comment}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
+                                        <Border.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible4, Converter={StaticResource EyeStateToImageConverter}}"
+                                                         Stretch="Uniform"/>
+                                        </Border.OpacityMask>
+                                    </Border>
+                                </StackPanel>
+                            </ToggleButton>
+                            
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Border>
+
+
+    </DockPanel>
+</UserControl>

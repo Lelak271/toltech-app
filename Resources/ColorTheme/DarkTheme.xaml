@@ -1,0 +1,65 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:Fluent="clr-namespace:Fluent;assembly=Fluent"
+                     xmlns:dragablz="clr-namespace:Dragablz;assembly=Dragablz">
+
+
+    <!-- Couleurs principales pour Dark Theme -->
+    <Color x:Key="PrimaryBackgroundColor">#000000</Color>
+    <Color x:Key="SecondaryBackgroundColor">#FF2D2D30</Color>
+    <Color x:Key="TertiaryBackgroundColor">#a69d9d</Color>
+    
+    <Color x:Key="PrimaryForegroundColor">#FFF5F5F5</Color>
+    <Color x:Key="PrimaryBorderColor">#3a3c3d</Color>
+    <Color x:Key="SecondaryBorderColor">Gray</Color>
+    
+    <!-- Accent -->
+    <Color x:Key="AccentColor">#3f3f5c</Color>
+    <Color x:Key="AccentHoverColor">#35354a</Color>
+
+    <SolidColorBrush x:Key="IconPrimaryBrush" Color="White"/>
+    <SolidColorBrush x:Key="IconSecondaryBrush" Color="White"/>
+
+    <!-- Color Panel Data (bleu plus intense, clairci légèrement) -->
+    <SolidColorBrush x:Key="PanelDataPrimaryBrush" Color="#2C3E50"/>
+    <SolidColorBrush x:Key="PanelDataSecondaryBrush" Color="#3E556F"/>
+    <SolidColorBrush x:Key="PanelDataOffPrimaryBrush" Color="#414345"/>  <!--Fond border OFF-->
+    <SolidColorBrush x:Key="PanelDataOffSecondaryBrush" Color="#616163"/>  <!--Fond TEXTBOX OFF-->
+
+    <!-- Color Panel Req (vert clair, contraste suffisant) -->
+    <SolidColorBrush x:Key="PanelReqPrimaryBrush" Color="#3A503A"/>
+    <SolidColorBrush x:Key="PanelReqSecondaryBrush" Color="#4A654A"/>
+    
+    <!-- Color Panel ModelMeta (gris clair, contraste suffisant) -->
+    <SolidColorBrush x:Key="PanelModelMetaPrimaryBrush" Color="#2B2B2B"/>
+    <SolidColorBrush x:Key="PanelModelMetaSecondaryBrush" Color="#5e615e"/>
+    <SolidColorBrush x:Key="PanelModelMetaEditionBrush" Color="#224973"/>
+    <SolidColorBrush x:Key="PanelModelMetaEditionBrush2" Color="#112f4f"/>
+
+
+
+    <!-- Ombres et éléments neutres -->
+    <Color x:Key="ShadowColor">#66000000</Color>
+    <Color x:Key="DisabledColor">#FF777777</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="PrimaryBackgroundBrush" Color="{StaticResource PrimaryBackgroundColor}" />
+    <SolidColorBrush x:Key="SecondaryBackgroundBrush" Color="{StaticResource SecondaryBackgroundColor}" />
+    <SolidColorBrush x:Key="TertiaryBackgroundBrush" Color="{StaticResource TertiaryBackgroundColor}" />
+    <SolidColorBrush x:Key="PrimaryForegroundBrush" Color="{StaticResource PrimaryForegroundColor}" />
+    <SolidColorBrush x:Key="PrimaryBorderBrush" Color="{StaticResource PrimaryBorderColor}" />
+    <SolidColorBrush x:Key="SecondaryBorderBrush" Color="{StaticResource SecondaryBorderColor}" />
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentHoverColor}" />
+    <SolidColorBrush x:Key="ShadowBrush" Color="{StaticResource ShadowColor}" />
+    <SolidColorBrush x:Key="DisabledBrush" Color="{StaticResource DisabledColor}" />
+
+    
+    <!-- Brushes dynamiques -->
+    <SolidColorBrush x:Key="TabItemBackgroundNormal" Color="{DynamicResource SecondaryBackgroundColor }" />
+    <SolidColorBrush x:Key="TabItemBackgroundSelected" Color="{DynamicResource PrimaryBackgroundColor }" />
+    <SolidColorBrush x:Key="TabItemForegroundNormal" Color="{DynamicResource PrimaryForegroundColor}" />
+    <SolidColorBrush x:Key="TabItemForegroundSelected" Color="{DynamicResource PrimaryBackgroundColor}" />
+    <SolidColorBrush x:Key="TabItemBackgroundHover" Color="{DynamicResource AccentHoverColor}"/>
+    
+</ResourceDictionary>

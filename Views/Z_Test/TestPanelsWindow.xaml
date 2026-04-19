@@ -1,0 +1,36 @@
+﻿<Window x:Class="TOLTECH_APPLICATION.FrontEnd.Test.TestPanelsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TOLTECH_APPLICATION.FrontEnd.Test"
+        xmlns:controls="clr-namespace:TOLTECH_APPLICATION.FrontEnd.Controls"
+        mc:Ignorable="d" Background="Black"
+        Title="TestPanelsWindow" Height="auto" Width="800">
+    <Grid>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+             
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" x:Name="Row0"/>
+                    <RowDefinition Height="*" x:Name="Row2"/>
+                </Grid.RowDefinitions>
+
+
+                <controls:PanelReqs x:Name="TestPanelReqs" Grid.Row="0"
+                                        HorizontalAlignment="Stretch"
+                                        VerticalAlignment="Top"
+                                        Margin="0,0,0,10"/>
+
+
+
+
+                <controls:PanelData x:Name="TestPanelData" Grid.Row="1"
+                                           HorizontalAlignment="Stretch"
+                                           VerticalAlignment="Top"
+                                           Margin="0,0,0,10"/>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Window>

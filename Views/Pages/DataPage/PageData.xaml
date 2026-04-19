@@ -1,0 +1,463 @@
+﻿<UserControl x:Class="TOLTECH_APPLICATION.Views.PageData"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:app="clr-namespace:TOLTECH_APPLICATION"
+      xmlns:local="clr-namespace:TOLTECH_APPLICATION.Views"
+      xmlns:models="clr-namespace:TOLTECH_APPLICATION.Models"
+      xmlns:localControls="clr-namespace:TOLTECH_APPLICATION.FrontEnd.Controls"
+      xmlns:mainVM="clr-namespace:TOLTECH_APPLICATION.Resources"
+      xmlns:conv="clr-namespace:TOLTECH_APPLICATION.Converters"
+      xmlns:lang="clr-namespace:TOLTECH_APPLICATION.Resources.Lang"
+      Loaded="Page3Load"
+      mc:Ignorable="d"
+      d:DesignHeight="450" d:DesignWidth="800" 
+      >
+
+    <UserControl.Resources>
+        <conv:EyeStateToImageConverter x:Key="EyeStateToImageConverter"/>
+        <conv:ZeroToVisibilityConverter x:Key="ZeroToVisibilityConverter"/>
+        <conv:IdToNameConverter x:Key="IdToNameConverter"/>
+        <conv:BoolToDynamicResourceConverter x:Key="BoolToDynamicResourceConverter"/>
+        <conv:ByteArrayToImageConverter x:Key="ByteArrayToImageConverter"/>
+    </UserControl.Resources>
+    
+    <DockPanel LastChildFill="True" Margin="0">
+        
+         <!--Zone de l'arborescence du modèle (à gauche, largeur fixe)-->
+        <Border DockPanel.Dock="Left" Style="{DynamicResource BorderThemeStyle}">
+            <Grid x:Name="GridTreeView" Width="250">
+                <localControls:TreeViewAreaV3 x:Name="TreeView" DataContext="{Binding TreeVM}"/>
+            </Grid>
+        </Border>
+
+        <Border Style="{DynamicResource BorderThemeStyle}" Margin="10,0,0,0" >
+            <Grid x:Name="MainGridData" ShowGridLines="False" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="70"/>
+                    <RowDefinition Height="1"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border x:Name="HeaderPage3" Grid.Row="0" Margin="5,15,5,0" CornerRadius="10">
+
+                    <Grid ShowGridLines="False" >
+                        <Grid.ColumnDefinitions >
+                            <ColumnDefinition Width="0"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Zone d'affichage des TextBlock -->
+                        <StackPanel Orientation="Horizontal" Grid.Column="1">
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock Margin="10,0" FontSize="15" HorizontalAlignment="Left" >
+                                    <Run Text="{lang:Loc NumberPart}" />
+                                    <Run Text=" " /> 
+                                    <Run Text="{Binding MainVM.NumberOfParts}" />
+                                </TextBlock>
+
+                                <TextBlock Margin="10,0" FontSize="15" HorizontalAlignment="Left">
+                                    <Run Text="{lang:Loc NumberReq}" />
+                                    <Run Text=" " /> 
+                                    <Run Text="{Binding MainVM.NumberOfReq}" />
+                                </TextBlock>
+                            </StackPanel>
+
+                            <Separator Margin="0,0,0,5"  />
+
+                            <StackPanel Orientation="Horizontal" Margin="10,0">
+                                <ComboBox  
+                                    x:Name="IsFixedPartText"
+                                    FontWeight="Medium"
+                                    HorizontalContentAlignment="Stretch"
+                                    FontSize="15"
+                                    VerticalAlignment="center"
+                                    Padding="0"
+                                    MinWidth="150"
+                                    Width="auto"
+                                    Height="25"
+                                    ToolTip="Définition de la pièce fixe" 
+                                    ItemsSource="{Binding MainVM.Parts}"
+                                    DisplayMemberPath="NamePart" 
+                                    SelectedValuePath="Id"
+                                    SelectedValue="{Binding FixedPartId, Mode=TwoWay}" >
+                                    
+                                    
+                                    <ComboBox.ItemContainerStyle>
+                                    <Style TargetType="ComboBoxItem"
+                                            BasedOn="{StaticResource {x:Type ComboBoxItem}}">
+
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Background" Value="Red"/>
+
+                                    </Style>
+                                    </ComboBox.ItemContainerStyle>
+                                </ComboBox>
+
+                                
+                                <Image Source="/Asset/IsFixedPartImg.png" Stretch="Uniform" Width="20" Margin="5"/>
+
+                                <!--<TextBlock Text="{Binding FixedPartId}" Width="50"/>-->
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Grid.Column="2">
+                            <TextBlock  x:Name="TextBoxPartActif" 
+                                        Text="{Binding  SelectedPartId, Converter={StaticResource IdToNameConverter}}"  
+                                        FontWeight="Bold" 
+                                        FontSize="20" 
+                                        Grid.Column="1" 
+                                        TextWrapping="Wrap"
+                                        Width="400"    
+                                        TextAlignment="Center" >
+                                <TextBlock.ToolTip>
+                                    <ToolTip 
+                                        Placement="Mouse"
+                                        Background="#F5F5F5"
+                                        BorderBrush="#B0B0B0"
+                                        BorderThickness="1"
+                                        Padding="10"
+                                        MaxWidth="350"
+                                        ToolTipService.ShowDuration="101000">
+
+                                        <Grid DataContext="{Binding ActivePart, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Left">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <!-- Titre du tooltip -->
+                                            <TextBlock 
+                                                    Text="{lang:Loc ToolTipPart}"
+                                                    Grid.Row="0"
+                                                    FontWeight="Bold"
+                                                    FontSize="14"
+                                                    Foreground="#2B579A"
+                                                    Margin="0,0,0,6"/>
+
+                                            <Separator Grid.Row="1" Margin="0,4"/>
+
+                                            <!-- Nom de la pièce -->
+                                            <TextBlock Grid.Row="2" Margin="0,4" TextWrapping="Wrap" 
+                                                HorizontalAlignment="Left">
+                                                    <Run Text="{lang:Loc Name}" FontWeight="Bold"/>
+                                                    <Run Text=" : "/>
+                                                    <Run Text="{Binding NamePart}"/>
+                                            </TextBlock>
+
+                                            <!-- Masse Volumique -->
+                                            <TextBlock Grid.Row="3" Margin="0,4" TextWrapping="Wrap" 
+                                                HorizontalAlignment="Left">
+                                                    <Run Text="{lang:Loc MasseVol}" FontWeight="Bold"/>
+                                                    <Run Text=" : "/>
+                                                    <Run Text="{Binding MasseVol}"/>
+                                            </TextBlock>
+
+                                            <!-- Commentaire -->
+                                            <TextBlock Grid.Row="4" Margin="0,4" TextWrapping="Wrap" HorizontalAlignment="Left" >
+                                                    <Run Text="{lang:Loc Comment}" FontWeight="Bold"/>
+                                                    <Run Text=" : "/>
+                                                    <Run Text="{Binding Comment}" />
+                                            </TextBlock>
+
+                                            <!-- Statut fixe -->
+                                            <TextBlock Grid.Row="5" Margin="0,4" TextWrapping="Wrap" 
+                                                HorizontalAlignment="Left">
+                                                    <Run Text="{lang:Loc Part_Fixed}" FontWeight="Bold"/>
+                                                    <Run Text=" : "/>
+                                                    <Run Text="{Binding IsFixed,
+                                                               Converter={StaticResource BoolToDynamicResourceConverter},
+                                                               ConverterParameter='Part_Fixed;Part_NotFixed'}"/>
+                                            </TextBlock>
+
+                                            <!-- Image -->
+                                            <StackPanel Grid.Row="6" Orientation="Vertical" Margin="0,4" >
+                                                <TextBlock Text="{lang:Loc Picture}" FontWeight="Bold"/>
+                                                <Border BorderBrush="LightGray" BorderThickness="1" Height="80" Width="80" >
+                                                     <Image 
+                                                            Width="auto"
+                                                            Height="auto"
+                                                            Stretch="Uniform"
+                                                            MaxHeight="60"
+                                                            MaxWidth="60"
+                                                            Source="{Binding ImagePart, Converter={StaticResource ByteArrayToImageConverter}}"/>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <Separator Grid.Row="7" Margin="6"/>
+
+                                            <!-- Statut fixe -->
+                                            <TextBlock Grid.Row="8" 
+                                                       Margin="0,4" 
+                                                       TextWrapping="Wrap" 
+                                                       HorizontalAlignment="Left">
+                                                    <Run Text="Nb de liaison" FontWeight="Bold"/>
+                                                    <Run Text=" : "/>
+                                            </TextBlock>
+                                            <TextBlock
+                                                Text="{Binding Datas.Count,
+                                                RelativeSource={RelativeSource AncestorType=ToolTip}}"/>
+
+                                        </Grid>
+                                    </ToolTip>
+                                </TextBlock.ToolTip>
+
+
+                            </TextBlock>
+                        </StackPanel>
+
+                        <!-- Groupe des boutons à droite -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0" Grid.Column="3">
+                            <!--<Button x:Name="Btntestt" Width="40" Height="40" Margin="0,0,0,0" Padding="2" Command="{Binding LoadCommand}" HorizontalContentAlignment="Center" 
+                                    VerticalContentAlignment="Center"  ToolTip="Création d'une pièce"  >
+                                <Image Source="/Asset/add_part2.png" Stretch="Uniform" />
+                            </Button>-->
+
+                            <Button x:Name="BtnCreatePart" Width="40" Height="40" Margin="0,0,0,0" Padding="2" Command="{Binding CreatePartCommand}" HorizontalContentAlignment="Center" 
+                                    VerticalContentAlignment="Center"  ToolTip="Création d'une pièce"  >
+                                <Image Source="/Asset/add_part2.png" Stretch="Uniform" />
+                            </Button>
+                            <Button x:Name="BtnDeletePart" Width="40" Height="40" Margin="10,0,0,0" Padding="2" Command="{Binding DeletePartCommand}" HorizontalContentAlignment="Center" 
+                                    VerticalContentAlignment="Center"  ToolTip="Suppresion de la pièce active">
+                                <Image Source="/Asset/bin_part2.png" Stretch="Uniform" />
+                            </Button>
+
+                            <Border Style="{DynamicResource BorderThemeStyle}" Width="1" Height="40"  Margin="10,0" /> 
+
+                            <Button x:Name="IsoButton" Width="40" Height="40" Margin="0,0,0,0" Padding="2"
+                                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center"  ToolTip="Isostatisme locale"
+                                    Command="{Binding CheckIsoPartCommand}"  >
+                                <Image Source="/Asset/HyperstatismeLogo.png" Stretch="Uniform" />
+                            </Button>
+                            <Button x:Name="MultiEditButton" Width="40" Height="40" Margin="10,0,0,0" Padding="2"   Click="MultiEdit_Click"
+                                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center"  ToolTip="Edition multiple des données" >
+                                <Viewbox Stretch="Uniform">
+                                    <Grid Margin="40">
+                                        <Image Source="/Asset/MultiEdit.png" Stretch="Uniform"/>
+                                    </Grid>
+                                </Viewbox>
+                            </Button>
+                            <Button x:Name="SaveButton"
+                                    Content="💾" 
+                                    FontSize="25"
+                                    Width="40" 
+                                    Height="40"
+                                    Margin="10,0,0,0" 
+                                    Padding="0" 
+                                    Command="{Binding SaveAllCommand}" 
+                                    ToolTip="Sauvegade totale" />
+                        </StackPanel>
+                    </Grid>
+
+                </Border>
+
+                <Border x:Name="Barre" Grid.Row="1" CornerRadius="10">
+                    <Border.Effect>
+                        <DropShadowEffect Color="Black" Direction="270" ShadowDepth="3" BlurRadius="6" Opacity="0.4"/>
+                    </Border.Effect>
+                    <Border Style="{DynamicResource BorderThemeStyle}" Height="1" Margin="20,0,20,0" VerticalAlignment="Bottom"/>
+                </Border>
+
+                <Grid Grid.Row="2" ShowGridLines="False">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="1"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="1"/>
+                    </Grid.RowDefinitions>
+
+                   <!-- EmptyDatasPanel centré si aucun item -->
+                    <Grid x:Name="NoDatasPicture" Grid.Row="1" Height="400" Margin="0,50,0,0"
+                          Visibility="{Binding Datas.Count, Converter={StaticResource ZeroToVisibilityConverter}}">
+                        <!--Rajouter converter visibility after  TBD-->
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel x:Name="EmptyDataPanel" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Top" >
+                            <TextBlock Text="{lang:Loc NoModelData1}" Style="{StaticResource EmptyDataTextBlockStyle}"/>
+                            <TextBlock Text="{lang:Loc NoModelData2}" Style="{StaticResource EmptyDataTextBlockStyle}"/>
+                            <Image Source="/Asset/ImageEmptyDatas.png" Width="700" Stretch="Fill"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid x:Name="MainListBoxGrid" Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                       
+                        <!-- LISTE scrollable + virtualisée : on utilise ListBox (contient ScrollViewer) -->
+                        <ListBox   Grid.Row="0"
+                                   x:Name="ListBoxDatas"
+                                   ItemsSource="{Binding Datas}"
+                                   SelectedItem="{Binding SelectedData, Mode=TwoWay}"
+                                   VirtualizingPanel.IsVirtualizing="True"
+                                   VirtualizingPanel.VirtualizationMode="Recycling"
+                                   VirtualizingPanel.ScrollUnit="Pixel"
+                                   ScrollViewer.CanContentScroll="True"
+                                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                   Background="Transparent"
+                                   BorderThickness="0"
+                                   Focusable="True"
+                                   SelectionMode="Single"
+                                   Margin="0,0,0,0"
+                                   ItemContainerStyle="{DynamicResource ListBoxReqs}">          
+
+                            <!-- Panel virtualisant -->
+                            <ListBox.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel Margin="0,30,0,0" />
+                                </ItemsPanelTemplate>
+                            </ListBox.ItemsPanel>
+
+                            <!-- Template de l'item (votre PanelReqs) -->
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:ModelData}">
+                                    <localControls:PanelData x:Name="PanelModelerControl"
+                                          Data="{Binding}"
+                                          ParentViewModel="{Binding DataContext, RelativeSource={RelativeSource AncestorType=local:PageData}}"
+                                          Margin="0,5,0,5"
+                                          Padding="10"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <StackPanel Grid.Column="0" Margin="20" Orientation="Vertical" HorizontalAlignment="Right">
+                            <Button Width="50"
+                                    Height="50"
+                                    Padding="0"
+                                    Command="{Binding CreateDataCommand}"
+                                    CommandParameter="{Binding SelectedPartId}">
+                                <Image Source="/Asset/Contact.png" 
+                                       Stretch="Uniform" 
+                                       Margin="-5,-5,-2,-5"
+                                       />
+                            </Button >
+                            <TextBlock Text="{Binding Datas.Count}" />
+                        </StackPanel>
+
+                    </Grid>
+
+                                <!-- Footer placé à la fin du scroll -->
+                                <Grid Visibility="Collapsed" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <Border Style="{DynamicResource BorderThemeStyle}" Height="1" Margin="0,10,0,10" VerticalAlignment="Top"/>
+                                    <TextBlock Grid.Row="1" Text="Page de modélisation pour l'application TOLTECH - Développée par Louis PERIER" 
+                                                    FontSize="20" Margin="5"
+                                                   VerticalAlignment="Bottom" HorizontalAlignment="Center"/>
+                                </Grid>
+                                 
+                                <!-- Panneau de remplacement (à la place de l'image) -->
+                               <Grid x:Name="EmptyPlaceholderGrid" Grid.Row="0" Background="#EEE" Visibility="Collapsed"  HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,50,0,0" Width="auto" Height="auto">
+                                    <Border Style="{DynamicResource BorderThemeStyle}" CornerRadius="6" Padding="20">
+                                        <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="auto" Height="auto">
+                                            <!-- Image en fond -->
+                                            <Image x:Name="PlaceholderImage" Source="/Asset/BatiPicture.png" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Top" Width="400" Height="400"/>
+                                            <TextBlock x:Name="NamePartBox" Text="{Binding PartActifText}" FontSize="30" FontWeight="Bold"   Padding="8"  TextAlignment="Center"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Margin=" 0,0,0,300"/>
+
+                                            <!-- Texte explicatif au-dessus de l'image -->
+                                            <StackPanel Grid.Row="0" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,310,0,0">
+                                                <TextBlock Text="{lang:Loc TipFixedPart}"
+                                                             FontSize="18" Foreground="Gray" TextAlignment="Center"/>
+                                                <TextBlock Text="{lang:Loc TipCheckActiveParts}"
+                                                             FontSize="14" Foreground="Gray" TextAlignment="Center" Margin="0,10,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+
+                                    </Border>
+                  
+                               </Grid>
+                    
+                    <!-- Header flottant -->
+                    <Grid x:Name="FloatingHeader" Grid.Row="1" Height="Auto" VerticalAlignment="Top" >
+                        <Grid.RenderTransform>
+                            <TranslateTransform x:Name="HeaderTransform" Y="0"/>
+                        </Grid.RenderTransform>
+           
+                        <StackPanel x:Name="StackHeaderButtons" MouseEnter="FloatingHeader_MouseEnter" MouseLeave="FloatingHeader_MouseLeave" Grid.Row="0" 
+                                    Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,5" Panel.ZIndex="2">
+
+                            <ToggleButton Tag="1" IsChecked="{Binding IsEyeVisible1, Mode=TwoWay}" Opacity="0.8" Margin="0,0,10,0" Style="{DynamicResource ToggleButtonEye}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" >
+                                    <TextBlock Text="{lang:Loc Part1}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+
+                                    <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
+                                        <Border.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible1, Converter={StaticResource EyeStateToImageConverter}}"
+                                                         Stretch="Uniform"/>
+                                        </Border.OpacityMask>
+                                    </Border>
+                                </StackPanel>
+                            </ToggleButton>
+
+                            <ToggleButton Tag="2" Style="{DynamicResource ToggleButtonEye}" IsChecked="{Binding IsEyeVisible2, Mode=TwoWay}" Opacity="0.8" Margin="0,0,10,0" >
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{lang:Loc ToleranceInt}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
+                                        <Border.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible2, Converter={StaticResource EyeStateToImageConverter}}"
+                                                         Stretch="Uniform"/>
+                                        </Border.OpacityMask>
+                                    </Border>
+                                </StackPanel>
+                            </ToggleButton>
+
+                            <ToggleButton Tag="3" IsChecked="{Binding IsEyeVisible3, Mode=TwoWay}" Opacity="0.8" Margin="0,0,10,0" Style="{DynamicResource ToggleButtonEye}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{lang:Loc Part2}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
+                                        <Border.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible3, Converter={StaticResource EyeStateToImageConverter}}"
+                                                         Stretch="Uniform"/>
+                                        </Border.OpacityMask>
+                                    </Border>
+                                </StackPanel>
+                            </ToggleButton>
+
+                            <ToggleButton Tag="4" IsChecked="{Binding IsEyeVisible4, Mode=TwoWay}" Opacity="0.8" Margin="0,0,10,0" Style="{DynamicResource ToggleButtonEye}">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{lang:Loc Coordinate}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
+                                        <Border.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible4, Converter={StaticResource EyeStateToImageConverter}}"
+                                                         Stretch="Uniform"/>
+                                        </Border.OpacityMask>
+                                    </Border>
+                                </StackPanel>
+                            </ToggleButton>
+                            <ToggleButton Tag="4" IsChecked="{Binding IsEyeVisible5, Mode=TwoWay}" Opacity="0.8" Margin="0,0,10,0" Style="{DynamicResource ToggleButtonEye}" >
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="{lang:Loc Comment}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
+                                        <Border.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible5, Converter={StaticResource EyeStateToImageConverter}}"
+                                                         Stretch="Uniform"/>
+                                        </Border.OpacityMask>
+                                    </Border>
+                                </StackPanel>
+                            </ToggleButton>
+                        </StackPanel>
+                    
+                    </Grid>
+                    
+                </Grid>
+            </Grid>
+        </Border>
+        
+    </DockPanel>
+</UserControl>

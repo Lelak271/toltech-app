@@ -1,0 +1,89 @@
+﻿<UserControl x:Class="TOLTECH_APPLICATION.Visualisateur.VSTWindow"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:helix="http://helix-toolkit.org/wpf"
+             xmlns:local="clr-namespace:TOLTECH_APPLICATION.Visualisateur"
+             mc:Ignorable="d"
+             Height="AUTO" Width="AUTO"
+             Background="#f0f2f5">
+
+
+    
+
+    <Border BorderBrush="#C0C0C0" BorderThickness="1" CornerRadius="6" Padding="4" Background="White" Margin="10">
+        <DockPanel LastChildFill="True">
+
+            <!-- Bandeau supérieur -->
+            <Border DockPanel.Dock="Top" Height="40" Background="#2c3e50">
+                <TextBlock Text="Visualiseur 3D Toltech"
+                           VerticalAlignment="Center"
+                           Foreground="White"
+                           FontSize="16"
+                           Margin="10,0,0,0"
+                           FontWeight="SemiBold" />
+            </Border>
+
+            <!-- Contenu principal -->
+            <Grid>
+                <helix:HelixViewport3D x:Name="view3D" ZoomExtentsWhenLoaded="True"
+                           ShowCoordinateSystem="True" ShowViewCube="True"
+                           Background="White">
+
+                    <helix:DefaultLights/>
+
+
+                    <!-- Cube -->
+                    <ModelVisual3D>
+                        <ModelVisual3D.Content>
+                            <GeometryModel3D>
+                                <GeometryModel3D.Geometry>
+                                    <MeshGeometry3D Positions="-0.5,-0.5,-0.5 0.5,-0.5,-0.5 0.5,0.5,-0.5 -0.5,0.5,-0.5 
+                                                   -0.5,-0.5,0.5 0.5,-0.5,0.5 0.5,0.5,0.5 -0.5,0.5,0.5"
+                                        TriangleIndices="0 1 2 0 2 3 1 5 6 1 6 2
+                                                         5 4 7 5 7 6 4 0 3 4 3 7
+                                                         3 2 6 3 6 7 1 0 4 1 4 5"
+                                        Normals="0,0,-1 0,0,-1 0,0,-1 0,0,-1
+                                                 0,0,1 0,0,1 0,0,1 0,0,1" />
+                                </GeometryModel3D.Geometry>
+                                <GeometryModel3D.Material>
+                                    <MaterialGroup>
+                                        <DiffuseMaterial Brush="SteelBlue" />
+                                        <SpecularMaterial Brush="White" SpecularPower="100" />
+                                    </MaterialGroup>
+                                </GeometryModel3D.Material>
+                            </GeometryModel3D>
+                        </ModelVisual3D.Content>
+                    </ModelVisual3D>
+                </helix:HelixViewport3D>
+
+                <Button Content="Importer fichier OBJ" Visibility="Collapsed"  Width="200" Height="40"  HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                         Margin="0" />
+                <StackPanel Orientation="Horizontal"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Margin="0,10">
+
+                    <Button Content="Importer modèle" Click="OnLoadArrowsClicked"
+            Width="200"
+            Height="40"
+            Margin="10,0"
+             />
+
+                    <Button Content="Clear View" Click="ClearView_Click"
+            Width="120"
+            Height="40"
+            Margin="10,0"
+            />
+
+                </StackPanel>
+
+
+
+            </Grid>
+            
+           
+        </DockPanel>
+    </Border>
+</UserControl>

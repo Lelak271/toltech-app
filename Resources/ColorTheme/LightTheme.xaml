@@ -1,0 +1,80 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:Fluent="clr-namespace:Fluent;assembly=Fluent"
+                    xmlns:dragablz="clr-namespace:Dragablz;assembly=Dragablz">
+
+    <!-- Couleurs principales -->
+    <Color x:Key="PrimaryBackgroundColor">#FFF5F5F5</Color>
+    <Color x:Key="SecondaryBackgroundColor">#FFFFFFFF</Color>
+    <Color x:Key="TertiaryBackgroundColor">#9c9797</Color>
+    
+    <Color x:Key="PrimaryForegroundColor">#FF1E1E1E</Color>
+    <Color x:Key="PrimaryBorderColor">#262626</Color>
+    <Color x:Key="SecondaryBorderColor">Gray</Color>
+
+    <!-- Accent -->
+    <Color x:Key="AccentColor">#4a4b4d</Color>
+    <Color x:Key="AccentHoverColor">#d2e2fa</Color>
+
+    <!-- Color for Icon -->
+    <SolidColorBrush x:Key="IconPrimaryBrush" Color="#000000"/>
+    <SolidColorBrush x:Key="IconSecondaryBrush" Color="#000000"/>
+
+    <!-- Color Panel Data -->
+    <SolidColorBrush x:Key="PanelDataPrimaryBrush" Color="AliceBlue"/> <!--Fond border ON -->
+    <SolidColorBrush x:Key="PanelDataSecondaryBrush" Color="Lavender"/> <!--Fond TEXTBOX ON-->
+    <SolidColorBrush x:Key="PanelDataOffPrimaryBrush" Color="#afafb3"/> <!--Fond border OFF-->
+    <SolidColorBrush x:Key="PanelDataOffSecondaryBrush" Color="#B9B9C4"/> <!--Fond TEXTBOX OFF-->
+
+    <!-- Color Panel Req -->
+    <SolidColorBrush x:Key="PanelReqPrimaryBrush" Color="#ebffeb"/>
+    <SolidColorBrush x:Key="PanelReqSecondaryBrush" Color="#d8ffd8"/>
+    <SolidColorBrush x:Key="PanelReqOffPrimaryBrush" Color="#FFE5E5E5"/>
+    <!--Fond border OFF-->
+    <SolidColorBrush x:Key="PanelReqOffSecondaryBrush" Color="#B9B9C4"/>
+    <!--Fond TEXTBOX OFF-->
+
+    <!-- Color Panel ModelMeta (gris clair, contraste suffisant) -->
+    <SolidColorBrush x:Key="PanelModelMetaPrimaryBrush" Color="LightGray"/>
+    <SolidColorBrush x:Key="PanelModelMetaSecondaryBrush" Color="#a8a3a3"/>
+    <SolidColorBrush x:Key="PanelModelMetaEditionBrush" Color="LightBlue"/>
+    <SolidColorBrush x:Key="PanelModelMetaEditionBrush2" Color="#86c5da"/>
+
+    <!-- Ombres et éléments neutres -->
+    <Color x:Key="ShadowColor">#66000000</Color>
+    <Color x:Key="DisabledColor">#FFAAAAAA</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="PrimaryBackgroundBrush" Color="{StaticResource PrimaryBackgroundColor}" />
+    <SolidColorBrush x:Key="SecondaryBackgroundBrush" Color="{StaticResource SecondaryBackgroundColor}" />
+    <SolidColorBrush x:Key="TertiaryBackgroundBrush" Color="{StaticResource TertiaryBackgroundColor}" />
+    
+    <SolidColorBrush x:Key="PrimaryForegroundBrush" Color="{StaticResource PrimaryForegroundColor}" />
+    <SolidColorBrush x:Key="PrimaryBorderBrush" Color="{StaticResource PrimaryBorderColor}" />
+    <SolidColorBrush x:Key="SecondaryBorderBrush" Color="{StaticResource SecondaryBorderColor}" />
+    
+    <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="{StaticResource AccentHoverColor}" />
+    
+    <SolidColorBrush x:Key="ShadowBrush" Color="{StaticResource ShadowColor}" />
+    <SolidColorBrush x:Key="DisabledBrush" Color="{StaticResource DisabledColor}" />
+
+    <!-- Brushes dynamiques -->
+    <SolidColorBrush x:Key="TabItemBackgroundNormal" Color="{DynamicResource SecondaryBackgroundColor}" />
+    <SolidColorBrush x:Key="TabItemBackgroundSelected" Color="{DynamicResource TertiaryBackgroundColor}" />
+    <SolidColorBrush x:Key="TabItemForegroundNormal" Color="{DynamicResource PrimaryForegroundColor}" />
+    <SolidColorBrush x:Key="TabItemForegroundSelected" Color="{DynamicResource PrimaryBackgroundColor}" />
+    <SolidColorBrush x:Key="TabItemBackgroundHover" Color="{DynamicResource AccentHoverColor}"/>
+
+
+    <!-- Brushes basés sur tes couleurs existantes -->
+    <SolidColorBrush x:Key="Menu.Background" Color="{StaticResource SecondaryBackgroundColor}" />
+    <SolidColorBrush x:Key="Menu.Border" Color="{StaticResource PrimaryBorderColor}" />
+
+    <SolidColorBrush x:Key="MenuItem.Background" Color="Transparent" />
+    <SolidColorBrush x:Key="MenuItem.Background.Hover" Color="{StaticResource AccentHoverColor}" />
+
+    <SolidColorBrush x:Key="MenuItem.Foreground" Color="{StaticResource PrimaryForegroundColor}" />
+    <SolidColorBrush x:Key="MenuItem.Foreground.Hover" Color="{StaticResource AccentColor}" />
+
+</ResourceDictionary>

@@ -1,0 +1,124 @@
+﻿<ResourceDictionary 
+                    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="https://westermo.com/graphx/"
+    >
+
+    <!--  EDGE CONTROL  -->
+    <Style TargetType="{x:Type controls:EdgeControl}">
+        <Setter Property="SelfLoopIndicatorOffset" Value="10,10" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type controls:EdgeControl}">
+                    <Grid>
+                        <Path x:Name="PART_edgePath"
+                              Stroke="DarkBlue"
+                              StrokeThickness="3"
+                              ToolTip="{TemplateBinding ToolTip}" />
+                        <controls:DefaultEdgePointer x:Name="PART_EdgePointerForTarget" NeedRotation="true">
+                            <Path Width="15"
+                                  Height="15"
+                                  Data="M0,0.5 L1,1 1,0"
+                                  Fill="Black"
+                                  Stretch="Uniform" />
+                        </controls:DefaultEdgePointer>
+                        <!--<controls:DefaultEdgePointer x:Name="PART_EdgePointerForSource" NeedRotation="true">
+                            <Path Width="15"
+                                  Height="15"
+                                  Data="M2,0.5 L1,1 1,0"
+                                  Fill="Red"
+                                  Stretch="Uniform" />
+                        </controls:DefaultEdgePointer>-->
+                        <Path x:Name="PART_SelfLoopedEdge"
+                              Width="10"
+                              Height="10"
+                              Data="F1 M 17.4167,32.25L 32.9107,32.25L 38,18L 43.0893,32.25L 58.5833,32.25L 45.6798,41.4944L 51.4583,56L 38,48.0833L 26.125,56L 30.5979,41.7104L 17.4167,32.25 Z "
+                              Fill="Black"
+                              IsHitTestVisible="True"
+                              Stretch="Uniform"
+                              ToolTip="This vertex has some self looped edges!" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    
+    <!-- STYLE PERSONNALISÉ POUR LES VERTICES AVEC IMAGES -->
+    <Style TargetType="{x:Type controls:VertexControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type controls:VertexControl}">
+                    <Grid Width="{Binding Vertex.ImageHeight, RelativeSource={RelativeSource TemplatedParent}}"  Height="{Binding Vertex.ImageHeight, RelativeSource={RelativeSource TemplatedParent}}"  
+                          HorizontalAlignment="Center" VerticalAlignment="Center">
+
+                        <!-- Forme circulaire avec image + texte -->
+                        <Border 
+                                BorderBrush="Black"
+                                BorderThickness="2"
+                                CornerRadius="100" 
+                                Background="Transparent"
+                                Padding="5"
+                                ClipToBounds="True">
+
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <Image 
+                                    Grid.Row="0"
+                                    Width="Auto"
+                                    Height="Auto"
+                                    Source="{Binding Vertex.ImageSource, RelativeSource={RelativeSource TemplatedParent}}"
+                                    Stretch="UniformToFill" 
+                                    ToolTip="{Binding Vertex.Text, RelativeSource={RelativeSource TemplatedParent}}" />
+
+                                <TextBlock 
+                                    Grid.Row="1"
+                                    Text="{Binding Vertex.Text, RelativeSource={RelativeSource TemplatedParent}}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Bottom"
+                                    Background="#AAFFFFFF"
+                                    Padding="3,1"
+                                    FontSize="16"
+                                    Margin="0,2,0,0"/>  
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+
+            </Setter.Value>
+        </Setter>
+
+        <!--  VERTEX DRAGGING CONTROL  -->
+        <Setter Property="controls:DragBehaviour.IsDragEnabled" Value="True" />
+        <Setter Property="controls:DragBehaviour.UpdateEdgesOnMove" Value="True" />
+    </Style>
+
+   
+
+    <!-- EDGE LABEL CONTROL -->
+    <Style TargetType="{x:Type controls:AttachableEdgeLabelControl}">
+        <Setter Property="LabelVerticalOffset" Value="0"/>
+        <Setter Property="ShowLabel" Value="true"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type controls:AttachableEdgeLabelControl}">
+                    <Border BorderBrush="Black" 
+                        BorderThickness="1" 
+                        Background="White" 
+                        CornerRadius="5"
+                        Padding="1">
+                        <TextBlock Text="{Binding AttachNode.Edge.Text}" 
+                               Foreground="Black"
+                               FontSize="20" 
+                               TextAlignment="Center"/>
+                </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="DisplayForSelfLoopedEdges" Value="False"/>
+    </Style>
+
+</ResourceDictionary>

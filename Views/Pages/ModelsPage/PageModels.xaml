@@ -1,0 +1,135 @@
+﻿<UserControl x:Class="TOLTECH_APPLICATION.Views.PageModels"
+              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+              xmlns:localControls="clr-namespace:TOLTECH_APPLICATION.FrontEnd.Controls"
+              xmlns:models="clr-namespace:TOLTECH_APPLICATION.Models"
+              xmlns:lang="clr-namespace:TOLTECH_APPLICATION.Resources.Lang"
+              mc:Ignorable="d" 
+              d:DesignHeight="450" d:DesignWidth="800">
+
+    <Grid>
+        <Border Padding="0" Style="{DynamicResource BorderThemeStyle}" Effect="{DynamicResource DropShadowEffect}">
+
+            <!-- Organisation principale en Stack -->
+            <Grid Margin="0,10,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="80"/>
+                    <RowDefinition Height="2"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border x:Name="HeaderPageModel" Grid.Row="0" Background="Transparent" Margin="0,0,0,0" CornerRadius="10">
+                    <Grid Margin="1" ShowGridLines="False" >
+                        <Grid.ColumnDefinitions >
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10" Grid.Column="0">
+                            <TextBlock Text="{lang:Loc SaveModel}" FontSize="20" FontWeight="Bold" Margin="10,0,0,0"/>
+                        </StackPanel>
+                        
+                        <StackPanel Orientation="Horizontal" Margin="15,0,0,10" Grid.Column="1">
+                            <Button Name="BtnCreateModel" ToolTip="Créer un nouveau modèle" Command="{Binding CreateCommand}" Margin="0,0,10,0">
+                                <StackPanel Orientation="Vertical" >
+                                    <Image Source="/Asset/add_model2.png" Width="32" Height="32" Stretch="Uniform" />
+                                    <TextBlock Text="{lang:Loc CreateWord}"  Margin="0,5,5,0" />
+                                </StackPanel>
+                            </Button>
+                            <Button Name="BtnDeleteModel" 
+                                    ToolTip="Supprimer modèle" 
+                                    Command="{Binding DeleteActiveModelCommand}">
+                                <StackPanel Orientation="Vertical">
+                                    <Image Source="/Asset/bin_model2.png" Width="32" Height="32" Stretch="Uniform" />
+                                    <TextBlock Text="{lang:Loc DeleteWord}" Margin="0,5,0,0" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2" 
+                                    Orientation="Vertical" 
+                                    VerticalAlignment="Center">
+                            <TextBlock 
+                                Margin="35,0,0,5"  
+                                Text="{lang:Loc LibraryToltech}" 
+                                FontSize="25" 
+                                FontWeight="DemiBold" />
+                            <TextBlock 
+                                Margin="35,0,0,5"  
+                                Text="{Binding PathModel}" 
+                                FontSize="25" 
+                                FontWeight="DemiBold" />
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Column="3" Orientation="Vertical" VerticalAlignment="Center">
+                            <TextBlock Margin="35,0,0,5"  
+                                       Text="{lang:Loc SentFilterBar}" 
+                                       FontWeight="DemiBold" />
+                            <TextBox x:Name="FilterTextBox" 
+                                     Width="200" 
+                                     Margin="35,0,0,10"  
+                                     ToolTip="{lang:Loc FilterByName}"  />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border x:Name="Barre" Grid.Row="1" Background="Transparent" CornerRadius="10">
+                    <Border.Effect>
+                        <DropShadowEffect Color="Black" Direction="270" ShadowDepth="3" BlurRadius="6" Opacity="0.4"/>
+                    </Border.Effect>
+                    <Border Background="Black" Height="1" Margin="20,0,20,0" VerticalAlignment="Bottom"/>
+                </Border>
+
+                <!-- Conteneur des modèles -->
+                <ScrollViewer Grid.Row="2"
+              VerticalScrollBarVisibility="Auto"
+              HorizontalScrollBarVisibility="Disabled">
+
+                    <Grid>
+
+                        <ItemsControl ItemsSource="{Binding Models}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:ModelMeta}">
+                                    <localControls:PanelModelMeta Margin="20,5"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+
+                        </ItemsControl>
+
+                        <!-- Image base vide -->
+                        <Image Source="/Asset/ImageEmptyModels.png"
+                               Width="800"
+                               Stretch="Uniform"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center">
+
+                            <Image.Style>
+                                <Style TargetType="Image">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Models.Count}" Value="0">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Image.Style>
+
+                        </Image>
+
+                    </Grid>
+                </ScrollViewer>
+
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

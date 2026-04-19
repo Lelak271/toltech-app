@@ -1,0 +1,371 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	 <Version>0.2.0</Version>
+	 <Product>TOLTECH Application</Product>
+	<OutputType>WinExe</OutputType>
+	<TargetFramework>net9.0-windows</TargetFramework>
+	<Nullable>enable</Nullable>
+	<ImplicitUsings>enable</ImplicitUsings>
+	<UseWPF>true</UseWPF>
+	<ApplicationIcon>Asset\Logo_TT.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="MatrixModels\**" />
+    <EmbeddedResource Remove="MatrixModels\**" />
+    <None Remove="MatrixModels\**" />
+    <Page Remove="MatrixModels\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Views\Controls\TreeViewArea.xaml.cs" />
+    <Compile Remove="Views\Controls\TreeViewAreaReq.xaml.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="C:\Users\louis\.nuget\packages\lottiesharp\2.4.3\contentFiles\any\net8.0-windows7.0\lottie_sharp.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<None Remove="Asset\add_model.png" />
+	<None Remove="Asset\add_model2.png" />
+	<None Remove="Asset\add_part.png" />
+	<None Remove="Asset\add_part2.png" />
+	<None Remove="Asset\add_req.png" />
+	<None Remove="Asset\add_req2.png" />
+	<None Remove="Asset\Associate_modele.png" />
+	<None Remove="Asset\BatiPicture.png" />
+	<None Remove="Asset\bin.png" />
+	<None Remove="Asset\bin_model.png" />
+	<None Remove="Asset\bin_model2.png" />
+	<None Remove="Asset\bin_part.png" />
+	<None Remove="Asset\bin_part2.png" />
+	<None Remove="Asset\bin_req.png" />
+	<None Remove="Asset\bin_req2.png" />
+	<None Remove="Asset\BiPoint.png" />
+	<None Remove="Asset\Capg.png" />
+	<None Remove="Asset\clean.png" />
+	<None Remove="Asset\Contact.png" />
+	<None Remove="Asset\DarkMode.png" />
+	<None Remove="Asset\duplicate_model.png" />
+	<None Remove="Asset\duplicate_model2.png" />
+	<None Remove="Asset\EmptyData.jpg" />
+	<None Remove="Asset\Engrenage.png" />
+	<None Remove="Asset\Exigence.png" />
+	<None Remove="Asset\eyehide.png" />
+	<None Remove="Asset\eyeshow.png" />
+	<None Remove="Asset\Flags\map_fr.png" />
+	<None Remove="Asset\FolderModel.png" />
+	<None Remove="Asset\FontStars.jpg" />
+	<None Remove="Asset\Graphe.png" />
+	<None Remove="Asset\HyperstatismeLogo.png" />
+	<None Remove="Asset\HyperstatismeLogo2.png" />
+	<None Remove="Asset\ImageEmptyDatas.jpg" />
+	<None Remove="Asset\ImageEmptyDatas.png" />
+	<None Remove="Asset\ImageEmptyModels.png" />
+	<None Remove="Asset\ImageEmptyReqs.png" />
+	<None Remove="Asset\IsFixedPartImg.png" />
+	<None Remove="Asset\LightMode.png" />
+	<None Remove="Asset\Logo_DB_EXI.png" />
+	<None Remove="Asset\Logo_DB_MODEL.png" />
+	<None Remove="Asset\Logo_DB_tol.png" />
+	<None Remove="Asset\logo_excel.png" />
+	<None Remove="Asset\logo_gsheet.png" />
+	<None Remove="Asset\logo_toltech.png" />
+	<None Remove="Asset\Matrix_Music.mp3" />
+	<None Remove="Asset\modify_modele.png" />
+	<None Remove="Asset\MultiEdit.png" />
+	<None Remove="Asset\NoData.json" />
+	<None Remove="Asset\open_model.png" />
+	<None Remove="Asset\open_model2.png" />
+	<None Remove="Asset\PARTS.png" />
+	<None Remove="Asset\save.png" />
+	<None Remove="Asset\SimpleFolder.png" />
+	<None Remove="Asset\syncDB.png" />
+	<None Remove="Asset\SystemMode.png" />
+	<None Remove="Asset\Template_CdC_Excel_Toltech.xlsx" />
+	<None Remove="Asset\TestGrapheButton.png" />
+	<None Remove="Asset\TheBatman.jpg" />
+	<None Remove="Asset\TimeLine.png" />
+	<None Remove="Asset\yellow_folder.png" />
+	<None Remove="Views\Logo_TT.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Remove="Views\Controls\TreeViewArea.xaml" />
+    <Page Remove="Views\Controls\TreeViewAreaReq.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Asset\Template_CdC_Excel_Toltech.xlsx" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Asset\add_model2.png" />
+    <Resource Include="Asset\add_part2.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Asset\add_req2.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Asset\Associate_modele.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
+
+
+  <ItemGroup>
+	<Resource Include="Asset\BatiPicture.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\bin_model2.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\bin_part2.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\bin_req2.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\BiPoint.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Capg.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Contact.png" />
+	<Resource Include="Asset\DarkMode.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\duplicate_model2.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\EmptyData.jpg">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Engrenage.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Exigence.png">
+	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\eyehide.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\eyeshow.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Flags\en.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Flags\fr.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Flags\it.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Flags\map_fr.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\FolderModel.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\FontStars.jpg">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Graphe.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\HyperstatismeLogo.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\HyperstatismeLogo2.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\ImageEmptyDatas.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\ImageEmptyModels.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\ImageEmptyReqs.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\IsFixedPartImg.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\LightMode.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Logo_DB_EXI.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Logo_DB_MODEL.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Logo_DB_tol.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\logo_excel.png" />
+	<Resource Include="Asset\logo_gsheet.png" />
+	<Resource Include="Asset\Logo_TT.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+	<PackageReference Include="ClosedXML" Version="0.105.0" />
+	<PackageReference Include="CSparse" Version="4.2.0" />
+	<PackageReference Include="Dragablz" Version="0.0.3.234" />
+	<PackageReference Include="Extended.Wpf.Toolkit" Version="5.0.0" />
+	<PackageReference Include="Fluent.Ribbon" Version="11.0.1" />
+	<PackageReference Include="HelixToolkit.Wpf" Version="2.27.3" />
+	<PackageReference Include="LiveCharts.Wpf" Version="0.9.7" />
+	<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc5.4" />
+	<PackageReference Include="Microsoft.VisualStudio.VsixColorCompiler" Version="17.0.31709.430" />
+	<PackageReference Include="QuickGraphCore" Version="1.0.0" />
+	<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
+	<PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+	<PackageReference Include="Westermo.GraphX.Controls" Version="3.1.0" />
+	<PackageReference Include="Westermo.GraphX.Logic" Version="3.1.0" />
+
+
+
+  </ItemGroup>
+
+  <ItemGroup>
+	<Resource Include="Asset\add_model.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\add_part.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\add_req.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\bin.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\bin_model.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\bin_part.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\bin_req.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\clean.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\duplicate_model.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\logo_toltech.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Matrix_Music.mp3" />
+	<Resource Include="Asset\modify_modele.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\MultiEdit.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\NoData.json">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\open_model.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\open_model2.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\PARTS.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\save.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\SimpleFolder.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\syncDB.png" />
+	<Resource Include="Asset\SystemMode.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\TestGrapheButton.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\TheBatman.jpg">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\TimeLine.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\yellow_folder.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Logo_TT.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ApplicationDefinition Update="App.xaml">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ApplicationDefinition>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\BarChartSettings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>BarChartSettings.settings</DependentUpon>
+    </Compile>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Update="Resources\Lang\AppResources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>AppResources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Properties\BarChartSettings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>BarChartSettings.Designer.cs</LastGenOutput>
+    </None>
+    <None Update="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="StylesApp.xaml">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Page>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\Lang\AppResources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>AppResources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="ToltechCalculation\ValidationCalculation\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Toltech.ComputeEngine.Contracts\Toltech.ComputeEngine.Contracts.csproj" />
+    <ProjectReference Include="..\Toltech.Engine\Toltech.ComputeEngine.csproj" />
+  </ItemGroup>
+
+
+
+</Project>

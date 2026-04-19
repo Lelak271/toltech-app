@@ -1,0 +1,723 @@
+﻿<UserControl x:Class="TOLTECH_APPLICATION.FrontEnd.Controls.PanelData"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:TOLTECH_APPLICATION"
+             xmlns:vm="clr-namespace:TOLTECH_APPLICATION.ViewModels"
+             xmlns:behaviors="clr-namespace:TOLTECH_APPLICATION.Behaviors"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:localControls="clr-namespace:TOLTECH_APPLICATION.FrontEnd.Controls" 
+             xmlns:conv="clr-namespace:TOLTECH_APPLICATION.Converters"
+             xmlns:lang="clr-namespace:TOLTECH_APPLICATION.Resources.Lang"
+             mc:Ignorable="d"
+             Width="1000" Height="Auto"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             Focusable="True">
+
+   
+    <UserControl.Resources>
+        
+        <conv:IdToNameConverter  x:Key="IdToNameConverter"/>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+        
+        <Style x:Key="ActiveAwareContainer" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource PanelDataPrimaryBrush}" />
+            <Setter Property="IsHitTestVisible" Value="True" />
+            <Setter Property="Cursor" Value="Arrow" />
+            
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Active}" Value="False">
+                    <Setter Property="Opacity" Value="1" />
+                    <Setter Property="Background" Value="{DynamicResource PanelDataOffPrimaryBrush}" />
+                    <Setter Property="Cursor" Value="Arrow" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox} }" >
+            <Setter Property="Background" Value="{DynamicResource PanelDataOffSecondaryBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBorderBrush}"/>
+
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Active}" Value="True">
+                    <Setter Property="IsReadOnly" Value="False"/>
+                    <Setter Property="IsHitTestVisible" Value="True"/>
+                    <Setter Property="IsEnabled" Value="True"/>
+                    <Setter Property="Background" Value="{DynamicResource PanelDataSecondaryBrush }"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBorderBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="NumEditTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource NumericTextBoxStyle}">
+            <Setter Property="Background" Value="{DynamicResource PanelDataOffSecondaryBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBorderBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Active}" Value="True">
+                    <Setter Property="IsReadOnly" Value="False"/>
+                    <Setter Property="IsHitTestVisible" Value="True"/>
+                    <Setter Property="IsEnabled" Value="True"/>
+                    <Setter Property="Background" Value="{DynamicResource PanelDataSecondaryBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBorderBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        
+        <Style x:Key="TolTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource ToleranceTextBoxStyle}">
+            <Setter Property="Background" Value="{DynamicResource PanelDataOffSecondaryBrush}"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBorderBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Active}" Value="True">
+                    <Setter Property="IsReadOnly" Value="False"/>
+                    <Setter Property="IsHitTestVisible" Value="True"/>
+                    <Setter Property="IsEnabled" Value="True"/>
+                    <Setter Property="Background" Value="{DynamicResource PanelDataSecondaryBrush}"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBorderBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+            <Setter Property="Height" Value="35"/>
+            <Setter Property="Width" Value="150"/>
+            <Setter Property="Background" Value="{DynamicResource PanelDataOffSecondaryBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Active}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource PanelDataSecondaryBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        
+        <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+            <Setter Property="IsEnabled" Value="False"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Active}" Value="True">
+                    <Setter Property="IsEnabled" Value="True"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        
+        <Style TargetType="Border">
+            <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="5"/>
+        </Style>
+
+    </UserControl.Resources>
+    
+    <Grid  Margin="0" ShowGridLines="False" Width="auto" >
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="auto"/>
+            <ColumnDefinition Width="auto"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- Bordure principale -->
+    <Border CornerRadius="10" 
+            BorderThickness="2" 
+            Padding="10"
+            Style="{StaticResource ActiveAwareContainer}"
+            BorderBrush="{DynamicResource PrimaryBorderBrush}" 
+            Width="auto"
+            >
+        <Grid x:Name="MainGridPanelData" ShowGridLines="False" Margin="-2,0,2,0">
+            <Grid.RowDefinitions>
+                    <RowDefinition Height="*" x:Name="Row0"/>
+                    <RowDefinition Height="{Binding ParentViewModel.Row1Height,RelativeSource={RelativeSource AncestorType=localControls:PanelData}}" x:Name="Row1"/>
+                    <RowDefinition Height="{Binding ParentViewModel.Row2Height,RelativeSource={RelativeSource AncestorType=localControls:PanelData}}" x:Name="Row2"/>
+                    <RowDefinition Height="{Binding ParentViewModel.Row3Height,RelativeSource={RelativeSource AncestorType=localControls:PanelData}}" x:Name="Row3"/>
+                    <RowDefinition Height="{Binding ParentViewModel.Row4Height,RelativeSource={RelativeSource AncestorType=localControls:PanelData}}" x:Name="Row4"/>
+                    <RowDefinition Height="{Binding ParentViewModel.Row5Height,RelativeSource={RelativeSource AncestorType=localControls:PanelData}}" x:Name="Row5"/>
+            </Grid.RowDefinitions>
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="171"/>
+                <ColumnDefinition Width="0"/>
+                <ColumnDefinition Width="500" />
+                <ColumnDefinition Width="105"/>
+                <ColumnDefinition Width="auto"/>
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!--  PARTIE NAME data DU PANELDATA  -->
+            <Border Grid.Row="0" 
+                    Grid.Column="0" 
+                    Grid.ColumnSpan="3"
+                    Margin="4" 
+                    Padding="6" 
+                    d:IsLocked="True">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!--<TextBox x:Name="NamePoText"    Tag="{DynamicResource Placeholder_NamePo}" Style="{StaticResource CustomHintTextBox}"  Grid.Column="1" HorizontalAlignment="Stretch"  MinWidth="100" TextWrapping="NoWrap"/>-->
+                    <TextBox x:Name="NamePoText"  
+                             Grid.Column="1" 
+                             HorizontalAlignment="Stretch"  
+                             MinWidth="500" 
+                             MaxHeight="40" 
+                             TextWrapping="NoWrap"
+                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_NamePo}"  
+                             Text="{Binding Model, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </Grid>
+            </Border>
+
+            <!--  PARTIE 1 DU PANEL -->
+                <Border x:Name="ForTest" Visibility="Collapsed"
+                    Grid.Row="2"
+                    Grid.Column="0" >
+
+                    <TextBlock Text="{Binding Active}" />
+                </Border>
+            <Border Grid.Row="1"
+                    Grid.Column="0" 
+                    Grid.ColumnSpan="1"  
+                    Margin="4" 
+                    Padding="6" 
+                    d:IsLocked="True">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="{lang:Loc Part1}" 
+                               Height="18" Grid.Row="0" />
+
+                    <Border Grid.Row="1" 
+                            Padding="8" 
+                            Height="35" 
+                            Cursor="No">
+                    <TextBlock x:Name="Part1Text" 
+                               Width="auto"
+                               HorizontalAlignment="Left"  
+                               Text="{Binding ExtremitePartId, Converter={StaticResource IdToNameConverter}, UpdateSourceTrigger=PropertyChanged}" 
+                                       />
+                    </Border>
+                </Grid>
+            </Border>
+
+
+            <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="4" Padding="6">
+                <Grid ShowGridLines="False" >
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="40"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="NameTol1Part1"
+                             Grid.Column="0" 
+                             IsReadOnly="False" 
+                             IsReadOnlyCaretVisible="False"   
+                             TextWrapping="NoWrap" 
+                             HorizontalAlignment="Stretch"
+                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Tol1Name}"
+                             Text="{Binding NameTolExtre, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                    
+                    <TextBox x:Name="IdTol1" 
+                             Grid.Row="0" 
+                             Grid.Column="1"
+                             IsReadOnly="true" 
+                             IsReadOnlyCaretVisible="False"
+                              
+                             Width="50" 
+                             HorizontalAlignment="Left"
+                             Cursor="No"
+                             Text="{Binding IdTolExtre, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <CheckBox x:Name="CheckBoxPart1"
+                              Grid.Column="1" 
+                              VerticalAlignment="Top"
+                              HorizontalAlignment="Right"
+                              IsThreeState="False" 
+                              Padding="2,0,0,0" 
+                              HorizontalContentAlignment="Center"  
+                              VerticalContentAlignment="Center"  
+                              FlowDirection="RightToLeft" 
+                              Checked="ToggleCheckBox1_Checked"
+                              Unchecked="ToggleCheckBox1_Unchecked"
+                              
+                               IsChecked="{Binding CheckBoxExtre, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <CheckBox.Content>
+                            <Image Source="/Asset/Logo_DB_tol.png" Height="22"/>
+                        </CheckBox.Content>
+                    </CheckBox>
+
+                    <TextBox x:Name="descriptionPart1"
+                             Grid.Row="1"
+                             Grid.Column="0" 
+                             Grid.ColumnSpan="2"
+                             IsReadOnly="False" 
+                             IsReadOnlyCaretVisible="False"  
+                             TextWrapping="Wrap" 
+                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Tol1Desc}"
+                             Text="{Binding DescriptionTolExtre, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1" Grid.Column="3"  Margin="4" Padding="6" >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="{lang:Loc Tolerance1}"
+                               Height="19" 
+                               Grid.Row="0" 
+                               />
+                    <TextBox x:Name="Tol1Text" 
+                             IsReadOnly="False" 
+                             IsReadOnlyCaretVisible="False"  
+                             MinWidth="50" 
+                             Grid.Row="1" 
+                             TextWrapping="NoWrap" 
+                             Style="{StaticResource TolTextBoxStyle}" 
+                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Tol1}"
+                             Text="{Binding TolExtr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2" Grid.Column="2" Margin="4" Padding="6" >
+                    <Grid ShowGridLines="False">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="40"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="NameTolInt" 
+                             Grid.Row="0" 
+                             Grid.Column="0" 
+                             IsReadOnly="False" 
+                             IsReadOnlyCaretVisible="False"
+                             TextWrapping="NoWrap" 
+                             MinWidth="100" 
+                             MaxHeight="36"
+                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_TolIntName}"
+                             Text="{Binding NameTolInt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <TextBox x:Name="IdTolInt"
+                             Grid.Row="0" 
+                             Grid.Column="1" 
+                             IsReadOnly="True" 
+                             IsReadOnlyCaretVisible="False"
+                              
+                             Width="50"
+                             HorizontalAlignment="Left" 
+                             Cursor="No"
+                             Text="{Binding IdTolInt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <CheckBox x:Name="CheckBoxTolInt" 
+                              Grid.Row="0" 
+                              Grid.Column="1" 
+                              HorizontalAlignment="Right"
+                              IsChecked="False"
+                              IsThreeState="False" 
+                              Padding="2,0,0,0" 
+                              HorizontalContentAlignment="Center" 
+                              VerticalContentAlignment="Center"
+                              FlowDirection="RightToLeft" 
+                              Checked="ToggleCheckBoxInt_Checked" 
+                              Unchecked="ToggleCheckBoxInt_Unchecked">
+                        <CheckBox.Content>
+                            <Image Source="/Asset/Logo_DB_tol.png" Height="22"/>
+                        </CheckBox.Content>
+                    </CheckBox>
+
+                    <TextBox x:Name="descriptionPartInt" 
+                             Grid.Row="1" Grid.Column="0"
+                             Grid.ColumnSpan="2"
+                             IsReadOnly="False"
+                             IsReadOnlyCaretVisible="False"
+                             VerticalContentAlignment="Center"
+                             MinWidth="50" 
+                             TextWrapping="Wrap"
+                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_TolIntDesc}" 
+                             Text="{Binding DescriptionTolInt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </Grid>
+            </Border>
+
+                
+            <!--  PARTIE 2 DU PANELMODELER  -->
+            <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="1"  Margin="4" Padding="0" >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="{lang:Loc Part2}" 
+                               Height="19" 
+                               Grid.Row="0" 
+                               />
+                    <ComboBox x:Name="Part2Text" 
+                              Grid.Row="1"
+                              IsReadOnly="False" 
+                              IsEditable="False"  
+                              StaysOpenOnEdit="True" 
+                              Grid.Column="1"  
+                              VerticalAlignment="Top"  
+                              MinWidth="100"
+                              Text="{Binding OriginePartId, Converter={StaticResource IdToNameConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                              ItemsSource="{Binding ParentViewModel.Parts ,RelativeSource={RelativeSource AncestorType=localControls:PanelData}}"
+                              DisplayMemberPath="NamePart"
+                              SelectedValuePath="Id" 
+                              SelectedValue="{Binding OriginePartId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              />
+                </Grid>
+            </Border>
+
+
+            <Border Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="4" Padding="6"  >
+                <Grid ShowGridLines="False">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="40"/>
+                        <RowDefinition Height="40"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox x:Name="NameTol2Part2" 
+                             Grid.Row="0" 
+                             Grid.Column="0" 
+                             IsReadOnly="False"
+                             IsReadOnlyCaretVisible="False"  
+                             HorizontalAlignment="Stretch"
+                             TextWrapping="NoWrap" 
+                             MinWidth="100"
+                             MaxHeight="36"
+                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Tol2Name}"
+                             Text="{Binding NameTolOri, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <TextBox x:Name="IdTol2" 
+                             Grid.Row="0" 
+                             Grid.Column="1" 
+                             IsReadOnly="True"
+                             IsReadOnlyCaretVisible="False"
+                             Cursor="No"
+                             
+                             HorizontalAlignment="Left"
+                             Width="50" 
+                             Text="{Binding IdTolOri, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>         
+
+                    <CheckBox x:Name="CheckBoxPart2" 
+                              Grid.Row="0" 
+                              Grid.Column="1" 
+                              HorizontalAlignment="Right" 
+                              IsThreeState="False" 
+                              HorizontalContentAlignment="Center" 
+                              VerticalContentAlignment="Center"
+                              Width="Auto" 
+                              Padding="2,0,0,0" 
+                              FlowDirection="RightToLeft"
+                              Checked="ToggleCheckBox2_Checked" 
+                              Unchecked="ToggleCheckBox2_Unchecked"
+                              IsChecked="{Binding CheckBoxOri, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                        <CheckBox.Content>
+                            <Image Source="/Asset/Logo_DB_tol.png" Height="22"/>
+                        </CheckBox.Content>
+                    </CheckBox>
+
+                    <TextBox x:Name="descriptionPart2" 
+                             Grid.Row="1" 
+                             Grid.Column="0"
+                             Grid.ColumnSpan="2"
+                             IsReadOnly="False" 
+                             IsReadOnlyCaretVisible="False" 
+                             HorizontalAlignment="Stretch" 
+                             Height="36" 
+                             MinWidth="100" 
+                             MaxHeight="36"
+                             TextWrapping="Wrap" 
+                             ScrollViewer.VerticalScrollBarVisibility="Visible"
+                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Tol2Desc}" 
+                             Text="{Binding DescriptionTolOri, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </Grid>
+            </Border>
+
+
+
+            <Border Grid.Row="3" Grid.Column="3"  Margin="4" Padding="6" >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="{lang:Loc Tolerance2}"
+                               Height="19"
+                               Grid.Row="0"/>
+                    <TextBox x:Name="Tol2Text"  
+                             IsReadOnly="False" 
+                             IsReadOnlyCaretVisible="False"
+                             MinWidth="50" Grid.Row="1" 
+                             Style="{StaticResource TolTextBoxStyle}" 
+                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Tol2}" 
+                             Text="{Binding TolOri, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                </Grid>
+            </Border>
+
+
+            <!--  PARTIE POINTS DU PANELMODELER  -->
+            <Border Grid.Row="4" 
+                    Grid.Column="0" 
+                    Grid.ColumnSpan="4" 
+                    Margin="4" 
+                    Padding="6">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock Text="{lang:Loc Coordinate}" 
+                               Height="19"  
+                               Grid.Row="0"/>
+
+                    <!-- Grille contenant deux grilles horizontales -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Première sous-grille -->
+                        <Border 
+                                Grid.Column="0" 
+                                Margin="2,0"  >
+                            <Grid HorizontalAlignment="Stretch" >
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Label centré au-dessus -->
+                                <TextBlock Text="{lang:Loc Point}" 
+                                           Grid.Row="0"
+                                           Grid.ColumnSpan="3" 
+                                           />
+
+                                <!-- Conteneur horizontal pour les TextBox -->
+                                <TextBox  x:Name="PointXText" 
+                                          Grid.Row="1" 
+                                          Grid.Column="0"   
+                                          HorizontalContentAlignment="Center" 
+                                          Style="{StaticResource NumEditTextBoxStyle}"
+                                          behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_PointX}"
+                                          Text="{Binding CoordX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBox  x:Name="PointYText" 
+                                          Grid.Row="1" 
+                                          Grid.Column="1"     
+                                          HorizontalContentAlignment="Center" 
+                                          Style="{DynamicResource NumEditTextBoxStyle}" 
+                                          behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_PointY}"
+                                          Text="{Binding CoordY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                <TextBox  x:Name="PointZText" 
+                                          Grid.Row="1" 
+                                          Grid.Column="2"      
+                                          HorizontalContentAlignment="Center" 
+                                          Style="{DynamicResource NumEditTextBoxStyle}" 
+                                          behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_PointZ}"
+                                          Text="{Binding CoordZ, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            </Grid>
+                        </Border>
+
+                        <Border 
+                                Grid.Column="1" 
+                                Margin="2,0">
+                            <Grid HorizontalAlignment="Stretch" >
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Text="{lang:Loc Direction}" 
+                                           Grid.Row="0" 
+                                           Grid.ColumnSpan="3"
+                                           />
+
+                                <TextBox x:Name="DirectionXText" 
+                                         Grid.Row="1" 
+                                         Grid.Column="0" 
+                                         HorizontalContentAlignment="Center" 
+                                         Style="{DynamicResource NumEditTextBoxStyle}"
+                                         behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_DirX}"
+                                         Text="{Binding CoordU, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                <TextBox x:Name="DirectionYText" 
+                                         Grid.Row="1"
+                                         Grid.Column="1"  
+                                         HorizontalContentAlignment="Center" 
+                                         Style="{DynamicResource NumEditTextBoxStyle}"
+                                         behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_DirY}"
+                                         Text="{Binding CoordV, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                <TextBox x:Name="DirectionZText" Grid.Row="1" 
+                                         Grid.Column="2"  
+                                         HorizontalContentAlignment="Center" 
+                                         Style="{DynamicResource NumEditTextBoxStyle}"
+                                         behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_DirZ}"
+                                         Text="{Binding CoordW, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                            </Grid>
+                        </Border>
+
+
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2" 
+                    Grid.Column="3" 
+                    Margin="4" 
+                    Padding="6"
+                    >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="{lang:Loc ToleranceInt}" 
+                               Height="19" 
+                               Grid.Row="0" 
+                               />
+                    <TextBox x:Name="TolIntText"
+                             IsReadOnly="False"
+                             IsReadOnlyCaretVisible="False" 
+                             MinWidth="50"
+                             Grid.Row="1"
+                             Style="{StaticResource  TolTextBoxStyle}"
+                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_TolInt}" 
+                             Text="{Binding TolInt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </Grid>
+
+            </Border>
+
+            <Border Grid.Row="0" Grid.Column="3" Margin="4" Padding="6" BorderBrush="Transparent" >
+                <Grid ShowGridLines="False">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                    </Grid.ColumnDefinitions>
+                        <ToggleButton  Grid.Row="0"  
+                                       HorizontalAlignment="Center" 
+                                       Height="19" Width="50" 
+                                       IsThreeState="False"
+                                      IsChecked="{Binding Active, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                        <!--<TextBlock Grid.Column="1" Text="{lang:Loc IDWord}" Margin="0" Height="19"  HorizontalAlignment="Left"/>-->
+                        <TextBox Grid.Row="1" 
+                                 x:Name="IdText"  
+                                 IsReadOnly="True" 
+                                 Cursor="No" 
+                                  
+                                 MinWidth="50"
+                                 Text="{Binding Id, Mode=TwoWay}"/>
+                        <TextBlock Text="*"
+                                   Grid.Column="1"
+                                    Foreground="Black"
+                                    FontWeight="Bold"
+                                    Margin="10,0,0,0"
+                                   HorizontalAlignment="Right"
+                                    Visibility="{Binding IsDirty, Converter={StaticResource BoolToVisibilityConverter}}" 
+                                   
+                                   />
+
+                    </Grid>
+
+            </Border>
+
+            <Border Grid.Row="5" Grid.Column="0"   Grid.ColumnSpan="4"  Margin="4" Padding="6" >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="{lang:Loc Comment}" 
+                               Height="19" 
+                               Grid.Row="0" />
+                    <TextBox x:Name="CommentText"  
+                             IsReadOnly="False" 
+                             IsReadOnlyCaretVisible="False"
+                             Cursor="Arrow"  
+                             TextWrapping="Wrap" 
+                             AcceptsReturn="True"
+                             MinWidth="50" 
+                             Grid.Row="1"
+                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Comment}"
+                             Text="{Binding Commentaire, Mode=TwoWay}"/>
+
+                </Grid>
+            </Border>
+        </Grid>
+    </Border>
+
+    <Grid Grid.Column="1" 
+          HorizontalAlignment="Left"  
+          VerticalAlignment="Center"
+          Margin="0,10,0,0"  
+          Grid.IsSharedSizeScope="True">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Button Grid.Row="0" 
+                Content="{lang:Loc Save}" 
+                Command="{Binding DataContext.SavePanelCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                CommandParameter="{Binding}"
+                HorizontalAlignment="Stretch"
+                Grid.IsSharedSizeScope="True"/>
+
+        <Button Grid.Row="1"
+                Content="{lang:Loc Deleted}"
+                Command="{Binding DataContext.DeletePanelCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                CommandParameter="{Binding}"
+                HorizontalAlignment="Stretch"/>
+
+        <Button Grid.Row="2"
+                Content="{lang:Loc Clear}"
+                Command="{Binding DataContext.ClearPanelCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                CommandParameter="{Binding}"
+                HorizontalAlignment="Stretch"/>
+    </Grid>
+    </Grid>
+</UserControl>

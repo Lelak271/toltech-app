@@ -1,0 +1,134 @@
+﻿<Window x:Class="TOLTECH_APPLICATION.FrontEnd.Controls.FloatingPanelPartDB"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:TOLTECH_APPLICATION.ViewModels"
+        xmlns:behaviors="clr-namespace:TOLTECH_APPLICATION.Behaviors"
+        xmlns:conv="clr-namespace:TOLTECH_APPLICATION.Converters"
+        Title="Base de données - Pièces"
+        Width="900" Height="550"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Segoe UI"
+        Closed="Window_Closed">
+
+    <Window.Resources>
+        <conv:ByteArrayToImageConverter x:Key="ByteArrayToImageConverter"/>
+    </Window.Resources>
+    
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Bandeau -->
+        <Border Padding="15" Margin="5" CornerRadius="6">
+            <TextBlock Text="Liste des pièces du modèle actif"
+                       FontSize="20"
+                       FontWeight="SemiBold"/>
+        </Border>
+
+        <!-- DataGrid -->
+        <DataGrid Grid.Row="1"
+                  Margin="15"
+                  CanUserResizeRows="True"
+                  CanUserResizeColumns="True"
+                  ItemsSource="{Binding Parts}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  SelectionMode="Extended"
+                  SelectionUnit="FullRow"
+                  behaviors:DataGridSelectedItemsBehavior.Enable="True"
+                  behaviors:DataGridSelectedItemsBehavior.SelectedItems="{Binding SelectedParts}"
+                  >
+
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Nom"
+                                    Binding="{Binding NamePart}"
+                                    Width="*"/>
+
+                <DataGridTextColumn Header="Masse Vol."
+                                    Binding="{Binding MasseVol}"
+                                    Width="100"/>
+
+                <DataGridTextColumn Header="Commentaire"
+                                    Binding="{Binding Comment}"
+                                    Width="2*"/>
+
+                <DataGridTemplateColumn Header="Image" Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Image Width="auto" Height="auto" Stretch="Uniform" MaxHeight="200" MaxWidth="200"
+                   Source="{Binding ImagePart, Converter={StaticResource ByteArrayToImageConverter}}"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <DataGridTemplateColumn Header="Active" Width="100">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ToggleButton x:Name="PART_ToggleButton"
+                                          Margin="3"
+                                          Width="100"
+                                          Height="30"
+                                          IsChecked="{Binding IsActive, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          Foreground="White"
+                                          BorderBrush="Black"
+                                          BorderThickness="1">
+                                <ToggleButton.Style>
+                                    <Style TargetType="ToggleButton">
+                                        <Setter Property="Background" Value="Gray"/>
+                                        <Setter Property="Content" Value="Inactif"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                                <Setter Property="Background" Value="Green"/>
+                                                <Setter Property="Content" Value="Actif"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ToggleButton.Style>
+                            </ToggleButton>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+
+            </DataGrid.Columns>
+            
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Insérer une image" Command="{Binding InsertImageCommand}"/>
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+
+        </DataGrid>
+
+        <!-- Boutons -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="10">
+
+            <Button Content="Créer"
+                    Width="120"
+                    Margin="5"
+                    Command="{Binding CreateCommand}"/>
+
+            <Button Content="Supprimer"
+                    Width="120"
+                    Margin="5"
+                    Command="{Binding DeleteCommand}"/>
+
+            <Button Content="Enregistrer"
+                    Width="120"
+                    Margin="5"
+                    Command="{Binding SaveCommand}"/>
+            <Button Content="test"
+                    Width="120"
+                    Margin="5"
+                    Command="{Binding TestCommand}"/>
+        </StackPanel>
+
+    </Grid>
+</Window>

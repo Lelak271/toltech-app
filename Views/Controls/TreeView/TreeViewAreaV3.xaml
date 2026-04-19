@@ -1,0 +1,183 @@
+﻿<UserControl x:Class="TOLTECH_APPLICATION.FrontEnd.Controls.TreeViewAreaV3"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:TOLTECH_APPLICATION.FrontEnd.Controls" 
+             xmlns:behaviors="clr-namespace:TOLTECH_APPLICATION.Behaviors" 
+             xmlns:vm="clr-namespace:TOLTECH_APPLICATION.Models"
+             xmlns:convtree="clr-namespace:TOLTECH_APPLICATION.Views.Controls.TreeView.Converters"
+             xmlns:conv="clr-namespace:TOLTECH_APPLICATION.Converters"
+             xmlns:lang="clr-namespace:TOLTECH_APPLICATION.Resources.Lang"
+             >
+
+    <UserControl.Resources>
+        <convtree:NodeTypeToIconConverter x:Key="NodeTypeToIconConverter" />
+        <convtree:NodeTypeToBrushConverter x:Key="NodeTypeToBrushConverter" />
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+       
+        <HierarchicalDataTemplate DataType="{x:Type vm:NodesDefinition}" ItemsSource="{Binding Children}">
+            <Border x:Name="PART_SelectionBorder" BorderThickness="0">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <!-- Modifier selon IsSelected du TreeViewItem parent -->
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                                <Setter Property="Background" Value="White"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+
+                <Grid  Margin="2 2 6 2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                     
+                    <Border Width="16" Height="16" Background="{DynamicResource IconPrimaryBrush}">
+                            <Border.OpacityMask>
+                                <ImageBrush ImageSource="{Binding Type, Converter={StaticResource NodeTypeToIconConverter}}"
+                                             Stretch="Uniform" />
+                            </Border.OpacityMask>
+                     </Border>
+
+                        <TextBox x:Name="PART_TextBox" 
+                                 Text="{Binding NodeName}" 
+                                 Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityConverter}}" 
+                                 LostFocus="TextBox_LostFocus" 
+                                 KeyDown="TextBox_KeyDown"
+                                 behaviors:TextBoxEnterBehavior.MoveFocusOnEnter="False"
+                                 behaviors:TextBoxEnterBehavior.AllowEnterKey="True"
+                                 Grid.Column="1" Margin="6,0,0,0" 
+                                 VerticalAlignment="Center">
+                       
+                    </TextBox>
+                        <TextBlock x:Name="PART_TextBlock" 
+                                   Text="{Binding NodeName}" 
+                                   Grid.Column="1" 
+                                   Margin="6,0,0,0" 
+                                   VerticalAlignment="Center"  
+                                   Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityConverter}, ConverterParameter=Invert}"
+                                   >
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                     <!-- Modifier selon IsActive -->
+                                     <Style.Triggers>
+                                         <DataTrigger Binding="{Binding IsActive}" Value="False">
+                                             <Setter Property="Foreground" Value="Gray"/>
+                                         </DataTrigger>
+                      
+                                         <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryForegroundBrush }"/>
+                                         </DataTrigger>
+
+                                </Style.Triggers>
+                                 </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+
+                
+                        <!-- Icône spéciale si IsFixed = true -->
+                        <Image Width="16" 
+                               Height="16" 
+                               Grid.Column="2" 
+                               Margin="6,0,-30,0"
+                               Visibility="{Binding IsFixed, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <Image.Source>
+                                <BitmapImage UriSource="pack://application:,,,/Asset/IsFixedPartImg.png" />
+                            </Image.Source>
+                        </Image>
+                </Grid>
+            </Border >
+
+            <HierarchicalDataTemplate.Triggers>
+
+                <!-- Sélection de l'item -->
+                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsSelected}" Value="True">
+                    <Setter TargetName="PART_SelectionBorder" Property="Background" Value="{DynamicResource AccentHoverBrush}"/>
+                    <Setter TargetName="PART_TextBlock" Property="Foreground" Value="White"/>
+                </DataTrigger>
+                
+                <!-- Type = Basic Folder -->
+                <DataTrigger Binding="{Binding Type}" Value="0">
+                    <Setter TargetName="PART_TextBlock" Property="FontSize" Value="13"/>
+                    <Setter TargetName="PART_TextBlock" Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+
+                <!-- Type = Model -->
+                <DataTrigger Binding="{Binding Type}" Value="1">
+                    <Setter TargetName="PART_TextBlock" Property="FontSize" Value="15"/>
+                    <Setter TargetName="PART_TextBlock" Property="FontWeight" Value="Bold"/>
+                </DataTrigger>
+
+                <!-- Type = Folder Positionnement -->
+                <DataTrigger Binding="{Binding Type}" Value="2">
+                    <Setter TargetName="PART_TextBlock" Property="FontSize" Value="13"/>
+                    <Setter TargetName="PART_TextBlock" Property="FontWeight" Value="Bold"/>
+                    <Setter TargetName="PART_TextBlock" Property="Foreground" Value="RoyalBlue"/>
+                </DataTrigger>
+                
+                <!-- Type = Folder Exigence -->
+                <DataTrigger Binding="{Binding Type}" Value="3">
+                    <Setter TargetName="PART_TextBlock" Property="FontSize" Value="13"/>
+                    <Setter TargetName="PART_TextBlock" Property="FontWeight" Value="Bold"/>
+                    <Setter TargetName="PART_TextBlock" Property="Foreground" Value="MediumSeaGreen"/>
+                </DataTrigger>
+                
+                <!-- Type = Folder Exigence -->
+                <DataTrigger Binding="{Binding Type}" Value="4">
+                    <Setter TargetName="PART_TextBlock" Property="FontSize" Value="13"/>
+                </DataTrigger>
+
+            </HierarchicalDataTemplate.Triggers>
+            
+        </HierarchicalDataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Barre d'outils minimal pour rafraîchir le TreeView depuis le VM -->
+        <ToolBar Grid.Row="0">
+            <Button Content="{lang:Loc Refresh}" Command="{Binding RefreshCommand}" />
+            <TextBlock Text="{Binding StatusMessage}" Margin="10,0,0,0" VerticalAlignment="Center" />
+        </ToolBar>
+
+        <!-- TreeView lié au ViewModel -->
+        <TreeView x:Name="TreeViewControlV3"
+                  Grid.Row="1"
+                  ItemsSource="{Binding RootNodes}"
+                  VirtualizingStackPanel.IsVirtualizing="True"
+                  VirtualizingStackPanel.VirtualizationMode="Recycling"
+                  SelectedItemChanged="TreeViewControlV3_SelectedItemChanged"
+                  ContextMenuOpening="TreeViewControlV3_ContextMenuOpening"
+                  PreviewDragOver="TreeView_PreviewDragOver"
+                  PreviewMouseMove="TreeView_PreviewMouseMove"
+                  PreviewMouseLeftButtonDown="TreeView_PreviewMouseLeftButtonDown"
+                  PreviewMouseLeftButtonUp="TreeView_PreviewMouseLeftButtonUp"
+                  MouseDoubleClick="TreeViewControlV3_MouseDoubleClick"
+                  AllowDrop="True"
+                  Drop="TreeView_Drop"
+                  >
+
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <Setter Property="Tag" Value="{Binding}"/>
+                    <EventSetter Event="Expanded" Handler="TreeViewControlV3_Expanded"/>
+                    <EventSetter Event="Collapsed" Handler="TreeViewControlV3_Collapsed"/>
+                    <EventSetter Event="PreviewMouseDoubleClick" Handler="TreeViewItem_PreviewMouseDoubleClick"/>
+                    
+                    
+                </Style>
+
+            </TreeView.ItemContainerStyle>
+           
+
+        </TreeView>
+    </Grid>
+</UserControl>

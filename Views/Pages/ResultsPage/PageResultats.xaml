@@ -1,0 +1,182 @@
+﻿<UserControl x:Class="TOLTECH_APPLICATION.Views.PageResultats"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+      xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+      xmlns:ribbon="clr-namespace:System.Windows.Controls.Ribbon;assembly=System.Windows.Controls.Ribbon"
+      xmlns:localB="clr-namespace:TOLTECH_APPLICATION.Behaviors"
+      xmlns:controls="clr-namespace:TOLTECH_APPLICATION.FrontEnd.Controls.Dashboard"
+      xmlns:utilities="clr-namespace:TOLTECH_APPLICATION.Utilities"
+      xmlns:lang="clr-namespace:TOLTECH_APPLICATION.Resources.Lang"
+      xmlns:dragablz="clr-namespace:Dragablz;assembly=Dragablz"
+      xmlns:dockablz="clr-namespace:Dragablz.Dockablz;assembly=Dragablz"
+      xmlns:system="clr-namespace:System;assembly=mscorlib"
+      mc:Ignorable="d"
+      d:DesignHeight="700" d:DesignWidth="1300"
+       >
+
+
+    
+    <UserControl.Resources>
+        <system:String x:Key="Partition">ToltechPartition</system:String>
+    </UserControl.Resources>
+            
+    <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="LeftColumn" Width="3*" />
+                    <ColumnDefinition x:Name="SplitterColumn" Width="10" />
+                    <ColumnDefinition x:Name="RightColumn" Width="1.2*" />
+                    <ColumnDefinition x:Name="ColonneTest" Width="1" />
+                </Grid.ColumnDefinitions>   
+
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <dockablz:Layout Partition="{StaticResource Partition}" FloatingItemHeaderMemberPath="Header"
+                     IsFloatDropZoneEnabled="True" 
+                     FloatingItemsContainerMargin="0 2 0 0">
+
+                <dragablz:TabablzControl  Margin="0" 
+                                          ConsolidateOrphanedItems="True"
+                                          ItemContainerStyle="{DynamicResource CustomDragablzTabItemStyle}" 
+                                          >
+                    <dragablz:TabablzControl.InterTabController>
+                        <dragablz:InterTabController 
+                                                InterTabClient="{x:Static utilities:ToltechInterTabClient.Instance}"
+                                                Partition="{StaticResource Partition}"/>
+                    </dragablz:TabablzControl.InterTabController>
+
+                 <!-- 1️⃣ Diagramme en barre -->
+                <TabItem Header="Diagramme en barres" TabIndex="0" >
+                        <Grid>
+                            <controls:BarChartControl x:Name="BarChartControl1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </Grid>
+                </TabItem>
+
+                <!-- 2️⃣ Tableau croisé (Reqs) -->
+                <TabItem Header="Tableau croisé Reqs" TabIndex="1">
+                    <Grid>
+                            <controls:BChartReqs x:Name="BchartReqsControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </Grid>
+                </TabItem>
+
+                <!-- 3️⃣ Stack Chain -->
+                <TabItem Header="Chaîne de cotes" TabIndex="2">
+                    <Grid>
+                            <controls:StackChainControl x:Name="StackChainControl1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </Grid>
+                </TabItem>
+
+                <!-- 4️⃣ Tableau croisé -->
+                <TabItem Header="Tableau croisé" TabIndex="3">
+                    <Grid>
+                            <controls:CrossTableControl x:Name="CrossTableControl1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                    </Grid>
+                </TabItem>
+
+                <!-- 5️⃣ Pièces contributrices -->
+                <TabItem Header="Pièces contributrices" TabIndex="4">
+                        <controls:PieChartControl x:Name="PieChartControl" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                </TabItem>
+            </dragablz:TabablzControl>
+            </dockablz:Layout>
+        </Grid>
+
+        <GridSplitter Grid.Column="1" Width="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"  Background="{DynamicResource PrimaryBorderBrush}"
+                  ResizeBehavior="PreviousAndNext" ResizeDirection="Columns" />
+
+        <Expander Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ExpandDirection="Left" IsExpanded="True"
+                  Expanded="Expander_Expanded" Collapsed="Expander_Collapsed" Background="{DynamicResource SecondaryBackgroundBrush}"  >
+            <Grid >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Grid Grid.Row="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,10,0,10">
+                        <TextBlock Text="{lang:Loc Sent_Select_the_requirements_to_be_calculated}" FontWeight="Bold" ToolTip="MultiSélection avec Shift ou Alt+Shift" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                       
+                    </StackPanel>
+                    <Border Grid.Row="1" BorderBrush="Black" BorderThickness="1" CornerRadius="2" Padding="4">
+                        <ListBox x:Name="RequirementsList" DisplayMemberPath="NomExigence" SelectionMode="Extended"
+                                 HorizontalContentAlignment="Stretch" VerticalAlignment="Stretch" MinHeight="120" MaxHeight="600"
+                                 SelectionChanged="RequirementsList_SelectionChanged" Background="{DynamicResource SecondaryBackgroundBrush}" />
+                    </Border>
+                </Grid>
+
+                <StackPanel Grid.Row="1" Orientation="Vertical" Margin="0,10,0,0">
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                                <!--Changement dynamique du type de calcul via CS-->
+                                <Button x:Name="BtnCompute" 
+                                        Content="{lang:Loc LauchWord}" 
+                                        Width="160" 
+                                        Height="40" 
+                                        FontWeight="Bold" 
+                                        Cursor="Hand" 
+                                        Click="LauchComputeV2_Click" 
+                                        Visibility="Visible"/>
+
+                            <ribbon:RibbonSplitButton Width="20" Height="40" Padding="0" ToolTip="Choisir la version" Background="Transparent">
+                                <ribbon:RibbonSplitButton.Items>
+                                    <ribbon:RibbonMenuItem Header="Activer V1" Click="MenuActivateV1_Click"/>
+                                    <ribbon:RibbonMenuItem Header="Activer V2" Click="MenuActivateV2_Click"/>
+                                </ribbon:RibbonSplitButton.Items>
+                            </ribbon:RibbonSplitButton>
+
+                        <CheckBox x:Name="CbAllReqs" Content="" Margin="10,0,0,0" Width="10" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                 IsChecked="False" IsThreeState="False"  Height="20" Padding="2,0,0,0" HorizontalContentAlignment="Center"  
+                                  VerticalContentAlignment="Center"  FlowDirection="RightToLeft" Click="CbAllReqs_Click" />
+                        
+                    </StackPanel>
+
+                    <Separator Margin="0,20,0,20"/>
+
+                    <!-- Import / Export placés plus bas -->
+                    <WrapPanel Orientation="Horizontal" ItemHeight="auto" ItemWidth="auto" HorizontalAlignment="Left" VerticalAlignment="Center">
+                        <Button x:Name="ImportResx" 
+                                Content="{lang:Loc Import_Resx}"
+                                Width="160" 
+                                Height="40"
+                                FontWeight="Bold"
+                                Cursor="Hand"
+                                Click="ImportResx_Click" 
+                                ToolTip="Importer un fichier .resx existant" 
+                                Margin="0,0,8,8" />
+
+                        <Button x:Name="ExportResx" 
+                                Content="{lang:Loc Import_Resx}" 
+                                Width="160" Height="40"
+                                FontWeight="Bold"
+                                Cursor="Hand"
+                                Click="ExportResx_Click" ToolTip="Exporter les résultats actuels" Margin="0,0,8,8" />   
+                    </WrapPanel>
+                </StackPanel>
+
+
+                <TextBlock Grid.Row="2" 
+                           x:Name="PathResuxText" 
+                           Text="{Binding FilePathResx}"
+                           ToolTip="{Binding FilePathResx}"
+                           HorizontalAlignment="Left"
+                           Margin="0,8,0,0"
+                           FontSize="12"
+                           Foreground="Gray"
+                           TextWrapping="NoWrap"
+                           MaxWidth="{Binding RelativeSource={RelativeSource AncestorType=Border}, Path=ActualWidth}" />
+            </Grid>
+
+        </Expander>
+    </Grid>
+</UserControl>
