@@ -3,7 +3,7 @@ using System.Windows.Controls;
 using Toltech.App.Resources;
 using Toltech.App.ViewModels;
 
-namespace Toltech.App.FrontEnd.Interfaces
+namespace Toltech.App.Services.Notification
 {
     public class NotificationService : INotificationService
     {

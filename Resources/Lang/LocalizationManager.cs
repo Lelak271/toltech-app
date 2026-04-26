@@ -22,8 +22,7 @@ namespace Toltech.App.Resources.Lang
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public string this[string key]
-            => _resourceManager.GetString(key, CultureInfo.CurrentUICulture) ?? key;
+        public string this[string key] => _resourceManager.GetString(key, CurrentCulture) ?? key;
 
         public void ChangeCulture(string cultureCode)
         {

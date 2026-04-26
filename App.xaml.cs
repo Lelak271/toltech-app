@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using Toltech.ComputeEngine;
 using Toltech.ComputeEngine.Contracts;
-using Toltech.App.FrontEnd.Interfaces;
+using Toltech.App.Services.Notification;
 using Toltech.App.Properties;
 using Toltech.App.Resources;
 using Toltech.App.Services.Dialog;

@@ -202,35 +202,7 @@ namespace Toltech.App.Services
             NotRegistered
         }
 
-        public async Task<bool> CheckModelExistenceAsync(string modelPath, bool withMsg = true)
-        {
-            bool exists = await IsExistModelDB(modelPath);
 
-            if (withMsg)
-            {
-                if (exists)
-                {
-                    //MessageBox.Show("Ce modèle est déjà présent dans la base de données ModelDB.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return true;
-                }
-                else
-                {
-                    var result = MessageBox.Show(
-                        "Ce modèle n'est pas présent dans la base de données ModelDB. Voulez-vous l'inclure pour qu'il soit disponible ?",
-                        "Information",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Question);
-
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        return true;
-                    }
-                    return false;
-                }
-            }
-
-            return exists;
-        }
 
         #endregion
 

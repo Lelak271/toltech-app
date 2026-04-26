@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using Toltech.App.ViewModels;
-using Toltech.App.Resources;
+using Toltech.App.Services;
 using Toltech.App.Services.Dialog;
+using Toltech.App.Services.Logging;
+using Toltech.App.ViewModels;
 
 namespace Toltech.App.FrontEnd.Controls
 {
@@ -15,19 +15,24 @@ namespace Toltech.App.FrontEnd.Controls
         #region Fields & Properties
         //private readonly MainViewModel _mainVM;
         private readonly IDialogService _dialog;
-        private readonly ModelsViewModel _modelsVM;
+        private readonly MainViewModel _mainVM;
+        private DomainService _domainService;
+
+        private readonly ILoggerService _logger;
+
 
         public ObservableCollection<DriveItem> DriveItems { get; set; } = new ObservableCollection<DriveItem>();
         #endregion
 
         #region Constructor
-        public RegisterModelWindow(ModelsViewModel modelVM)
+        public RegisterModelWindow(MainViewModel mainVM)
         {
-            //_mainVM = modelVM.MainVM;
-            _modelsVM = modelVM;
+            _mainVM = mainVM;
+            _domainService = mainVM.DomainService;
             _dialog = App.DialogService;
+            _logger = App.Logger;
 
-            DataContext = modelVM;
+            DataContext = mainVM.ModelsVM;
             InitializeComponent();
 
             LoadDrivesAndKnownFolders();
@@ -40,11 +45,12 @@ namespace Toltech.App.FrontEnd.Controls
             try
             {
                 // Enregistre le modèle actif via la VM
-                await _modelsVM.RegisterModelAsync();
+                var result = await _domainService.RegisterModelAsync();
 
-                // Optionnel : désactiver le bouton et mettre un tooltip
-                // BtnRegisterActiveModel.IsEnabled = false;
-                // BtnRegisterActiveModel.ToolTip = (string)Application.Current.FindResource("ModelAlreadyRegistered");
+                if (result.IsFailure)
+                {
+                    _dialog.Error(result.Error, "Erreur lors du register");
+                }
             }
             catch (Exception ex)
             {
@@ -71,7 +77,7 @@ namespace Toltech.App.FrontEnd.Controls
                 _dialog.Info($"Fichier sélectionné : {selectedFile}", "Info");
 
                 // Enregistre le modèle sélectionné via la VM
-                await _modelsVM.RegisterModelAsync(selectedFile);
+                await _domainService.RegisterModelAsync(selectedFile);
             }
             catch (Exception ex)
             {
@@ -173,7 +179,7 @@ namespace Toltech.App.FrontEnd.Controls
             if (string.IsNullOrWhiteSpace(selectedFile)) return;
 
             _dialog.Info($"Fichier sélectionné : {selectedFile}", "Info");
-            _modelsVM.RegisterModelAsync(selectedFile);
+            _domainService.RegisterModelAsync(selectedFile);
         }
         #endregion
     }

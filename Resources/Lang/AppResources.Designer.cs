@@ -412,6 +412,60 @@ namespace Toltech.App.Resources.Lang {
         }
         
         /// <summary>
+        ///   Recherche une chaîne localisée semblable à Database error.
+        /// </summary>
+        public static string Error_Database {
+            get {
+                return ResourceManager.GetString("Error_Database", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à File locked by another application.
+        /// </summary>
+        public static string Error_FileLocked {
+            get {
+                return ResourceManager.GetString("Error_FileLocked", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à No active model..
+        /// </summary>
+        public static string Error_NoActiveModel {
+            get {
+                return ResourceManager.GetString("Error_NoActiveModel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Item not found.
+        /// </summary>
+        public static string Error_NotFound {
+            get {
+                return ResourceManager.GetString("Error_NotFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Access denied.
+        /// </summary>
+        public static string Error_Unauthorized {
+            get {
+                return ResourceManager.GetString("Error_Unauthorized", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à An unexpected error occurred.
+        /// </summary>
+        public static string Error_Unknown {
+            get {
+                return ResourceManager.GetString("Error_Unknown", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Recherche une chaîne localisée semblable à Exclude 0.
         /// </summary>
         public static string ExcludNull {
@@ -1569,6 +1623,15 @@ namespace Toltech.App.Resources.Lang {
         public static string TipOpenModel {
             get {
                 return ResourceManager.GetString("TipOpenModel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Error.
+        /// </summary>
+        public static string Title_Error {
+            get {
+                return ResourceManager.GetString("Title_Error", resourceCulture);
             }
         }
         

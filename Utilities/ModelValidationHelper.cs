@@ -1,9 +1,8 @@
-﻿using System;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Windows;
-using System.Windows.Interop;
 using Toltech.App.Services;
+using AppResult = Toltech.App.Utilities.Result.Result;
+using Toltech.App.Utilities.Result;
 
 namespace Toltech.App.Utilities
 {
@@ -37,49 +36,65 @@ namespace Toltech.App.Utilities
         /// </summary>
         /// <param name="nomPiece">Le nom de pièce à valider.</param>
         /// <returns>True si le nom est valide, False sinon.</returns>
-        public static bool ValiderNomDePiece(string nomPiece)
+        //public static bool NamingValidation(string nomPiece)
+        //{
+        //    if (string.IsNullOrWhiteSpace(nomPiece))
+        //    {
+        //        MessageBox.Show(
+        //            "Le nom de la pièce est vide ou ne contient que des espaces.\nVeuillez saisir un nom valide.",
+        //            "Nom de pièce invalide",
+        //            MessageBoxButton.OK,
+        //            MessageBoxImage.Warning);
+        //        return false;
+        //    }
+
+        //    // Supprimer les espaces de début et fin
+        //    nomPiece = nomPiece.Trim();
+
+        //    // Caractères interdits (selon Windows)
+        //    char[] caracteresInterdits = Path.GetInvalidFileNameChars();
+
+        //    if (nomPiece.Any(c => caracteresInterdits.Contains(c)))
+        //    {
+        //        string interdits = string.Join(" ", caracteresInterdits.Select(c => $"'{c}'"));
+        //        MessageBox.Show(
+        //            $"Le nom de la pièce contient des caractères non autorisés :\n{interdits}\n\nVeuillez utiliser uniquement des lettres, chiffres, tirets (-) ou underscores (_).",
+        //            "Nom de pièce invalide",
+        //            MessageBoxButton.OK,
+        //            MessageBoxImage.Warning);
+        //        return false;
+        //    }
+
+        //    // Longueur maximale recommandée
+        //    if (nomPiece.Length > 100)
+        //    {
+        //        MessageBox.Show(
+        //            "Le nom de la pièce est trop long (plus de 100 caractères).\nVeuillez le raccourcir.",
+        //            "Nom de pièce invalide",
+        //            MessageBoxButton.OK,
+        //            MessageBoxImage.Warning);
+        //        return false;
+        //    }
+
+        //    return true;
+        //}
+
+        public static AppResult NamingValidation(string name)
         {
-            if (string.IsNullOrWhiteSpace(nomPiece))
-            {
-                MessageBox.Show(
-                    "Le nom de la pièce est vide ou ne contient que des espaces.\nVeuillez saisir un nom valide.",
-                    "Nom de pièce invalide",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return false;
-            }
+            if (string.IsNullOrWhiteSpace(name))
+                return AppResult.Failure("Le nom est vide ou ne contient que des espaces.", ErrorCode.ValidationError);
 
-            // Supprimer les espaces de début et fin
-            nomPiece = nomPiece.Trim();
+            name = name.Trim();
 
-            // Caractères interdits (selon Windows)
-            char[] caracteresInterdits = Path.GetInvalidFileNameChars();
+            var invalidChars = Path.GetInvalidFileNameChars();
+            if (name.Any(c => invalidChars.Contains(c)))
+                return AppResult.Failure("Le nom contient des caractères non autorisés.", ErrorCode.ValidationError);
 
-            if (nomPiece.Any(c => caracteresInterdits.Contains(c)))
-            {
-                string interdits = string.Join(" ", caracteresInterdits.Select(c => $"'{c}'"));
-                MessageBox.Show(
-                    $"Le nom de la pièce contient des caractères non autorisés :\n{interdits}\n\nVeuillez utiliser uniquement des lettres, chiffres, tirets (-) ou underscores (_).",
-                    "Nom de pièce invalide",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return false;
-            }
+            if (name.Length > 100)
+                return AppResult.Failure("Le nom est trop long (100 caractères maximum).", ErrorCode.ValidationError);
 
-            // Longueur maximale recommandée
-            if (nomPiece.Length > 100)
-            {
-                MessageBox.Show(
-                    "Le nom de la pièce est trop long (plus de 100 caractères).\nVeuillez le raccourcir.",
-                    "Nom de pièce invalide",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return false;
-            }
-
-            return true;
+            return AppResult.Success();
         }
-
 
         public static bool TryValidateName(string name, out string errorMessage, int maxLength = 100)
         {

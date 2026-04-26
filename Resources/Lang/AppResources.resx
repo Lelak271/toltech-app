@@ -651,4 +651,25 @@
   <data name="Folder" xml:space="preserve">
     <value>Folder</value>
   </data>
+  <data name="Error_Database" xml:space="preserve">
+    <value>Database error</value>
+  </data>
+  <data name="Error_NotFound" xml:space="preserve">
+    <value>Item not found</value>
+  </data>
+  <data name="Error_FileLocked" xml:space="preserve">
+    <value>File locked by another application</value>
+  </data>
+  <data name="Error_Unauthorized" xml:space="preserve">
+    <value>Access denied</value>
+  </data>
+  <data name="Error_Unknown" xml:space="preserve">
+    <value>An unexpected error occurred</value>
+  </data>
+  <data name="Title_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Error_NoActiveModel" xml:space="preserve">
+    <value>No active model.</value>
+  </data>
 </root>

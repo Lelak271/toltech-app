@@ -1,17 +1,13 @@
 ﻿using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using System.Windows;
 using System.Windows.Input;
 using Toltech.App.FrontEnd.Controls;
-using Toltech.App.FrontEnd.Interfaces;
+using Toltech.App.Services.Notification;
 using Toltech.App.Models;
 using Toltech.App.Properties;
 using Toltech.App.Services;
-using Toltech.App.Services.Dialog;
-using Toltech.App.Services.Logging;
-using Toltech.App.ToltechCalculation.Helpers;
 using Toltech.App.Utilities;
 using Toltech.App.Views.Controls.TreeView;
 using static Toltech.App.FrontEnd.Controls.TemplateCreateWindow;
@@ -27,18 +23,11 @@ namespace Toltech.App.ViewModels
 
         private readonly MainViewModel _mainVM;
         public MainViewModel MainVM => _mainVM;
-
         public ObservableCollection<Part> Parts => MainVM.Parts;
         public Part ActivePart => Parts?.FirstOrDefault(p => p.Id == SelectedPartId);
-
         public TreeViewAreaV3ViewModel TreeVM { get; }
-
         private readonly INotificationService _notificationService;
-        private readonly IDialogService _dialog;
-        private readonly ILoggerService _logger;
-
         private readonly DomainService _domainService;
-
         private readonly UiSettingsService _uiSettings;
 
         #endregion
@@ -125,7 +114,6 @@ namespace Toltech.App.ViewModels
 
         public int NbLiaisons => Datas?.Count ?? 0;
 
-        // Stockage interne du Part fixé
         // Champ interne stockant le Part fixé
         private Part? _fixedPart;
 
@@ -249,7 +237,7 @@ namespace Toltech.App.ViewModels
         public DatasViewModel(MainViewModel mainVM, TreeViewAreaV3ViewModel treeVM)
         {
             _mainVM = mainVM;
-            _domainService=mainVM.DomainService;
+            _domainService = mainVM.DomainService;
 
             // TODO bof 
             if (_mainVM?.Parts != null)
@@ -258,9 +246,7 @@ namespace Toltech.App.ViewModels
                 _mainVM.Parts.CollectionChanged += OnPartsCollectionChanged;
             }
 
-            _dialog = App.DialogService;
             _notificationService = App.NotificationService;
-            _logger = App.Logger;
 
             _uiSettings = App.UiSettings;
             #region Command
@@ -321,16 +307,16 @@ namespace Toltech.App.ViewModels
         #region Main Event Function
         ///Summary  
         /// Fonction pour définir la valeur actuelle de la CB après ouverture d'un modéle et changement de la liste des Parts
-        ///Peut etre amelioré => âs mieux pour le moment 
+        ///Peut etre amelioré => pas mieux pour le moment 
         ///Summary  
         private async Task DefinedCBFixedPart()
         {
             var fixedPart = await _domainService.GetFixedPartAsync();
 
-            if (fixedPart == null || Parts == null)
+            if (fixedPart.IsFailure || Parts == null || fixedPart.Value==null)
                 return;
 
-            var partInCollection = Parts.FirstOrDefault(p => p.Id == fixedPart.Id);
+            var partInCollection = Parts.FirstOrDefault(p => p.Id == fixedPart.Value.Id);
 
             if (partInCollection != null)
                 FixedPart = partInCollection;
@@ -374,13 +360,20 @@ namespace Toltech.App.ViewModels
         private CancellationTokenSource _reloadCts;
         private async Task ReloadSafe(int? idPart = 0)
         {
-            _reloadCts?.Cancel();
+            // Capture de l'ancienne instance
+            var previousCts = _reloadCts;
+
+            // Création de la nouvelle instance
             _reloadCts = new CancellationTokenSource();
+
+            // Annulation + libération de l'ancienne
+            previousCts?.Cancel();
+            previousCts?.Dispose();
 
             try
             {
                 await Task.Delay(100, _reloadCts.Token);
-                await LoadAsync( _reloadCts.Token, idPart);
+                await LoadAsync(_reloadCts.Token, idPart);
             }
             catch (TaskCanceledException) { }
         }
@@ -419,9 +412,14 @@ namespace Toltech.App.ViewModels
 
             // Première visite de cette Part → chargement DB
             var dataList = await _domainService.LoadPartDataAsync(partId);
+            if (dataList.IsFailure || dataList.Value == null)
+            {
+                HandleError(dataList);
+                return;
+            }
             token.ThrowIfCancellationRequested();
 
-            if (!dataList.Any())
+            if (!dataList.Value.Any())
             {
                 SelectedPartId = null;
                 _cache[partId] = new List<ModelData>(); // cache vide pour éviter re-query
@@ -429,10 +427,15 @@ namespace Toltech.App.ViewModels
                 return;
             }
 
-            var sortedData = await _domainService.LoadSortedDataAsync(dataList, partId);
+            var sortedData = await _domainService.LoadSortedDataAsync(dataList.Value, partId);
+            if(sortedData.IsFailure)
+            {
+                HandleError(sortedData);
+                return;
+            }
             token.ThrowIfCancellationRequested();
 
-            var items = sortedData
+            var items = sortedData.Value
                 .Select(data =>
                 {
                     var uiData = new ModelData();
@@ -457,8 +460,13 @@ namespace Toltech.App.ViewModels
         {
             if (!_cache.ContainsKey(partId))
                 return;
-
-            _cache[partId] = (await _domainService.SortDatasAsync(_cache[partId], partId))
+            var sortedDataResult = await _domainService.SortDatasAsync(_cache[partId], partId);
+            if (sortedDataResult.IsFailure)
+            {
+                HandleError(sortedDataResult);
+                return;
+            }
+            _cache[partId] = (sortedDataResult.Value)
                 .ToList();
 
             if (partId == SelectedPartId)
@@ -518,25 +526,25 @@ namespace Toltech.App.ViewModels
                 ? items
                 : new List<ModelData>();
 
-           await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                for (int i = 0; i < source.Count; i++)
-                {
-                    var item = source[i];
-                    int currentIndex = Datas.IndexOf(item);
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+             {
+                 for (int i = 0; i < source.Count; i++)
+                 {
+                     var item = source[i];
+                     int currentIndex = Datas.IndexOf(item);
 
-                    if (currentIndex == -1)
-                        Datas.Insert(i, item);
-                    else if (currentIndex != i)
-                        Datas.Move(currentIndex, i);
-                }
+                     if (currentIndex == -1)
+                         Datas.Insert(i, item);
+                     else if (currentIndex != i)
+                         Datas.Move(currentIndex, i);
+                 }
 
-                var sourceSet = new HashSet<ModelData>(source);
+                 var sourceSet = new HashSet<ModelData>(source);
 
-                for (int i = Datas.Count - 1; i >= 0; i--)
-                    if (!sourceSet.Contains(Datas[i]))
-                        Datas.RemoveAt(i);
-            });
+                 for (int i = Datas.Count - 1; i >= 0; i--)
+                     if (!sourceSet.Contains(Datas[i]))
+                         Datas.RemoveAt(i);
+             });
         }
 
         /// <summary>
@@ -636,34 +644,28 @@ namespace Toltech.App.ViewModels
             // 1. UI optimistic remove
             await RemoveItem(data, partId);
 
-            try
-            {
-                // 2. logique métier centralisée
-                bool success = await _domainService.DeleteDataAsync(data);
-
-                if (!success)
-                {
-                    // rollback UI
-                    await AddItem(data, partId);
-
-                    _ = _notificationService.ShowNotifAsync(
-                        $"Erreur lors de la suppression {data.Model}.",
-                        true);
-                }
-            }
-            catch (Exception ex)
+            // 2. logique métier centralisée
+            var deleteResult = await _domainService.DeleteDataAsync(data);
+            if (deleteResult.IsFailure)
             {
                 // rollback UI
                 await AddItem(data, partId);
 
-                _logger.LogWarning("Erreur lors de la suppression", "todo");
+                _ = _notificationService.ShowNotifAsync(
+                    $"Erreur lors de la suppression {data.Model}.",
+                    true);
             }
         }
 
         // Méthode privée commune
         private async Task SaveModelDataInternalAsync(List<ModelData> toSave)
         {
-            await _domainService.SaveModelDataAsync(toSave);
+            var saveResult = await _domainService.SaveModelDataAsync(toSave);
+            if (saveResult.IsFailure)
+            {
+               HandleError(saveResult.Error); return;
+            }
+
         }
 
         // Save un seul item
@@ -679,16 +681,10 @@ namespace Toltech.App.ViewModels
                 return;
             }
 
-            try
-            {
+
                 await SaveModelDataInternalAsync(new List<ModelData> { data });
-                _= _notificationService.ShowNotifAsync($"Données sauvegardées pour la ponctuelle {data.Model}.");
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Erreur SavePanelAsync: {ex}");
-                throw;
-            }
+            _ = _notificationService.ShowNotifAsync($"Données sauvegardées pour la ponctuelle {data.Model}.");
+
         }
 
         // Save tous les dirty
@@ -734,7 +730,12 @@ namespace Toltech.App.ViewModels
             if (string.IsNullOrWhiteSpace(nomPiece))
                 return;
 
-            await _domainService.CreatePartAndDatasAsync(nomPiece);
+            var creatResult = await _domainService.CreatePartAndDatasAsync(nomPiece);
+            if (creatResult.IsFailure)
+            {
+                HandleError(creatResult);
+                return;
+            }
         }
 
         public async Task CreateData(int idPartActif)
@@ -753,16 +754,15 @@ namespace Toltech.App.ViewModels
 
             // 2. appel métier
             var result = await _domainService.CreateDataAsync(idPartActif);
-
-            // 3. gestion résultat UI
-            if (result == null)
+            if (result.IsFailure)
             {
                 await RemoveItem(placeholder, idPartActif);
+                HandleError(result);  
                 return;
             }
 
             // 4. hydration
-            placeholder.LoadFromDb(result);
+            placeholder.LoadFromDb(result.Value);
         }
 
         // Supprimer pièce du modèle TODO
@@ -785,23 +785,27 @@ namespace Toltech.App.ViewModels
             int partId = SelectedPartId.Value;
 
             // 1. récupérer le nom via domain (lecture autorisée)
-            string? partName = await _domainService.GetPartNameByIdAsync(partId);
-
-            if (string.IsNullOrWhiteSpace(partName))
+            var partName = await _domainService.GetPartNameByIdAsync(partId);
+            if(partName.IsFailure)
+            {
+                HandleError(partName);
                 return;
+            } 
 
             // 2. décision utilisateur (UI layer)
             bool confirmed = _dialog.Confirm(
-                $"Voulez-vous supprimer la pièce '{partName}'?");
+                $"Voulez-vous supprimer la pièce '{partName.Value}'?");
 
             if (!confirmed)
                 return;
 
             // 3. exécution métier
-            bool success = await _domainService.DeletePartByIdAsync(partId);
-
-            if (!success)
+            var success = await _domainService.DeletePartByIdAsync(partId);
+            if (success.IsFailure)
+            {
+                HandleError(success);
                 return;
+            }
 
             // 4. update UI state
             if (SelectedPartId == partId)
@@ -812,10 +816,12 @@ namespace Toltech.App.ViewModels
 
         public async Task DeletePartById(int idPart)
         {
-            bool success = await _domainService.DeletePartByIdAsync(idPart);
-
-            if (!success)
+            var success = await _domainService.DeletePartByIdAsync(idPart);
+            if (success.IsFailure)
+            {
+                HandleError(success);
                 return;
+            }
 
             if (SelectedPartId == idPart)
             {
@@ -833,12 +839,34 @@ namespace Toltech.App.ViewModels
                 return;
             }
 
-            await _domainService.CheckIsoPartAsync(SelectedPartId);
+            var checkResult = await _domainService.CheckIsoPartAsync(SelectedPartId);
+            // 1. Erreur technique — la fonction a échoué
+            if (checkResult.IsFailure)
+            {
+                HandleError(checkResult);
+                return;
+            }
+
+            // 2. Erreur métier — la fonction a marché mais la pièce est invalide
+            if (checkResult.Value.HasErrors)
+            {
+                var message = string.Join("\n\n", checkResult.Value.Errors);
+                _dialog.Warning(message, Loc("Title_ValidationError"));
+                return;
+            }
+
+            // 3. Succès — pièce valide
+            _dialog.Info(checkResult.Value.SuccessMessage, Loc("Title_ValidationSuccess"));
         }
 
         private async Task UpdateFixedPartAsync(Part part)
         {
-            await _domainService.UpdateFixedPartAsync(part);
+            var result =await _domainService.UpdateFixedPartAsync(part);
+            if(result.IsFailure)
+            {
+                HandleError(result);
+            }
+
         }
         #endregion
 

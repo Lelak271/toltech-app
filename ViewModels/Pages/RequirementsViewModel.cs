@@ -3,11 +3,10 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
-using Toltech.App.FrontEnd.Interfaces;
+using Toltech.App.Services.Notification;
 using Toltech.App.Models;
 using Toltech.App.Properties;
 using Toltech.App.Services;
-using Toltech.App.Services.Dialog;
 using Toltech.App.Services.Logging;
 using Toltech.App.Utilities;
 using Toltech.App.Views.Controls.TreeView;
@@ -35,22 +34,16 @@ namespace Toltech.App.ViewModels
         private readonly MainViewModel _mainVM;
         public MainViewModel MainVM => _mainVM;
         private DomainService _domainService;
-
-
         public ObservableCollection<Part> Parts => MainVM.Parts;
         public TreeViewAreaV3ViewModel TreeVM { get; }
-
         private readonly INotificationService _notificationService;
-        private readonly IDialogService _dialog;
         private readonly ILoggerService _logger;
-
         private readonly UiSettingsService _uiSettings;
         #endregion
 
         #region Collections
         public ObservableCollection<Requirements> Requirements { get; } = new ObservableCollection<Requirements>();
         public ListCollectionView FilteredRequirements { get; }
-
         private HashSet<int> _visibleRequirementIds = new();
         #endregion
 
@@ -150,9 +143,7 @@ namespace Toltech.App.ViewModels
         public RequirementsViewModel(MainViewModel mainVM, TreeViewAreaV3ViewModel treeVM)
         {
             _mainVM = mainVM;
-            _domainService = mainVM.DomainService;   
-            _dialog = App.DialogService;
-            _logger = App.Logger;
+            _domainService = mainVM.DomainService;
             _notificationService = App.NotificationService;
 
             _uiSettings = App.UiSettings;
@@ -326,10 +317,15 @@ namespace Toltech.App.ViewModels
 
             token.ThrowIfCancellationRequested();
 
-            var requirements = await _domainService.LoadAllRequirementsAsync();
+            var loadResult = await _domainService.LoadAllRequirementsAsync();
+            if (loadResult.IsFailure)
+            {
+                HandleError(loadResult);
+                return;
+            }
             token.ThrowIfCancellationRequested();
 
-            _cache = requirements;
+            _cache = loadResult.Value;
 
             token.ThrowIfCancellationRequested();
 
@@ -395,6 +391,7 @@ namespace Toltech.App.ViewModels
             MessageBox.Show("Fonction à créer");
 
         }
+
         public async Task SaveAllReqAsync()
         {
             Debug.WriteLine("RequirementsViewModel - SaveAsync()");
@@ -403,8 +400,13 @@ namespace Toltech.App.ViewModels
                 var toSave = Requirements.Where(r => r.IsDirty).ToList();
                 if (toSave.Count == 0) return;
 
-                await _domainService.SaveRequirementsAsync(toSave);
-                _notificationService.ShowNotifAsync("Données sauvegardées pour les exigences.");
+                var saveResResult = await _domainService.SaveRequirementsAsync(toSave);
+                if (saveResResult.IsFailure)
+                {
+                    HandleError(saveResResult);
+                    return;
+                }
+                _ = _notificationService.ShowNotifAsync("Données sauvegardées pour les exigences.");
             }
             catch (Exception ex)
             {
@@ -420,41 +422,65 @@ namespace Toltech.App.ViewModels
         public async Task DeleteRequirementByIdAsync(int? idReq)
         {
 
-            string nameReq = await _domainService.GetRequirementNameByIdAsync(idReq);
+            var nameReq = await _domainService.GetRequirementNameByIdAsync(idReq);
+            if (nameReq.IsFailure)
+            {
+                HandleError(nameReq);
+                return;
+            }
 
             if (!_dialog.Confirm($"Voulez-vous supprimer l'exigence {nameReq}"))
                 return;
 
-            await _domainService.DeleteRequirementByIdAsync(idReq);
+            var deleteResult = await _domainService.DeleteRequirementByIdAsync(idReq);
+            if (deleteResult.IsFailure)
+            {
+                HandleError(deleteResult);
+                return;
+            }
+            await RemoveItemAsync(Requirements.FirstOrDefault(r => r.Id_req == idReq));
         }
 
-        // TBD utilité
+        // 
         public async Task CreateRequirementAsync()
         {
             Debug.WriteLine("[RequirementsViewModel] - CreateRequirementAsync()");
+            // 1. UI optimistic
+            var placeholder = new Requirements
+            {
+                NameReq = "Req_temp",
+                IsActive = true
+            };
+            await AddItemAsync(placeholder);
 
             var uiModel = await _domainService.CreateRequirementAsync();
-
-            if (uiModel == null)
+            if (uiModel.IsFailure)
+            {
+                HandleError(uiModel);
                 return;
+            }
+            //placeholder.LoadFromDb(uiModel.Value);
+            //await AddItemAsync(uiModel.Value);
 
-            await AddItemAsync(uiModel);
+            _treeFilterIds.Remove(0);
+            placeholder.LoadFromDb(uiModel.Value);
+            _treeFilterIds.Add(placeholder.Id_req);
+            ApplyFilterAndSort(forceRefresh: true);
+
         }
 
         #region Panel Button Function
         public async Task SaveUniqueAsync(Requirements req)
         {
             Debug.WriteLine("RequirementsViewModel - SaveUniqueAsync(Requirements req)");
-            try
+
+            var saveResult = await _domainService.SaveRequirementsAsync(new List<Requirements> { req });
+            if (saveResult.IsFailure)
             {
-                await _domainService.SaveRequirementsAsync(new List<Requirements> { req });
-                _notificationService.ShowNotifAsync("Données sauvegardées pour l'exigence.");
+                HandleError(saveResult);
+                return;
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"Erreur SaveUniqueAsync: {ex}");
-                throw;
-            }
+            _ = _notificationService.ShowNotifAsync($"Données sauvegardées pour l'exigence {req.NameReq}.");
         }
 
         private async Task RemoveUniqueAsync(Requirements req)
@@ -465,29 +491,15 @@ namespace Toltech.App.ViewModels
             if (!confirm)
                 return;
 
-            try
-            {
-                bool success = await _domainService.RemoveRequirementAsync(req);
+            await RemoveItemAsync(req);
 
-                if (!success)
-                    return;
-
-                await RemoveItemAsync(req);
-            }
-            catch (Exception ex)
+            var removeResult = await _domainService.RemoveRequirementAsync(req);
+            if (removeResult.IsFailure)
             {
-                _logger.LogError(
-                    $"Erreur lors de la suppression de l'exigence {req.NameReq} ({req.Id_req})",
-                    nameof(RequirementsViewModel),
-                    ex);
+                await AddItemAsync(req);
+                HandleError(removeResult);
+            }
 
-                throw;
-            }
-            finally
-            {
-                (SaveCommand as TtCore.RelayCommand)?.RaiseCanExecuteChanged();
-                (RemoveUniqueCommand as TtCore.RelayCommand)?.RaiseCanExecuteChanged();
-            }
         }
 
         private void ClearPanel(Requirements req)
@@ -514,16 +526,16 @@ namespace Toltech.App.ViewModels
 
         #endregion
 
-        #region Helpers
-
-        #endregion
-
         #endregion
 
 
         public async Task ReverseActiveReqByIdAsync(int? idReq)
         {
-            await _domainService.ReverseActiveReqByIdAsync(idReq);
+            var result = await _domainService.ReverseActiveReqByIdAsync(idReq);
+            if (result.IsFailure)
+            {
+                HandleError(result);
+            }
         }
 
         #region CheckBox Handling

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using Toltech.App.ViewModels;
-using Toltech.App.FrontEnd.Interfaces;
+using Toltech.App.Services.Notification;
 using Toltech.App.Models;
 using Toltech.App.Resources;
 using Toltech.App.Services;
@@ -153,7 +153,7 @@ namespace Toltech.App.ViewModels
                         // Si le nom a changé, on peut vérifier l'unicité
                         if (nameChanged)
                         {
-                            bool exists = await DatabaseService.ActiveInstance.NamePartExisteAsync(uiPart.NamePart);
+                            bool exists = await DatabaseService.ActiveInstance.IsNamePartExisteAsync(uiPart.NamePart);
                             if (exists)
                             {
                             }

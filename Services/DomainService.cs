@@ -1,13 +1,18 @@
 ﻿using System.IO;
-using System.Windows;
-using Toltech.App.FrontEnd.Interfaces;
+using Toltech.App.Services.Notification;
 using Toltech.App.Models;
 using Toltech.App.Services.Logging;
 using Toltech.App.ToltechCalculation.Helpers;
 using Toltech.App.Utilities;
+using Toltech.App.Utilities.Result;
 
 namespace Toltech.App.Services
 {
+    // Domain catch → ErrorCode.Unknown : valide si pas de besoin de distinguer les erreurs DB. TO DO Affiner plus tard si nécessaire .
+    /// <summary>
+    /// A clean business orchestration layer, independent from the UI,
+    /// that centralizes business rules and returns results consumable by the ViewModel
+    /// </summary>
     public class DomainService
     {
         private readonly INotificationService _notificationService;
@@ -33,31 +38,29 @@ namespace Toltech.App.Services
 
         #region Service ModelData
 
-        public async Task<int?> CreatePartAndDatasAsync(string nomPiece)
+        public async Task<Result> CreatePartAndDatasAsync(string nomPiece)
         {
             try
             {
-                if (!ModelValidationHelper.CheckModelActif(true))
-                    return null;
+                if (!ModelValidationHelper.CheckModelActif(false))
+                    return Result<ModelData>.Failure("No active model.", ErrorCode.NoActiveModel);
 
-                if (string.IsNullOrWhiteSpace(nomPiece))
-                    return null;
-
-                if (!NameValidationHelper.ValiderNomDePiece(nomPiece))
-                    return null;
+                if (NameValidationHelper.NamingValidation(nomPiece).IsFailure)
+                    return Result.Failure("Nom de pièce invalide.", ErrorCode.Unknown);
 
                 // 1. vérification existence
-                if (await _databaseService.NamePartExisteAsync(nomPiece))
+                if (await _databaseService.IsNamePartExisteAsync(nomPiece))
                 {
-                    //_dialog.Error($"La pièce \"{nomPiece}\" existe déjà dans la base.");
-                    return null;
+                    return Result.Failure("La pièce existe déjà dans la base.", ErrorCode.Unknown);
                 }
 
                 // 2. création part
                 int newPartID = await _databaseService.InsertPartAsync(nomPiece);
 
+                var newData = CreateModelDatas(newPartID, 6);
+
                 // 3. création datas initiales
-                await _databaseService.AddDataOfPartExtremiteAsync(newPartID, 6);
+                await _databaseService.InsertModelDataRangeAsync(newData);
 
                 // 4. notification
                 _ = _notificationService.ShowNotifAsync(
@@ -67,23 +70,23 @@ namespace Toltech.App.Services
                 // 5. event métier
                 await EventsManager.RaisePartSelectedChangedAsync(newPartID);
 
-                return newPartID;
+                return Result.Success();
             }
             catch (Exception ex)
             {
                 _logger.LogError("CreatePartAndDatas failed", "", ex);
-                return null;
+                return Result.Failure("Une erreur est survenue lors de la création de la pièce et des données.", ErrorCode.Unknown);
             }
         }
 
-        public async Task<ModelData> CreateDataAsync(int idPartActif)
+        public async Task<Result<ModelData>> CreateDataAsync(int idPartActif)
         {
-            if (!ModelValidationHelper.CheckModelActif(true))
-                return null;
+            if (!ModelValidationHelper.CheckModelActif(false))
+                return Result<ModelData>.Failure("No active model.", ErrorCode.NoActiveModel);
 
             try
             {
-                var newDatas = await _databaseService.AddDataOfPartExtremiteAsync(idPartActif, 1);
+                var newDatas = await AddDataOfPartExtremiteAsync(idPartActif, 1);
 
                 var firstData = newDatas.FirstOrDefault();
 
@@ -93,29 +96,28 @@ namespace Toltech.App.Services
                 var data = new ModelData();
                 data.LoadFromDb(firstData);
 
-                return data;
+                return Result<ModelData>.Success(data);
             }
             catch (Exception ex)
             {
                 _logger.LogError("CreateData failed", "", ex);
-                return null;
+                return Result<ModelData>.Failure("Une erreur est survenue lors de la création de la donnée.", ErrorCode.Unknown);
             }
         }
 
-        public async Task<bool> DeleteDataAsync(ModelData data)
+        public async Task<Result> DeleteDataAsync(ModelData data)
         {
             try
             {
                 if (data == null || data.Id <= 0)
-                    return false;
+                    return Result.Failure("Donnée invalide.", ErrorCode.Unknown);
 
                 // 1. récupération en base
                 var existing = await _databaseService.GetModelDataByIdAsync(data.Id);
 
                 if (existing == null)
                 {
-                    //_dialog.Error("Aucune correspondance trouvée en base de données.");
-                    return false;
+                    return Result.Failure("Aucune correspondance trouvée en base de données.", ErrorCode.Unknown);
                 }
 
                 // 2. suppression DB
@@ -129,21 +131,21 @@ namespace Toltech.App.Services
                     $"Contact {data.Model} supprimé avec succès.",
                     false);
 
-                return true;
+                return Result.Success();
             }
             catch (Exception ex)
             {
                 _logger.LogError("DeleteData failed", "", ex);
-                return false;
+                return Result.Failure("Une erreur est survenue lors de la suppression de la donnée.", ErrorCode.Unknown);
             }
         }
 
-        public async Task<bool> DeletePartByIdAsync(int idPart)
+        public async Task<Result> DeletePartByIdAsync(int idPart)
         {
             try
             {
-                if (!ModelValidationHelper.CheckModelActif(true))
-                    return false;
+                if (!ModelValidationHelper.CheckModelActif(false))
+                    return Result<ModelData>.Failure("No active model.", ErrorCode.NoActiveModel);
 
                 // 1. récupération nom (pour notification + event)
                 string partName = await _databaseService.GetPartNameByID(idPart);
@@ -160,32 +162,33 @@ namespace Toltech.App.Services
                 // 4. event métier
                 await EventsManager.RaisePartAddOrDeletedAsync();
 
-                return true;
+                return Result.Success();
             }
             catch (Exception ex)
             {
                 _logger.LogError("DeletePartById failed", "", ex);
-                return false;
+                return Result.Failure("Une erreur est survenue lors de la suppression de la pièce.", ErrorCode.Unknown);
             }
         }
 
-        public async Task<string?> GetPartNameByIdAsync(int idPart)
+        public async Task<Result<string?>> GetPartNameByIdAsync(int idPart)
         {
             try
             {
                 if (idPart <= 0)
-                    return null;
+                    return Result<string?>.Failure("ID de pièce invalide.", ErrorCode.Unknown);
 
-                return await _databaseService.GetPartNameByID(idPart);
+                var partName = await _databaseService.GetPartNameByID(idPart);
+                return Result<string?>.Success(partName);
             }
             catch (Exception ex)
             {
                 _logger.LogError("GetPartNameById failed", "", ex);
-                return null;
+                return Result<string?>.Failure("Une erreur est survenue lors de la récupération du nom de la pièce.", ErrorCode.Unknown);
             }
         }
 
-        public async Task SaveModelDataAsync(List<ModelData> toSave)
+        public async Task<Result> SaveModelDataAsync(List<ModelData> toSave)
         {
             foreach (var d in toSave)
                 d.MarkSaving();
@@ -196,9 +199,7 @@ namespace Toltech.App.Services
                 {
                     foreach (var d in toSave)
                     {
-                        if (d.Id == 0)
-                            await _databaseService.InsertModelDataAsync(d);
-                        else
+                        if (d.Id >= 0)
                             await _databaseService.UpdateModelDataAsync(d);
                     }
                 });
@@ -208,6 +209,7 @@ namespace Toltech.App.Services
                     d.ClearDirty();
                     d.ClearSaving();
                 }
+                return Result.Success();
             }
             catch (Exception ex)
             {
@@ -218,97 +220,172 @@ namespace Toltech.App.Services
                 }
 
                 _logger.LogError("SaveModelData failed", "", ex);
-                throw;
+                return Result.Failure("Une erreur est survenue lors de la sauvegarde des données.", ErrorCode.Unknown);
             }
         }
 
-        public async Task<List<ModelData>> LoadPartDataAsync(int partId)
-        {
-            return await _databaseService.GetModelDataByPartIdAsync(partId);
-        }
-
-        public async Task<IEnumerable<ModelData>> LoadSortedDataAsync(List<ModelData> dataList, int partId)
-        {
-            return await _databaseService.GetDatasSortedByNodeOrder(dataList, partId);
-        }
-
-        public async Task<List<ModelData>> SortDatasAsync(List<ModelData> datas, int partId)
-        {
-            return (await _databaseService
-                .GetDatasSortedByNodeOrder(datas, partId))
-                .ToList();
-        }
-
-        public async Task<bool?> CheckIsoPartAsync(int? selectedPartId)
+        public async Task<Result<List<ModelData>>> LoadPartDataAsync(int partId)
         {
             try
             {
-                if (!ModelValidationHelper.CheckModelActif(true))
-                    return null;
+                var data = await _databaseService.GetModelDataByPartIdAsync(partId);
+                return Result<List<ModelData>>.Success(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("LoadPartData failed", "", ex);
+                return Result<List<ModelData>>.Failure("Une erreur est survenue lors du chargement des données de la pièce.", ErrorCode.Unknown);
+            }
+        }
+
+        public async Task<Result<IEnumerable<ModelData>>> LoadSortedDataAsync(List<ModelData> dataList, int partId)
+        {
+            try
+            {
+                var data = await _databaseService.GetDatasSortedByNodeOrder(dataList, partId);
+                return Result<IEnumerable<ModelData>>.Success(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("LoadSortedData failed", "", ex);
+                return Result<IEnumerable<ModelData>>.Failure("Une erreur est survenue lors du chargement des données triées.", ErrorCode.Unknown);
+            }
+        }
+
+        public async Task<Result<List<ModelData>>> SortDatasAsync(List<ModelData> datas, int partId)
+        {
+            try
+            {
+                var data = await _databaseService.GetDatasSortedByNodeOrder(datas, partId);
+                return Result<List<ModelData>>.Success(data.ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("SortDatas failed", "", ex);
+                return Result<List<ModelData>>.Failure("Une erreur est survenue lors du tri des données.", ErrorCode.Unknown);
+            }
+        }
+        public async Task<Result<ValidationResult>> CheckIsoPartAsync(int? selectedPartId)
+        {
+            try
+            {
+                if (!ModelValidationHelper.CheckModelActif(false))
+                    return Result<ValidationResult>.Failure("No active model.", ErrorCode.NoActiveModel);
 
                 if (!selectedPartId.HasValue)
-                    return null;
+                    return Result<ValidationResult>.Failure("Aucune pièce sélectionnée.", ErrorCode.Unknown);
 
                 // 1. récupération part
                 Part partActif = await _databaseService.GetPartByIdAsync(selectedPartId.Value);
 
                 if (partActif == null)
-                    return null;
+                    return Result<ValidationResult>.Failure("Pièce introuvable.", ErrorCode.Unknown);
 
                 // 2. validation métier ISO
-                bool inverse = await _computeValidationService.ValidationPart(partActif);
-
-                return inverse;
+                var inverse = await _computeValidationService.ValidationPart(partActif);
+                return Result<ValidationResult>.Success(inverse);
             }
             catch (Exception ex)
             {
                 _logger.LogError("CheckIsoPart failed", "", ex);
-                return null;
+                return Result<ValidationResult>.Failure("Une erreur est survenue lors de la vérification ISO de la pièce.", ErrorCode.Unknown);
             }
         }
 
-        public async Task UpdateFixedPartAsync(Part part)
+        public async Task<Result> UpdateFixedPartAsync(Part part)
         {
             try
             {
                 if (part == null)
-                    return;
+                    return Result.Failure("Part is null", ErrorCode.Unknown);
 
                 await _databaseService.SetFixedPartAsync(part);
+
+                return Result.Success();
             }
             catch (Exception ex)
             {
                 _logger.LogError("UpdateFixedPart failed", "", ex);
+                return Result.Failure("Error UpdateFixedPartAsync", ErrorCode.Unknown);
             }
         }
 
-        public async Task<Part?> GetFixedPartAsync()
+        public async Task<Result<Part?>> GetFixedPartAsync()
         {
             try
             {
-                return await _databaseService.GetFixedPartAsync();
+                var part = await _databaseService.GetFixedPartAsync();
+                return Result<Part?>.Success(part);
             }
             catch (Exception ex)
             {
                 _logger.LogError("GetFixedPart failed", "", ex);
-                return null;
+                return Result<Part?>.Failure("Une erreur est survenue lors de la récupération du Part fixé.", ErrorCode.Unknown);
             }
         }
 
+        #region Helper Methods
+        private async Task<List<ModelData>> AddDataOfPartExtremiteAsync(int partId, int count)
+        {
+            if (partId <= 0)
+                throw new ArgumentException(nameof(partId));
+
+            if (count <= 0)
+                throw new ArgumentException(nameof(count));
+
+            var datas = CreateModelDatas(partId, count);
+
+            await _databaseService.InsertModelDataRangeAsync(datas);
+
+            return datas;
+        }
+
+        private static List<ModelData> CreateModelDatas(int partId, int count)
+        {
+            var result = new List<ModelData>(count);
+            string randomName = $"PO_{Guid.NewGuid().ToString("N")[..6]}";
+
+            for (int i = 0; i < count; i++)
+            {
+                result.Add(new ModelData
+                {
+                    CoordX = 0,
+                    CoordY = 0,
+                    CoordZ = 0,
+                    CoordU = 1,
+                    CoordV = 0,
+                    CoordW = 0,
+
+                    OriginePartId = 0,
+                    ExtremitePartId = partId,
+
+                    TolOri = 0,
+                    TolInt = 0,
+                    TolExtr = 0,
+
+                    Active = true,
+                    Model = randomName
+                });
+            }
+
+            return result;
+        }
+
+        #endregion
         #endregion
 
         #region Service Requirements
-        public async Task<Requirements?> CreateRequirementAsync()
+        public async Task<Result<Requirements?>> CreateRequirementAsync()
         {
-            string nomRequirement =
-                   $"Req_{Guid.NewGuid().ToString("N")[..6]}";
+            string nomRequirement = $"Req_{Guid.NewGuid().ToString("N")[..6]}";
+
             try
             {
-                if (!ModelValidationHelper.CheckModelActif(true))
-                    return null;
+                if (!ModelValidationHelper.CheckModelActif(false))
+                    return Result<Requirements?>.Failure("No active model.", ErrorCode.NoActiveModel);
 
-                if (!NameValidationHelper.ValiderNomDePiece(nomRequirement))
-                    return null;
+                if (NameValidationHelper.NamingValidation(nomRequirement).IsFailure)
+                    return Result<Requirements?>.Failure("Nom du requirement invalide", ErrorCode.InvalidInput);
 
                 // 1. vérification doublon
                 if (await _databaseService.NameReqExisteAsync(nomRequirement))
@@ -317,14 +394,14 @@ namespace Toltech.App.Services
                         $"L'exigence \"{nomRequirement}\" existe déjà.",
                         true);
 
-                    return null;
+                    return Result<Requirements?>.Failure("Nom d'exigence déjà similaire", ErrorCode.InvalidInput);
                 }
 
                 // 2. création DB
                 var newReq = await _databaseService.AddReqAsync(nomRequirement);
 
                 if (newReq == null)
-                    return null;
+                    return Result<Requirements?>.Failure("Erreur de base de données", ErrorCode.DatabaseError);
 
                 // 3. mapping métier → UI model
                 var uiModel = new Requirements();
@@ -335,7 +412,7 @@ namespace Toltech.App.Services
                     $"Exigence \"{nomRequirement}\" ajoutée avec succès !",
                     false);
 
-                return uiModel;
+                return Result<Requirements?>.Success(uiModel);
             }
             catch (Exception ex)
             {
@@ -348,7 +425,7 @@ namespace Toltech.App.Services
                 return null;
             }
         }
-        public async Task<List<Requirements>> LoadAllRequirementsAsync()
+        public async Task<Result<List<Requirements>>> LoadAllRequirementsAsync()
         {
             try
             {
@@ -363,16 +440,16 @@ namespace Toltech.App.Services
                     })
                     .ToList();
 
-                return result;
+                return Result<List<Requirements>>.Success(result); ;
             }
             catch (Exception ex)
             {
                 _logger.LogError("LoadAllRequirements failed", "", ex);
-                return new List<Requirements>();
+                return Result<List<Requirements>>.Failure("Erreur lors du chargement des exigences.", ErrorCode.Unknown); ;
             }
         }
 
-        public async Task SaveRequirementsAsync(List<Requirements> toSave)
+        public async Task<Result> SaveRequirementsAsync(List<Requirements> toSave)
         {
             foreach (var req in toSave)
                 req.MarkSaving();
@@ -395,6 +472,7 @@ namespace Toltech.App.Services
                     req.ClearDirty();
                     req.ClearSaving();
                 }
+                return Result.Success();
             }
             catch (Exception ex)
             {
@@ -402,22 +480,22 @@ namespace Toltech.App.Services
                     req.ClearSaving();
 
                 _logger.LogError("SaveRequirements failed", "", ex);
-                throw;
+                return Result.Failure("Erreur lors de la sauvegarde des exigences.", ErrorCode.Unknown);
             }
         }
 
-        public async Task<bool> RemoveRequirementAsync(Requirements req)
+        public async Task<Result> RemoveRequirementAsync(Requirements req)
         {
             try
             {
                 if (req == null)
-                    return false;
+                    return Result.Failure("Exigence invalide.", ErrorCode.InvalidInput);
 
                 // suppression DB uniquement si existe déjà en base
                 if (req.Id_req != 0)
                     await _databaseService.DeleteRequirementAsync(req);
 
-                return true;
+                return Result.Success();
             }
             catch (Exception ex)
             {
@@ -426,50 +504,51 @@ namespace Toltech.App.Services
                     "",
                     ex);
 
-                return false;
+                return Result.Failure("Erreur lors de la suppression de l'exigence.", ErrorCode.Unknown);
             }
         }
 
-        public async Task ReverseActiveReqByIdAsync(int? idReq)
+        public async Task<Result> ReverseActiveReqByIdAsync(int? idReq)
         {
             try
             {
                 if (!idReq.HasValue)
-                    return;
+                    return Result.Failure("ID de l'exigence invalide.", ErrorCode.InvalidInput);
 
                 // 1. récupération métier
                 var req = await _databaseService.GetReqsByIdAsync(idReq);
 
                 if (req == null)
-                    return;
+                    return Result.Failure("Exigence introuvable.", ErrorCode.NotFound);
 
                 // 2. application règle métier
                 await _databaseService.SetActiveReq_Async(req);
+
+                return Result.Success();
             }
             catch (Exception ex)
             {
                 _logger.LogError("ReverseActiveReqById failed", "", ex);
+                return Result.Failure("Une erreur est survenue lors de la modification de l'exigence.", ErrorCode.Unknown);
             }
         }
 
-        public async Task<bool> DeleteRequirementByIdAsync(int? idReq)
+        public async Task<Result> DeleteRequirementByIdAsync(int? idReq)
         {
             try
             {
                 if (!idReq.HasValue)
-                    return false;
+                    return Result.Failure("ID de l'exigence invalide.", ErrorCode.InvalidInput);
 
                 // 1. récupération nom (métier)
                 string nameReq = await _databaseService.GetReqNameByIdAsync(idReq);
-
-                if (string.IsNullOrWhiteSpace(nameReq))
-                    return false;
+                nameReq = string.IsNullOrWhiteSpace(nameReq) ? $"ID : {idReq}" : nameReq;
 
                 // 2. récupération entité
                 Requirements req = await _databaseService.GetReqsByIdAsync(idReq);
 
                 if (req == null)
-                    return false;
+                    return Result.Failure("Exigence introuvable.", ErrorCode.NotFound);
 
                 // 3. suppression DB
                 await _databaseService.DeleteRequirementAsync(req);
@@ -479,30 +558,30 @@ namespace Toltech.App.Services
                     $"Exigence \"{nameReq}\" supprimée avec succès !",
                     false);
 
-                return true;
+                return Result.Success();
             }
             catch (Exception ex)
             {
                 _logger.LogError("DeleteRequirementById failed", "", ex);
-                return false;
+                return Result.Failure("Une erreur est survenue lors de la suppression de l'exigence.", ErrorCode.Unknown);
             }
         }
 
-        public async Task<string?> GetRequirementNameByIdAsync(int? idReq)
+        public async Task<Result<string?>> GetRequirementNameByIdAsync(int? idReq)
         {
             try
             {
                 if (!idReq.HasValue || idReq.Value <= 0)
-                    return null;
+                    return Result<string?>.Failure("ID de l'exigence invalide.", ErrorCode.InvalidInput);
 
                 var name = await _databaseService.GetReqNameByIdAsync(idReq.Value);
 
-                return string.IsNullOrWhiteSpace(name) ? null : name;
+                return string.IsNullOrWhiteSpace(name) ? Result<string?>.Failure("Nom de l'exigence introuvable.", ErrorCode.NotFound) : Result<string?>.Success(name);
             }
             catch (Exception ex)
             {
                 _logger.LogError("GetRequirementNameById failed", "", ex);
-                return null;
+                return Result<string?>.Failure("Une erreur est survenue lors de la récupération du nom de l'exigence.", ErrorCode.Unknown);
             }
         }
 
@@ -510,15 +589,15 @@ namespace Toltech.App.Services
 
         #region Service Model
 
-        public async Task<bool> CreateModelAsync(string modelName)
+        public async Task<Result> CreateModelAsync(string modelName)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(modelName))
-                    return false;
+                    return Result.Failure("Le nom du modèle est invalide.");
 
-                if (!NameValidationHelper.ValiderNomDePiece(modelName))
-                    return false;
+                if (NameValidationHelper.NamingValidation(modelName).IsFailure)
+                    return Result.Failure("Le nom du modèle est invalide.");
 
                 // 1. Construction du chemin
                 string modelPath = Path.Combine(
@@ -528,15 +607,14 @@ namespace Toltech.App.Services
                 // 2. Vérification existence
                 if (File.Exists(modelPath))
                 {
-                    return false;
+                    return Result.Failure("Le modèle existe déjà.");
                 }
 
                 // 3. Définir modèle actif
                 ModelManager.ModelActif = modelPath;
 
                 // 4. Enregistrement meta DB
-                int newModelId = await DbModelService.ActiveInstance
-                    .RegisterModelInMetaDb(modelName, modelPath, modelName);
+                int newModelId = await DbModelService.ActiveInstance.RegisterModelInMetaDb(modelName, modelPath, modelName);
 
                 // 5. Ouverture / création DB modèle
                 await _databaseService.Open(modelPath);
@@ -552,21 +630,21 @@ namespace Toltech.App.Services
                     $"Modèle '{modelName}' créé avec succès",
                     false);
 
-                return true;
+                return Result.Success();
             }
             catch (Exception ex)
             {
                 _logger.LogError("CreateModel failed", "", ex);
-                return false;
+                return Result.Failure("Une erreur est survenue lors de la création du modèle.", ErrorCode.Unknown);
             }
         }
 
-        public async Task<bool> OpenModelAsync(string selectedFile)
+        public async Task<Result> OpenModelAsync(string selectedFile)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(selectedFile))
-                    return false;
+                    return Result.Failure("Le fichier sélectionné est invalide.");
 
                 // 1. Notification
                 _ = _notificationService.ShowNotifAsync(
@@ -579,24 +657,21 @@ namespace Toltech.App.Services
                 // 3. Switch DB (IMPORTANT : instance existante)
                 await _databaseService.Open(selectedFile);
 
-                // 4. Vérification
-                var status = await DbModelService.ActiveInstance.CheckModelExistenceAsync(selectedFile, true);
-
-                return status;
+                return Result.Success();
             }
             catch (Exception ex)
             {
                 _logger.LogError("OpenModel failed", "", ex);
-                return false;
+                return Result.Failure("Une erreur est survenue lors de l'ouverture du modèle.");
             }
         }
 
-        public async Task<bool> DeleteModelAsync(string path)
+        public async Task<Result> DeleteModelAsync(string path)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(path))
-                    return false;
+                    return Result.Failure("Le chemin du modèle est invalide.");
 
                 // 1. Si modèle actif → fermer la DB
                 if (path == ModelManager.ModelActif)
@@ -605,11 +680,13 @@ namespace Toltech.App.Services
                 }
 
                 // 2. Suppression avec retry (verrou fichier)
+                var deleted = false;
                 for (int i = 0; i < 5; i++)
                 {
                     try
                     {
                         File.Delete(path);
+                        deleted = true;
                         break;
                     }
                     catch (IOException)
@@ -617,6 +694,11 @@ namespace Toltech.App.Services
                         await Task.Delay(100);
                     }
                 }
+
+                if (!deleted)
+                    return Result.Failure(
+                        "Le fichier est verrouillé par une autre application.",
+                        ErrorCode.FileLocked);
 
                 // 3. Suppression meta
                 await DeleteMetaModelAsync(path);
@@ -627,27 +709,48 @@ namespace Toltech.App.Services
                 // 5. Notification
                 _ = _notificationService.ShowNotifAsync($"Modèle '{System.IO.Path.GetFileNameWithoutExtension(path)}' supprimé", false);
 
-                return true;
+                return Result.Success();
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Result.Failure(
+                    "Accès refusé : permissions insuffisantes pour supprimer ce fichier.",
+                    ErrorCode.Unauthorized);
             }
             catch (Exception ex)
             {
                 _logger.LogError("DeleteModel failed", "", ex);
-                return false;
+                return Result.Failure("Une erreur est survenue lors de la suppression du modèle.", ErrorCode.Unknown);
             }
         }
 
-        public async Task<bool> DuplicateModelAsync(string sourcePath, string destinationFolder)
+        public async Task<Result> DuplicateModelAsync(string sourcePath, string destinationFolder)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(sourcePath) || string.IsNullOrWhiteSpace(destinationFolder))
-                    return false;
+                    return Result.Failure("Le chemin source ou le dossier de destination est invalide.", ErrorCode.InvalidPath);
 
                 if (!File.Exists(sourcePath))
-                    return false;
+                    return Result.Failure("Le fichier source n'existe pas.", ErrorCode.NotFound);
 
-                string fileName = Path.GetFileName(sourcePath);
-                string newFilePath = Path.Combine(destinationFolder, fileName);
+                string fileName = Path.GetFileNameWithoutExtension(sourcePath);
+                string extension = Path.GetExtension(sourcePath);
+
+                string newFilePath = Path.Combine(destinationFolder, fileName + "_copy" + extension);
+
+                int counter = 2;
+
+                // Boucle tant que le fichier existe
+                while (File.Exists(newFilePath))
+                {
+                    newFilePath = Path.Combine(
+                        destinationFolder,
+                        $"{fileName}_copy_{counter}{extension}"
+                    );
+
+                    counter++;
+                }
 
                 // 1. duplication fichier
                 File.Copy(sourcePath, newFilePath, overwrite: false);
@@ -666,12 +769,12 @@ namespace Toltech.App.Services
                     "Modèle dupliqué avec succès",
                     false);
 
-                return true;
+                return Result.Success();
             }
             catch (Exception ex)
             {
                 _logger.LogError("DuplicateModel failed", "", ex);
-                return false;
+                return Result.Failure("Une erreur est survenue lors de la duplication du modèle.", ErrorCode.Unknown);
             }
         }
 
@@ -729,27 +832,19 @@ namespace Toltech.App.Services
         {
             try
             {
-                // Extraire le nom du modèle
-                string modelName = Path.GetFileNameWithoutExtension(fullPath);
-
-                // Vérifier si le modèle existe en base
                 var exists = await DbModelService.ActiveInstance.IsExistModelDB(fullPath);
                 if (!exists)
-                {
-                    MessageBox.Show($"Le modèle '{modelName}' n'existe pas dans la base.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
-                }
 
-                // Supprimer le modèle
                 await DbModelService.ActiveInstance.DeleteModelFromMetaDb(fullPath);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Erreur lors de la suppression du modèle actif : {ex.Message}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+                _logger.LogError("DeleteMetaModel failed", "", ex);
             }
         }
 
-        public async Task<bool> RegisterModelAsync(string modelPath = null)
+        public async Task<Result> RegisterModelAsync(string modelPath = null)
         {
             try
             {
@@ -758,19 +853,17 @@ namespace Toltech.App.Services
 
                 if (string.IsNullOrEmpty(modelPath) || !File.Exists(modelPath))
                 {
-                    MessageBox.Show("Aucun modèle actif valide n'est sélectionné.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return false;
+                    return Result.Failure("Invalid model path.", ErrorCode.Unknown);
                 }
 
-                if (await IsExistModelRegisterAsync(modelPath))
-                    return false;
+                if ((await IsExistModelRegisterAsync(modelPath)).IsSuccess)
+                    return Result.Success();
                 // Extraire le nom du modèle depuis le chemin
                 string modelName = Path.GetFileNameWithoutExtension(modelPath);
 
-                if (!NameValidationHelper.ValiderNomDePiece(modelName))
+                if (NameValidationHelper.NamingValidation(modelName).IsFailure)
                 {
-                    MessageBox.Show("Le nom du modèle actif n'est pas valide.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return false;
+                    return Result.Failure("Invalid model name.", ErrorCode.Unknown);
                 }
 
                 // Fermer la connexion base de données si ouverte (en tâche de fond)
@@ -780,39 +873,43 @@ namespace Toltech.App.Services
 
                 // Ecraser l'entrée correspondante dans la base de données du modèle
                 await _databaseService.UpdateModelIdAsync(modelId, modelName, modelPath);
-                return true;
+                return Result.Success();
 
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Erreur lors de l'enregistrement du modèle actif dans la bibliothèque: {ex.Message}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
-                return false;
+                return Result.Failure("Error during model registration.", ErrorCode.Unknown);
             }
         }
 
-        private async Task<bool> IsExistModelRegisterAsync(String modelPath)
+        public async Task<Result> IsExistModelRegisterAsync(String modelPath)
         {
             var IsExist = await DbModelService.ActiveInstance.IsExistModelDB(modelPath);
-            return IsExist;
+            if (IsExist)
+            {
+                return Result.Success();
+            }
+            return Result.Failure("Model not found.", ErrorCode.None);
         }
 
-        public async Task SaveModelAsync(ModelMeta meta)
+        public async Task<Result> SaveModelAsync(ModelMeta meta)
         {
             try
             {
-                if (meta == null || !meta.IsDirty || meta.IsSaving)
-                    return;
+                if (meta == null)
+                    return Result.Failure("Invalid model state.", ErrorCode.Unknown);
+                if (!meta.IsDirty || meta.IsSaving)
+                    return Result.Success();
 
                 meta.MarkSaving();
 
                 // 1. récupération état DB existant
-                var dbModel = await _dbModelService
-                    .GetModelMetaByIdAsync(meta.IdModel);
+                var dbModel = await _dbModelService.GetModelMetaByIdAsync(meta.IdModel);
 
                 if (dbModel == null)
                 {
                     meta.ClearSaving();
-                    return;
+                    return Result.Failure("Model not found.", ErrorCode.Unknown);
                 }
 
                 // 2. cohérence fichier si rename
@@ -827,6 +924,8 @@ namespace Toltech.App.Services
                 // 5. commit état UI
                 meta.ClearDirty();
                 meta.ClearSaving();
+
+                return Result.Success();
             }
             catch (Exception ex)
             {
@@ -834,16 +933,17 @@ namespace Toltech.App.Services
                 meta.ClearSaving();
 
                 _logger.LogError("SaveModel failed", "", ex);
+                return Result.Failure("Error during save operation.", ErrorCode.Unknown);
             }
         }
 
-        public async Task<List<ModelMeta>> LoadModelsAsync()
+        public async Task<Result<List<ModelMeta>>> LoadModelsAsync()
         {
             try
             {
                 var modelsFromDb = await _dbModelService.GetAllModelsAsync();
 
-                return modelsFromDb
+                var models = modelsFromDb
                     .OrderByDescending(m => m.IdModel)
                     .Select(dbModel =>
                     {
@@ -852,11 +952,15 @@ namespace Toltech.App.Services
                         return uiModel;
                     })
                     .ToList();
+
+                return Result<List<ModelMeta>>.Success(models);
             }
             catch (Exception ex)
             {
                 _logger.LogError("LoadModels failed", "", ex);
-                return new List<ModelMeta>();
+                return Result<List<ModelMeta>>.Failure(
+                    "Impossible de charger les modèles.",
+                    ErrorCode.DatabaseError);
             }
         }
 

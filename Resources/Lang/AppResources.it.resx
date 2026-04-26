@@ -651,4 +651,25 @@
   <data name="Folder" xml:space="preserve">
     <value>Cartella</value>
   </data>
+  <data name="Error_Database" xml:space="preserve">
+    <value>Errore database</value>
+  </data>
+  <data name="Error_NotFound" xml:space="preserve">
+    <value>Elemento non trovato</value>
+  </data>
+  <data name="Error_FileLocked" xml:space="preserve">
+    <value>File bloccato da un'altra applicazione</value>
+  </data>
+  <data name="Error_Unauthorized" xml:space="preserve">
+    <value>Accesso negato</value>
+  </data>
+  <data name="Error_Unknown" xml:space="preserve">
+    <value>Si è verificato un errore imprevisto</value>
+  </data>
+  <data name="Title_Error" xml:space="preserve">
+    <value>Errore</value>
+  </data>
+  <data name="Error_NoActiveModel" xml:space="preserve">
+    <value>Nessun modello attivo.</value>
+  </data>
 </root>

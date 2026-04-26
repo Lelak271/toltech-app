@@ -72,7 +72,8 @@
                             <TextBox x:Name="FilterTextBox" 
                                      Width="200" 
                                      Margin="35,0,0,10"  
-                                     ToolTip="{lang:Loc FilterByName}"  />
+                                     ToolTip="{lang:Loc FilterByName}" 
+                                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -84,51 +85,61 @@
                     <Border Background="Black" Height="1" Margin="20,0,20,0" VerticalAlignment="Bottom"/>
                 </Border>
 
-                <!-- Conteneur des modèles -->
-                <ScrollViewer Grid.Row="2"
-              VerticalScrollBarVisibility="Auto"
-              HorizontalScrollBarVisibility="Disabled">
+                <!-- LISTE scrollable + virtualisée : on utilise ListBox (contient ScrollViewer) -->
+                <ListBox Grid.Row="2"
+                          x:Name="ListBoxReqs"
+                          ItemsSource="{Binding FilteredModels}"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          VirtualizingPanel.ScrollUnit="Pixel"
+                          ScrollViewer.CanContentScroll="True"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          Focusable="False"
+                          SelectionMode="Single"
+                          Margin="0,30,0,0"
+                          ItemContainerStyle="{DynamicResource ListBoxReqs}">
 
-                    <Grid>
+                    <!-- Panel virtualisant -->
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VirtualizingStackPanel />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
 
-                        <ItemsControl ItemsSource="{Binding Models}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
+                    <!-- Template de l'item (votre PanelReqs) -->
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type models:ModelMeta}">
+                            <localControls:PanelModelMeta
+                             Margin="20,5"
+                             Padding="10"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
 
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate DataType="{x:Type models:ModelMeta}">
-                                    <localControls:PanelModelMeta Margin="20,5"/>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
+                <Grid Grid.Row="2">
+                    <!-- Image base vide -->
+                    <Image Source="/Asset/ImageEmptyModels.png"
+                            Width="800"
+                            Stretch="Uniform"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
 
-                        </ItemsControl>
+                        <Image.Style>
+                            <Style TargetType="Image">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Models.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Image.Style>
 
-                        <!-- Image base vide -->
-                        <Image Source="/Asset/ImageEmptyModels.png"
-                               Width="800"
-                               Stretch="Uniform"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center">
+                    </Image>
 
-                            <Image.Style>
-                                <Style TargetType="Image">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Models.Count}" Value="0">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Image.Style>
-
-                        </Image>
-
-                    </Grid>
-                </ScrollViewer>
-
+                </Grid>
             </Grid>
         </Border>
     </Grid>

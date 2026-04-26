@@ -8,6 +8,7 @@ using Toltech.App.ToltechCalculation.Validation;
 using Toltech.App.Utilities;
 using Toltech.ComputeEngine.Contracts;
 using Toltech.ComputeEngine;
+using Toltech.App.Utilities.Result;
 
 namespace Toltech.App.ToltechCalculation.Helpers
 {
@@ -28,12 +29,11 @@ namespace Toltech.App.ToltechCalculation.Helpers
             => Math.Abs(u) < 1e-6 && Math.Abs(v) < 1e-6 && Math.Abs(w) < 1e-6;
 
         // VALIDATION D'UNE PIÈCE
-        public async Task<bool> ValidationPart(Part part)
+        public async Task<ValidationResult> ValidationPart(Part part)
         {
             if (part == null) throw new ArgumentNullException(nameof(part));
 
             var errors = new List<string>();
-
             var allModelData = await _databaseService.GetAllModelDataAsync();
             var partModelData = allModelData
                 .Where(md => md.ExtremitePartId == part.Id && md.Active == true)
@@ -64,6 +64,7 @@ namespace Toltech.App.ToltechCalculation.Helpers
             // Isostatisme
             var computeModelData = ComputeMapper.ToComputeModelData(allModelData);
             var computePart = ComputeMapper.ToComputePart(part);
+
             if (computePart.IsFixed != true && !await _computeEngine.IsPartIsostaticAsync(computeModelData, computePart))
             {
                 var msg = ValidationRuleRegistry.PartNotIsostatic.GetMessage();
@@ -72,20 +73,12 @@ namespace Toltech.App.ToltechCalculation.Helpers
             }
 
             if (errors.Any())
-            {
-                MessageBox.Show(
-                    "Erreurs détectées lors de la validation :\n\n" + string.Join("\n\n", errors),
-                    "Validation de la MiP - Erreur",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                return false;
-            }
+                return ValidationResult.Invalid(errors);
 
-            MessageBox.Show(
-                ValidationRuleRegistry.ValidationSuccess.GetMessage(
-                    part.IsFixed == true ? "[Pièce fixe] - Modèle valide" : "Modèle valide"),
-                "Validation de la MiP - Ok",
-                MessageBoxButton.OK, MessageBoxImage.Information);
-            return true;
+            var successMessage = ValidationRuleRegistry.ValidationSuccess.GetMessage(
+                part.IsFixed == true ? "[Pièce fixe] - Modèle valide" : "Modèle valide");
+
+            return ValidationResult.Valid(successMessage);
         }
 
         // VALIDATION DU MODÈLE COMPLET

@@ -21,8 +21,6 @@ namespace Toltech.App.Views
         }
 
 
-
-
         //private void FilterTextBox_TextChanged(object sender, TextChangedEventArgs e)
         //{
         //    string filterText = FilterTextBox.Text?.Trim().ToLowerInvariant();

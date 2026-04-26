@@ -6,7 +6,7 @@ using System.Windows.Controls;
 using Microsoft.Win32;
 using Toltech.ComputeEngine.Contracts;
 using Toltech.App.FrontEnd.Controls;
-using Toltech.App.FrontEnd.Interfaces;
+using Toltech.App.Services.Notification;
 using Toltech.App.Models;
 using Toltech.App.Services;
 using Toltech.App.Services.Dialog;

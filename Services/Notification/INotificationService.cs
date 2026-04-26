@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Toltech.App.FrontEnd.Interfaces
+namespace Toltech.App.Services.Notification
 {
     public interface INotificationService
     {
