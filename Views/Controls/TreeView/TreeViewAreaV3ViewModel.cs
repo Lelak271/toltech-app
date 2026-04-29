@@ -623,7 +623,7 @@ namespace Toltech.App.Views.Controls.TreeView
             if (_mainVM.PartVM == null)
                 throw new InvalidOperationException("PartVM n'est pas initialisé."); //TBD
 
-            await _domainService.DeletePartByIdAsync(node.LinkedOriginalId);
+            await _domainService.DeletePartWithDatasByIdAsync(node.LinkedOriginalId);
         }
         private async Task DeleteNodeReqAsync(NodesDefinition node)
         {

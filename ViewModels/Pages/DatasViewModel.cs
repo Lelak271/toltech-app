@@ -800,7 +800,7 @@ namespace Toltech.App.ViewModels
                 return;
 
             // 3. exécution métier
-            var success = await _domainService.DeletePartByIdAsync(partId);
+            var success = await _domainService.DeletePartWithDatasByIdAsync(partId);
             if (success.IsFailure)
             {
                 HandleError(success);
@@ -816,7 +816,7 @@ namespace Toltech.App.ViewModels
 
         public async Task DeletePartById(int idPart)
         {
-            var success = await _domainService.DeletePartByIdAsync(idPart);
+            var success = await _domainService.DeletePartWithDatasByIdAsync(idPart);
             if (success.IsFailure)
             {
                 HandleError(success);

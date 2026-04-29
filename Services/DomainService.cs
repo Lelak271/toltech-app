@@ -1,7 +1,8 @@
 ﻿using System.IO;
-using Toltech.App.Services.Notification;
+using DocumentFormat.OpenXml.Office2010.Excel;
 using Toltech.App.Models;
 using Toltech.App.Services.Logging;
+using Toltech.App.Services.Notification;
 using Toltech.App.ToltechCalculation.Helpers;
 using Toltech.App.Utilities;
 using Toltech.App.Utilities.Result;
@@ -50,25 +51,20 @@ namespace Toltech.App.Services
 
                 // 1. vérification existence
                 if (await _databaseService.IsNamePartExisteAsync(nomPiece))
-                {
-                    return Result.Failure("La pièce existe déjà dans la base.", ErrorCode.Unknown);
-                }
+                    return Result.Failure("Le nom de la pièce existe déjà dans la base.", ErrorCode.Unknown);
 
                 // 2. création part
-                int newPartID = await _databaseService.InsertPartAsync(nomPiece);
+                int newPartID = await InsertPartAsync(nomPiece);
 
-                var newData = CreateModelDatas(newPartID, 6);
+                await AddDataOfPartExtremiteAsync(newPartID, 6);
 
-                // 3. création datas initiales
-                await _databaseService.InsertModelDataRangeAsync(newData);
-
-                // 4. notification
-                _ = _notificationService.ShowNotifAsync(
-                    $"Pièce \"{nomPiece}\" ajoutée avec succès !",
-                    false);
+                _ = _notificationService.ShowNotifAsync($"Pièce \"{nomPiece}\" ajoutée avec succès !", false);
 
                 // 5. event métier
                 await EventsManager.RaisePartSelectedChangedAsync(newPartID);
+
+                await EventsManager.RaiseModelDataAddOrDeletedAsync();
+                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
 
                 return Result.Success();
             }
@@ -105,62 +101,69 @@ namespace Toltech.App.Services
             }
         }
 
-        public async Task<Result> DeleteDataAsync(ModelData data)
+        public Task<Result> DeleteDataAsync(ModelData data)
+        {
+            return DeleteDataAsync(new[] { data });
+        }
+        public async Task<Result> DeleteDataAsync(IEnumerable<ModelData> datas)
         {
             try
             {
-                if (data == null || data.Id <= 0)
-                    return Result.Failure("Donnée invalide.", ErrorCode.Unknown);
+                var list = datas?.Where(d => d != null && d.Id > 0).ToList();
 
-                // 1. récupération en base
-                var existing = await _databaseService.GetModelDataByIdAsync(data.Id);
+                if (list == null || list.Count == 0)
+                    return Result.Failure("Aucune donnée valide à supprimer.", ErrorCode.Unknown);
 
-                if (existing == null)
-                {
+                // 1. récupération des entités existantes en base
+                var ids = list.Select(d => d.Id).ToList();
+
+                var existingDatas = await _databaseService.GetModelDataByIdsAsync(ids);
+
+                if (existingDatas == null || existingDatas.Count == 0)
                     return Result.Failure("Aucune correspondance trouvée en base de données.", ErrorCode.Unknown);
-                }
 
-                // 2. suppression DB
-                await _databaseService.DeleteModelDataAsync(existing);
+                // 2. suppression atomique
+                await _databaseService.DeleteRangeAsync(ids);
 
-                // 3. récupération info complémentaire
-                string nameData = await _databaseService.GetPartNameByID(data.Id);
-
-                // 4. notification
+                // 3. notification batch
                 _ = _notificationService.ShowNotifAsync(
-                    $"Contact {data.Model} supprimé avec succès.",
+                    $"{ids.Count} donnée(s) supprimée(s) avec succès.",
                     false);
+
+                // 4. events métier
+                await EventsManager.RaiseModelDataAddOrDeletedAsync();
+                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
 
                 return Result.Success();
             }
             catch (Exception ex)
             {
-                _logger.LogError("DeleteData failed", "", ex);
-                return Result.Failure("Une erreur est survenue lors de la suppression de la donnée.", ErrorCode.Unknown);
+                _logger.LogError("DeleteDataAsync failed", "", ex);
+                return Result.Failure(
+                    "Une erreur est survenue lors de la suppression des données.",
+                    ErrorCode.Unknown);
             }
         }
 
-        public async Task<Result> DeletePartByIdAsync(int idPart)
+        public async Task<Result> DeletePartWithDatasByIdAsync(int idPart)
         {
             try
             {
                 if (!ModelValidationHelper.CheckModelActif(false))
                     return Result<ModelData>.Failure("No active model.", ErrorCode.NoActiveModel);
 
-                // 1. récupération nom (pour notification + event)
-                string partName = await _databaseService.GetPartNameByID(idPart);
-
-                // 2. suppression métier
-                await _databaseService.DeletePartAsync(idPart);
-                await _databaseService.DeleteDatasOfPartExtremiteAsync(idPart);
+                // Suppression atomique (transaction recommandée côté service)
+                await _databaseService.DeletePartsWithDatasRangeAsync(new List<int> { idPart });
 
                 // 3. notification
                 _ = _notificationService.ShowNotifAsync(
-                    $"Données supprimées pour la pièce {partName}.",
+                    $"Données supprimées pour la pièce {idPart}.",
                     false);
 
                 // 4. event métier
                 await EventsManager.RaisePartAddOrDeletedAsync();
+                await EventsManager.RaiseModelDataAddOrDeletedAsync();
+                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
 
                 return Result.Success();
             }
@@ -195,20 +198,17 @@ namespace Toltech.App.Services
 
             try
             {
-                await _databaseService.RunInTransactionAsync(async () =>
-                {
-                    foreach (var d in toSave)
-                    {
-                        if (d.Id >= 0)
-                            await _databaseService.UpdateModelDataAsync(d);
-                    }
-                });
+                await _databaseService.UpdateRangeAsync(toSave);
 
                 foreach (var d in toSave)
                 {
                     d.ClearDirty();
                     d.ClearSaving();
                 }
+
+                await EventsManager.RaiseModelDataAddOrDeletedAsync();
+                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
+
                 return Result.Success();
             }
             catch (Exception ex)
@@ -333,14 +333,14 @@ namespace Toltech.App.Services
             if (count <= 0)
                 throw new ArgumentException(nameof(count));
 
-            var datas = CreateModelDatas(partId, count);
+            var datas = CreateDefaultModelDatas(partId, count);
 
-            await _databaseService.InsertModelDataRangeAsync(datas);
+            await _databaseService.InsertRangeAsync(datas);
 
             return datas;
         }
 
-        private static List<ModelData> CreateModelDatas(int partId, int count)
+        private static List<ModelData> CreateDefaultModelDatas(int partId, int count)
         {
             var result = new List<ModelData>(count);
             string randomName = $"PO_{Guid.NewGuid().ToString("N")[..6]}";
@@ -372,6 +372,7 @@ namespace Toltech.App.Services
         }
 
         #endregion
+
         #endregion
 
         #region Service Requirements
@@ -397,20 +398,36 @@ namespace Toltech.App.Services
                     return Result<Requirements?>.Failure("Nom d'exigence déjà similaire", ErrorCode.InvalidInput);
                 }
 
-                // 2. création DB
-                var newReq = await _databaseService.AddReqAsync(nomRequirement);
+                var newRequirement = new Requirements
+                {
+                    NameReq = nomRequirement,
+                    PartReq1Id = 0,
+                    PartReq2Id = 0,
+                    Description1 = "",
+                    Description2 = "",
+                    tol1 = 0,
+                    tol2 = 0,
+                    CoordX = 0,
+                    CoordY = 0,
+                    CoordZ = 0,
+                    CoordU = 1, // Vecteur direction par défaut
+                    CoordV = 0,
+                    CoordW = 0,
+                    IsActive = true,
+                };
 
-                if (newReq == null)
-                    return Result<Requirements?>.Failure("Erreur de base de données", ErrorCode.DatabaseError);
+                // 2. création DB
+                await _databaseService.InsertAsync(newRequirement);
 
                 // 3. mapping métier → UI model
                 var uiModel = new Requirements();
-                uiModel.LoadFromDb(newReq);
+                uiModel.LoadFromDb(newRequirement);
 
                 // 4. notification
-                _ = _notificationService.ShowNotifAsync(
-                    $"Exigence \"{nomRequirement}\" ajoutée avec succès !",
-                    false);
+                _ = _notificationService.ShowNotifAsync($"Exigence \"{nomRequirement}\" ajoutée avec succès !", false);
+
+                await EventsManager.RaiseRequirementAddOrDeletedAsync();
+                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
 
                 return Result<Requirements?>.Success(uiModel);
             }
@@ -422,7 +439,7 @@ namespace Toltech.App.Services
                     $"Erreur lors de la création de \"{nomRequirement}\".",
                     true);
 
-                return null;
+                return Result<Requirements?>.Failure("Erreur innatentu lors de la création de l'exigence", ErrorCode.Unknown);
             }
         }
         public async Task<Result<List<Requirements>>> LoadAllRequirementsAsync()
@@ -456,22 +473,17 @@ namespace Toltech.App.Services
 
             try
             {
-                await _databaseService.RunInTransactionAsync(async () =>
-                {
-                    foreach (var r in toSave)
-                    {
-                        if (r.Id_req == 0)
-                            await _databaseService.InsertRequirementAsync(r);
-                        else
-                            await _databaseService.UpdateRequirementsAsync(r);
-                    }
-                });
+                await _databaseService.UpdateRangeAsync(toSave);
 
                 foreach (var req in toSave)
                 {
                     req.ClearDirty();
                     req.ClearSaving();
                 }
+
+                await EventsManager.RaiseRequirementAddOrDeletedAsync();
+                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
+
                 return Result.Success();
             }
             catch (Exception ex)
@@ -484,27 +496,37 @@ namespace Toltech.App.Services
             }
         }
 
-        public async Task<Result> RemoveRequirementAsync(Requirements req)
+
+        public Task<Result> RemoveRequirementAsync(Requirements req)
+        {
+            return DeleteRequirementAsync(new[] { req });
+        }
+        public async Task<Result> DeleteRequirementAsync(IEnumerable<Requirements> reqs)
         {
             try
             {
-                if (req == null)
+                var list = reqs?.Where(r => r != null).ToList();
+
+                if (list == null || list.Count == 0)
                     return Result.Failure("Exigence invalide.", ErrorCode.InvalidInput);
 
-                // suppression DB uniquement si existe déjà en base
-                if (req.Id_req != 0)
-                    await _databaseService.DeleteRequirementAsync(req);
+                await _databaseService.DeleteRangeAsync(list);
+
+                await EventsManager.RaiseRequirementAddOrDeletedAsync();
+                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
 
                 return Result.Success();
             }
             catch (Exception ex)
             {
                 _logger.LogError(
-                    $"Delete requirement failed {req?.NameReq} ({req?.Id_req})",
+                    $"Delete requirement failed ({reqs?.Count() ?? 0} items)",
                     "",
                     ex);
 
-                return Result.Failure("Erreur lors de la suppression de l'exigence.", ErrorCode.Unknown);
+                return Result.Failure(
+                    "Erreur lors de la suppression de l'exigence.",
+                    ErrorCode.Unknown);
             }
         }
 
@@ -522,7 +544,12 @@ namespace Toltech.App.Services
                     return Result.Failure("Exigence introuvable.", ErrorCode.NotFound);
 
                 // 2. application règle métier
-                await _databaseService.SetActiveReq_Async(req);
+                req.IsActive = !req.IsActive;
+
+                await _databaseService.UpdateAsync(req);
+
+                await EventsManager.RaiseRequirementAddOrDeletedAsync();
+                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
 
                 return Result.Success();
             }
@@ -535,36 +562,12 @@ namespace Toltech.App.Services
 
         public async Task<Result> DeleteRequirementByIdAsync(int? idReq)
         {
-            try
-            {
-                if (!idReq.HasValue)
-                    return Result.Failure("ID de l'exigence invalide.", ErrorCode.InvalidInput);
+            var req = await _databaseService.GetReqsByIdAsync(idReq);
 
-                // 1. récupération nom (métier)
-                string nameReq = await _databaseService.GetReqNameByIdAsync(idReq);
-                nameReq = string.IsNullOrWhiteSpace(nameReq) ? $"ID : {idReq}" : nameReq;
+            if (req == null)
+                return Result.Failure("Exigence introuvable.", ErrorCode.NotFound);
 
-                // 2. récupération entité
-                Requirements req = await _databaseService.GetReqsByIdAsync(idReq);
-
-                if (req == null)
-                    return Result.Failure("Exigence introuvable.", ErrorCode.NotFound);
-
-                // 3. suppression DB
-                await _databaseService.DeleteRequirementAsync(req);
-
-                // 4. notification
-                _ = _notificationService.ShowNotifAsync(
-                    $"Exigence \"{nameReq}\" supprimée avec succès !",
-                    false);
-
-                return Result.Success();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError("DeleteRequirementById failed", "", ex);
-                return Result.Failure("Une erreur est survenue lors de la suppression de l'exigence.", ErrorCode.Unknown);
-            }
+            return await DeleteRequirementAsync(new[] { req });
         }
 
         public async Task<Result<string?>> GetRequirementNameByIdAsync(int? idReq)
@@ -966,9 +969,165 @@ namespace Toltech.App.Services
 
         #endregion
 
-        #region Service Divers
+        #region Service Part
+        public async Task<int> InsertPartAsync(Part newPart)
+        {
+            if (newPart == null) newPart = CreateDefaultPart("");
+            await _databaseService.InsertAsync(newPart);
 
+            await EventsManager.RaisePartAddOrDeletedAsync();
+            await _databaseService.Refactor_SynchronizeNodeGraphAsync();
 
+            return newPart.Id;
+        }
+        public async Task<Result> DeletePartsAsync(IEnumerable<Part> parts)
+        {
+            try
+            {
+                if (!ModelValidationHelper.CheckModelActif(false))
+                    return Result.Failure("No active model.", ErrorCode.NoActiveModel);
+
+                var partList = parts?.ToList();
+
+                if (partList == null || partList.Count == 0)
+                    return Result.Success();
+
+                var ids = partList.Select(p => p.Id).ToList();
+
+                // Suppression atomique
+                await _databaseService.DeletePartsWithDatasRangeAsync(ids);
+
+                // Notification (batch)
+                _ = _notificationService.ShowNotifAsync(
+                    $"{ids.Count} pièce(s) supprimée(s).",
+                    false);
+
+                // Events métier
+                await EventsManager.RaisePartAddOrDeletedAsync();
+                await EventsManager.RaiseModelDataAddOrDeletedAsync();
+                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("DeletePartsAsync failed", "", ex);
+                return Result.Failure(
+                    "Une erreur est survenue lors de la suppression des pièces.",
+                    ErrorCode.Unknown);
+            }
+        }
+
+        public async Task<Result> UpdatePartsAsync(IEnumerable<Part> parts)
+        {
+            var list = parts?.Where(p => p != null).ToList() ?? new List<Part>();
+            if (list.Count == 0)
+                return Result.Success();
+
+            try
+            {
+                // --- Validation métier (exemple : unicité des noms) ---
+                // 1) doublons dans le lot
+                var dupInBatch = list
+                    .GroupBy(p => p.NamePart)
+                    .FirstOrDefault(g => !string.IsNullOrWhiteSpace(g.Key) && g.Count() > 1);
+
+                if (dupInBatch != null)
+                    return Result.Failure($"Nom en double dans la sélection : '{dupInBatch.Key}'.", ErrorCode.DuplicateEntry);
+
+                // 2) conflits avec la base (en excluant les Id existants)
+                foreach (var p in list)
+                {
+                    bool exists = await _databaseService.IsNamePartExisteAsync(p.NamePart,p.Id);
+                    if (exists)
+                        return Result.Failure($"Le nom '{p.NamePart}' existe déjà.", ErrorCode.DuplicateEntry);
+                }
+
+                // --- Séparation insert / update ---
+                var toInsert = list.Where(p => p.Id == 0).ToList();
+                var toUpdate = list.Where(p => p.Id != 0).ToList();
+
+                // --- Transaction unique ---
+                await _databaseService.SavePartsRangeAsync(toUpdate,toInsert);
+
+                // Reset uniquement après succès global
+                foreach (var part in parts)
+                    part.ClearDirty();
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("SavePartsAsync failed", "", ex);
+                return Result.Failure("Erreur lors de la sauvegarde.", ErrorCode.Unknown);
+            }
+        }
+
+        public async Task<Result<int>> UpdatePartAsync(Part part)
+        {
+            if (part == null)
+                return Result<int>.Failure("Part null.", ErrorCode.InvalidInput);
+
+            try
+            {
+                part.MarkSaving();
+
+                bool exists = await _databaseService.IsNamePartExisteAsync(part.NamePart, part.Id);
+                if (exists)
+                {
+                    part.ClearSaving();
+                    return Result<int>.Failure($"Le nom '{part.NamePart}' existe déjà.", ErrorCode.DuplicateEntry);
+                }
+
+                await _databaseService.UpdateAsync(part);
+
+                part.ClearDirty();
+                part.ClearSaving();
+
+                await EventsManager.RaisePartAddOrDeletedAsync();
+                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
+
+                return Result<int>.Success(part.Id);
+            }
+            catch (Exception ex)
+            {
+                part.ClearSaving(); // très important
+
+                _logger.LogError("UpdatePartAsync failed", "", ex);
+
+                return Result<int>.Failure("Erreur lors de la mise à jour.", ErrorCode.Unknown);
+            }
+        }
+
+        #region Helper Methods
+
+        /// <summary>
+        /// Insertion de nouvelle pièce avec nom par défaut.
+        /// Sans syncronisation des tables car fonction utiliser en parralele de la création 
+        /// des contacts => pas de surcharge de syncronisation
+        /// </summary>
+        private async Task<int> InsertPartAsync(string nameNewPart)
+        {
+            Part newPart = CreateDefaultPart(nameNewPart);
+            await InsertPartAsync(newPart);
+            _logger.LogInfo($"Création de la Part '{nameNewPart}' - ID :{newPart.Id}", nameof(DatabaseService));
+            return newPart.Id;
+        }
+
+        private Part CreateDefaultPart(string nameNewPart = "")
+        {
+            if (nameNewPart == "") nameNewPart = "Nouvelle Pièce";
+            return new Part
+            {
+                NamePart = nameNewPart,
+                MasseVol = 0.0,
+                Comment = "",
+                IsActive = true,
+                ImagePart = null
+            };
+        }
+
+        #endregion
 
         #endregion
 

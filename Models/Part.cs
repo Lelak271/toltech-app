@@ -5,29 +5,16 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using DocumentFormat.OpenXml.EMMA;
+using DocumentFormat.OpenXml.Wordprocessing;
 using SQLite;
+using Toltech.App.ViewModels;
 
 namespace Toltech.App.Models
 {
-    public class Part : INotifyPropertyChanged
+    public class Part : BaseViewModel
     {
-        // Événement standard pour WPF
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        /// <summary>
-        /// Méthode générique pour notifier les changements de propriété.
-        /// </summary>
-        protected bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
-        {
-            if (Equals(field, value)) return false;
-            field = value;
-            OnPropertyChanged(propertyName);
-            return true;
-        }
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
+        #region Backing fields
 
         private int _id;
         private string _namePart;
@@ -37,12 +24,14 @@ namespace Toltech.App.Models
         private bool _isFixed;
         private bool _isActive;
 
+        #endregion
 
+        #region Propriétés éditables (dirty-aware)
         [PrimaryKey, AutoIncrement]
         public int Id
         {
             get => _id;
-            set => SetField(ref _id, value);
+            set => SetAndDirty(ref _id, value);
         } // Identifiant unique de l'enregistrement
 
         /// <summary>
@@ -51,7 +40,7 @@ namespace Toltech.App.Models
         public string NamePart
         {
             get => _namePart;
-            set => SetField(ref _namePart, value);
+            set => SetAndDirty(ref _namePart, value);
         }
 
         /// <summary>
@@ -60,7 +49,7 @@ namespace Toltech.App.Models
         public double MasseVol
         {
             get => _masseVol;
-            set => SetField(ref _masseVol, value);
+            set => SetAndDirty(ref _masseVol, value);
         }
 
         /// <summary>
@@ -69,7 +58,7 @@ namespace Toltech.App.Models
         public byte[] ImagePart
         {
             get => _imagePart;
-            set => SetField(ref _imagePart, value);
+            set => SetAndDirty(ref _imagePart, value);
         }
 
         /// <summary>
@@ -78,18 +67,119 @@ namespace Toltech.App.Models
         public string Comment
         {
             get => _comment;
-            set => SetField(ref _comment, value);
+            set => SetAndDirty(ref _comment, value);
         }
         public bool IsFixed
         {
             get => _isFixed;
-            set => SetField(ref _isFixed, value);
+            set => SetAndDirty(ref _isFixed, value);
         }
         public bool IsActive
         {
             get => _isActive;
-            set => SetField(ref _isActive, value);
+            set => SetAndDirty(ref _isActive, value);
+        }
+        #endregion
+
+        #region Flags d’état
+
+        private bool _isDirty;
+        private bool _isSaving;
+        private bool _isOutOfSync;
+        private bool _isLoading;
+
+        public bool IsDirty
+        {
+            get => _isDirty;
+            private set
+            {
+                if (_isDirty == value)
+                    return;
+
+                _isDirty = value;
+                OnPropertyChanged();
+            }
         }
 
+        public bool IsSaving
+        {
+            get => _isSaving;
+            private set => SetProperty(ref _isSaving, value);
+        }
+
+        public bool IsOutOfSync
+        {
+            get => _isOutOfSync;
+            private set => SetProperty(ref _isOutOfSync, value);
+        }
+
+        #endregion
+
+        #region Dirty helpers
+
+        protected bool SetAndDirty<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
+        {
+            if (Equals(field, value))
+                return false;
+
+            field = value;
+
+            OnPropertyChanged(propertyName);
+
+            if (!_isLoading)
+                MarkDirty();
+
+            return true;
+        }
+
+        private void MarkDirty()
+        {
+            if (!IsDirty)
+                IsDirty = true;
+
+            IsOutOfSync = false;
+        }
+
+
+        // Méthodes publiques pour contrôler les flags
+        public void ClearDirty() => IsDirty = false;
+        public void MarkSaving() => IsSaving = true;
+        public void ClearSaving() => IsSaving = false;
+        public void MarkOutOfSync() => IsOutOfSync = true;
+
+        #endregion
+
+        #region Load / Sync
+        public void LoadFromDb(Part db)
+        {
+            if (db == null)
+                return;
+
+            BeginLoad();
+
+            Id = db.Id;
+            NamePart = db.NamePart;
+            MasseVol = db.MasseVol;
+            ImagePart = db.ImagePart;
+            Comment = db.Comment;
+            IsFixed = db.IsFixed;
+            IsActive = db.IsActive;
+
+            EndLoad();
+        }
+
+        private void BeginLoad()
+        {
+            _isLoading = true;
+        }
+
+        private void EndLoad()
+        {
+            _isLoading = false;
+            IsDirty = false;
+            IsOutOfSync = false;
+        }
+
+        #endregion
     }
 }

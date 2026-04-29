@@ -1,18 +1,13 @@
-﻿using System;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using Toltech.App.ViewModels;
-using Toltech.App.Services.Notification;
 using Toltech.App.Models;
-using Toltech.App.Resources;
 using Toltech.App.Services;
-using CST = Toltech.App.Services;
-using Toltech.App.Utilities;
 using Toltech.App.Services.Dialog;
+using Toltech.App.Services.Notification;
+using Toltech.App.Utilities;
+using Westermo.GraphX.Common.Exceptions;
 
 namespace Toltech.App.ViewModels
 {
@@ -23,24 +18,30 @@ namespace Toltech.App.ViewModels
         private readonly INotificationService _notificationService;
         private readonly IDialogService _dialog;
 
+        private DomainService _domainService;
         private static bool _subscribed = false;
         public PartDBViewModel(MainViewModel mainVM)
         {
             _mainVM = mainVM;
+            _domainService = mainVM.DomainService;
+
             _dialog = App.DialogService;
             _notificationService = App.NotificationService;
 
             Parts = new ObservableCollection<Part>();
             SelectedParts = new ObservableCollection<Part>();
 
+            #region Commandes
             LoadCommand = new RelayCommand(async _ => await LoadAsync());
             CreateCommand = new RelayCommand(async _ => await CreateAsync());
             //CreateCommand = new RelayCommand(async _ => await AddLine());
             SaveCommand = new RelayCommand(async _ => await SaveAsync());
             DeleteCommand = new RelayCommand(async _ => await DeleteAsync());
-            TestCommand = new RelayCommand(async _ => await SetImageInFirstPartAsync());
             InsertImageCommand = new RelayCommand(async _ => await InsertImageAsync(), _ => SelectedParts != null);
 
+            #endregion
+
+            #region Events
             if (!_subscribed)
             {
                 // Gestion centrale du Chargement des Parts du modèle actif
@@ -48,6 +49,8 @@ namespace Toltech.App.ViewModels
                 EventsManager.PartAddedOrDelete += WrapperLoadAsync;
                 _subscribed = true;
             }
+            #endregion
+
             _ = LoadAsync();
         }
 
@@ -84,7 +87,7 @@ namespace Toltech.App.ViewModels
 
             Parts.Clear();
 
-            var parts = await  DatabaseService.ActiveInstance.GetAllPartsAsync();
+            var parts = await DatabaseService.ActiveInstance.GetAllPartsAsync();
             if (parts == null) return;
 
             foreach (var part in parts.OrderBy(p => p.NamePart))
@@ -92,7 +95,7 @@ namespace Toltech.App.ViewModels
                 Parts.Add(part);
                 //System.Diagnostics.Debug.WriteLine( $"[PartVM] Ajout - Id={part.Id}, Nom='{part.NamePart}'");
             }
-              
+
         }
         #endregion
 
@@ -120,74 +123,38 @@ namespace Toltech.App.ViewModels
                 IsActive = true
             };
 
-            await DatabaseService.ActiveInstance.InsertPartAsync(newPart);
-            _notificationService.ShowNotifAsync($"Pièce ajoutée {namePart}.");
+            await _domainService.InsertPartAsync(newPart);
+            _ = _notificationService.ShowNotifAsync($"Pièce ajoutée {namePart}.");
             //Parts.Add(newPart);
         }
 
         private async Task SaveAsync()
         {
-            var dbParts = await DatabaseService.ActiveInstance.GetAllPartsAsync();
+            var toSave = Parts.Where(p => p.IsDirty).ToList();
+            if (toSave.Count == 0)
+                return;
 
-            foreach (var uiPart in Parts.ToList()) // Parts = ObservableCollection<Part> de l'UI
+            var result = await _domainService.UpdatePartsAsync(toSave);
+
+            if (!result.IsSuccess)
             {
-                // Cherche l'équivalent en DB (par Id)
-                var dbPart = dbParts.FirstOrDefault(p => p.Id == uiPart.Id);
-
-                if (dbPart == null)
-                {
-                    // Nouvelle ligne → insertion
-                    await DatabaseService.ActiveInstance.InsertPartAsync(uiPart);
-                }
-                else
-                {
-                    // Comparaison des champs importants pour détecter un changement
-                    bool nameChanged = !string.Equals(uiPart.NamePart, dbPart.NamePart, StringComparison.Ordinal);
-                    bool masseChanged = Math.Abs(uiPart.MasseVol - dbPart.MasseVol) > Constants.EPSILON;
-                    bool commentChanged = uiPart.Comment != dbPart.Comment;
-                    bool imageChanged = !AreImagesEqual(uiPart.ImagePart, dbPart.ImagePart);
-                    bool isActiveChanged = uiPart.IsActive != dbPart.IsActive;
-
-                    if (nameChanged || masseChanged || commentChanged || imageChanged || isActiveChanged)
-                    {
-                        // Si le nom a changé, on peut vérifier l'unicité
-                        if (nameChanged)
-                        {
-                            bool exists = await DatabaseService.ActiveInstance.IsNamePartExisteAsync(uiPart.NamePart);
-                            if (exists)
-                            {
-                            }
-                            await DatabaseService.ActiveInstance.UpdatePartNameAsync(dbPart.Id, uiPart.NamePart);
-                        }
-
-                        // Mise à jour
-                        await DatabaseService.ActiveInstance.UpdatePartAsync(uiPart);
-                    }
-                }
+                HandleError(result);
+                return;
             }
-            _notificationService.ShowNotifAsync($"Données sauvegardées.");
+
+            _ = _notificationService.ShowNotifAsync("Données sauvegardées.");
         }
 
-        // Comparaison simple des tableaux byte[] pour les images
-        private bool AreImagesEqual(byte[] img1, byte[] img2)
-        {
-            if (ReferenceEquals(img1, img2)) return true;
-            if (img1 == null || img2 == null) return false;
-            if (img1.Length != img2.Length) return false;
-            for (int i = 0; i < img1.Length; i++)
-                if (img1[i] != img2[i]) return false;
-            return true;
-        }
 
         public async Task DeleteByIdAsync(int idPart)
         {
-           string namePart= await DatabaseService.ActiveInstance.GetPartNameByID(idPart);
+            string namePart = await DatabaseService.ActiveInstance.GetPartNameByID(idPart);
 
             if (!_dialog.Confirm($"Voulez-vous supprimer la pièce {namePart}"))
-              return;
+                return;
             if (idPart == 0)
                 return;
-            await DatabaseService.ActiveInstance.DeletePartAsync(idPart);
+            await _domainService.DeletePartWithDatasByIdAsync(idPart);
         }
         private async Task DeleteAsync()
         {
@@ -203,11 +170,22 @@ namespace Toltech.App.ViewModels
             if (result != MessageBoxResult.Yes)
                 return;
 
-            foreach (var part in SelectedParts.ToList())
+            var partsToDelete = SelectedParts.ToList();
+
+            var deleteResult = await _domainService.DeletePartsAsync(partsToDelete);
+
+            if (!deleteResult.IsSuccess)
             {
-                 await DatabaseService.ActiveInstance.DeletePartAsync(part);
-                 Parts.Remove(part);
+                _ = _notificationService.ShowNotifAsync(deleteResult.Error);
+                return;
             }
+
+            foreach (var part in partsToDelete)
+            {
+                Parts.Remove(part);
+            }
+
+            _ = _notificationService.ShowNotifAsync($"{partsToDelete.Count} pièce(s) supprimée(s).");
 
             SelectedParts.Clear();
         }
@@ -219,45 +197,6 @@ namespace Toltech.App.ViewModels
         {
             var part = await DatabaseService.ActiveInstance.GetPartByIdAsync(idPart);
             await DatabaseService.ActiveInstance.SetActivePart_PartAsync(part);
-        }
-
-
-
-        public static async Task SetImageInFirstPartAsync()
-        {
-            string filePath = @"C:\Users\louis\OneDrive\Images\Screenshots\Capture d'écran 2025-05-24 004423.png";
-
-            if (!File.Exists(filePath))
-                throw new FileNotFoundException("Le fichier image n'existe pas.", filePath);
-
-            // Lire l'image en byte[]
-            byte[] imageBytes = await File.ReadAllBytesAsync(filePath);
-
-            var db = DatabaseService.ActiveInstance;
-
-            // Récupérer toutes les parts
-            var parts = await db.GetAllPartsAsync();
-
-            if (parts == null || !parts.Any())
-            {
-                // Table vide → créer la première ligne
-                var newPart = new Part
-                {
-                    NamePart = "Exemple",
-                    MasseVol = 0.0,
-                    Comment = "Image test",
-                    ImagePart = imageBytes
-                };
-
-                await db.InsertPartAsync(newPart);
-            }
-            else
-            {
-                // Mettre à jour la première ligne existante
-                var firstPart = parts.First();
-                firstPart.ImagePart = imageBytes;
-                await db.UpdatePartAsync(firstPart);
-            }
         }
 
 
@@ -292,7 +231,7 @@ namespace Toltech.App.ViewModels
             selectedPart.ImagePart = imageBytes;
 
             // Sauvegarde en base
-            await DatabaseService.ActiveInstance.UpdatePartAsync(selectedPart);
+            await _domainService.UpdatePartsAsync(new List<Part> { selectedPart });
 
             // Notifier l'UI si nécessaire
             OnPropertyChanged(nameof(SelectedParts));
