@@ -46,12 +46,10 @@ namespace Toltech.App.Services
         /// <summary>
         /// Ouvre une instance Sqlite
         /// </summary>
-        public async Task Open(string modelPath = "")
+        public async Task Open(string modelPath="")
         {
             if (string.IsNullOrEmpty(ModelManager.AppDataPath))
-            {
                 ModelManager.AppDataPath = ModelManager.AppDataPathDefault();
-            }
 
             Directory.CreateDirectory(ModelManager.AppDataPath);
 
@@ -63,6 +61,7 @@ namespace Toltech.App.Services
                 modelPath = System.IO.Path.Combine(tempPath, _modelPath);
             }
 
+
             // Même DB → rien à faire
             if (_asyncDb != null &&
                 string.Equals(_dbPath, modelPath, StringComparison.OrdinalIgnoreCase))
@@ -73,24 +72,58 @@ namespace Toltech.App.Services
 
             // Ferme ancienne connexion
             if (_asyncDb != null)
-            {
                 await CloseConnection();
-            }
 
-            Debug.WriteLine("DATABASESERVICE SWITCH CONNEXION");
+            Debug.WriteLine("DATABASESERVICE SWITCH CONNECTION");
 
-            // CHANGEMENT ICI : on NE recrée PAS l'objet
             _dbPath = modelPath;
+
+            // IMPORTANT : pas de création implicite ici
             _asyncDb = new SQLiteAsyncConnection(_dbPath);
 
-            // TODO important : maintenir compatibilité
             ActiveInstance = this;
 
             if (!isTempPath)
-                _logger.LogInfo($"Nouvelle connexion : {modelPath}", nameof(DatabaseService));
+                _logger.LogInfo($"Connection opened : {modelPath}", nameof(DatabaseService));
 
-            await InitAsync();
             NotifyModelOpen();
+        }
+        public async Task CreateDatabaseAsync(string modelPath)
+        {
+            if (File.Exists(modelPath))
+                throw new InvalidOperationException("Database already exists.");
+
+            Directory.CreateDirectory(Path.GetDirectoryName(modelPath)!);
+
+            // Création physique via ouverture temporaire
+            var db = new SQLiteAsyncConnection(modelPath);
+
+           await EnsureSchemaAsync(db);
+
+            await db.CloseAsync();
+        }
+
+        public async Task InitializeModelAsync(Guid modelId, string name, string path)
+        {
+            var meta = await _asyncDb.FindAsync<ModelDB>(1);
+
+            if (meta != null)
+            {
+                meta.IdModel = modelId;
+                meta.ModelName = name;
+                meta.FilePathModel = path;
+
+                await _asyncDb.UpdateAsync(meta);
+                return;
+            }
+
+            await _asyncDb.InsertAsync(new ModelDB
+            {
+                Id = 1,
+                IdModel = modelId,
+                ModelName = name,
+                FilePathModel = path
+            });
         }
 
         public SQLiteAsyncConnection GetConnection()
@@ -141,19 +174,18 @@ namespace Toltech.App.Services
         }
         #endregion
 
-        public async Task InitAsync()
+        public async Task EnsureSchemaAsync(SQLiteAsyncConnection db)
         {
-            await _asyncDb.ExecuteScalarAsync<int>("SELECT 1");
+            await db.ExecuteScalarAsync<int>("SELECT 1");
 
-            await _asyncDb.CreateTableAsync<Requirements>();
-            await _asyncDb.CreateTableAsync<ModelData>();
-            await _asyncDb.CreateTableAsync<DBTolerances>();
-            await _asyncDb.CreateTableAsync<NodesDefinition>();
-            await _asyncDb.CreateTableAsync<ModelDB>();
-            await _asyncDb.CreateTableAsync<Part>();
-
+            await db.CreateTableAsync<Requirements>();
+            await db.CreateTableAsync<ModelData>();
+            await db.CreateTableAsync<DBTolerances>();
+            await db.CreateTableAsync<NodesDefinition>();
+            await db.CreateTableAsync<ModelDB>();
+            await db.CreateTableAsync<Part>();
         }
-
+      
         public async Task CloseConnection()
         {
             if (_asyncDb != null)
@@ -169,7 +201,6 @@ namespace Toltech.App.Services
                 }
             }
         }
-
 
 
         #region CRUD Unitaires
@@ -193,7 +224,6 @@ namespace Toltech.App.Services
         #endregion
        
         #region CRUD Bulk
-
         public async Task InsertRangeAsync<T>(IEnumerable<T> entities)
         {
             ArgumentNullException.ThrowIfNull(entities);
@@ -917,7 +947,6 @@ namespace Toltech.App.Services
             }
         }
 
-
         /// <summary>
         /// Récupère tous les nœuds enfants d’un dossier donné via son ParentId.
         /// </summary>
@@ -962,7 +991,6 @@ namespace Toltech.App.Services
         /// <summary>
         /// 
         /// </summary>
-
         public async Task<IEnumerable<ModelData>> GetDatasSortedByNodeOrder(
                    IEnumerable<ModelData> allData, int? idData)
         {
@@ -1022,7 +1050,6 @@ namespace Toltech.App.Services
 
             return sortedData;
         }
-
 
 
         public async Task UpdateDisplayOrderForMoveAsync(
@@ -1086,59 +1113,17 @@ namespace Toltech.App.Services
         #region Lien MetaModel
         private SQLiteAsyncConnection _dbTemp;
 
-        /// <summary>
-        /// Met à jour l'identifiant du modèle actif.
-        /// Garantit qu'un seul enregistrement existe dans la table ModelDB.
-        /// </summary>
-        public async Task<bool> UpdateModelIdAsync(int modelId, string modelName, string pathModel)
-        {
-            try
-            {
-                _dbTemp = new SQLiteAsyncConnection(pathModel);
-
-
-                // 1. Récupération des enregistrements existants
-                var existingModels = await _dbTemp.Table<ModelDB>().ToListAsync();
-
-                await _dbTemp.DeleteAllAsync<ModelDB>();
-
-                // 3. Création du nouveau modèle
-                var newModel = new ModelDB
-                {
-                    IdModel = modelId,
-                    ModelName = modelName,
-                    FilePathModel = pathModel,
-                    CreatedAtmodel = DateTime.Now
-                };
-
-                // 4. Insertion via ORM
-                int rows = await _dbTemp.InsertAsync(newModel);
-
-                _dbTemp.CloseAsync();
-
-                _logger.LogDebug($"Enregistrement du modèle '{modelName}' - ID :{modelId}", nameof(DatabaseService));
-
-
-
-                return rows > 0;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
 
         /// <summary>
         /// Récupere l'Id du model en cours d'édition
         /// </summary>
-        public async Task<int> GetModelIdAsync()
+        public async Task<Guid> GetModelIdAsync()
         {
             if (_asyncDb == null)
-                return 0;
+                return Guid.Empty;
 
             var result = await _asyncDb.Table<ModelDB>().FirstOrDefaultAsync();
-            return result?.IdModel ?? 0;
+            return result?.IdModel ?? Guid.Empty;
         }
 
 
@@ -1148,8 +1133,8 @@ namespace Toltech.App.Services
             try
             {
                 // Récupération de l'ID du modèle
-                int? modelId = await GetModelIdAsync();
-                if (modelId == 0)
+                Guid? modelId = await GetModelIdAsync();
+                if (modelId == Guid.Empty)
                 {
                     return;
                 }
@@ -1180,27 +1165,6 @@ namespace Toltech.App.Services
                 MessageBox.Show($"Erreur lors de la mise à jour des compteurs : {ex.Message}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-        /// <summary>
-        /// Mise à jour du FILEPATH  
-        /// </summary>
-        public async Task UpdateModelFilePathAsync(string newFilePath)
-        {
-            int idModel = await GetModelIdAsync();
-
-            // Récupère le modèle existant par son Id
-            var existingModel = await DbModelService.ActiveInstance.GetModelMetaByIdAsync(idModel);
-            if (existingModel == null)
-                throw new InvalidOperationException($"Le modèle avec Id {idModel} n'existe pas.");
-
-            // Met à jour uniquement le chemin du fichier
-            existingModel.FilePathModel = newFilePath;
-
-            // Sauvegarde la modification dans la base
-            await DbModelService.ActiveInstance.UpdateModelMetaAsync(existingModel);
-        }
-
-
 
         #endregion
 
@@ -1263,12 +1227,6 @@ namespace Toltech.App.Services
             await SyncNodesTableAsync();
             await NotifyNodeUpdated();
         }
-        public async Task PublicSyncTablesAsync()
-        {
-            Debug.WriteLine("[DataBaseService] - PublicSyncTablesAsync()");
-            await SyncNodesTableAsync();
-        }
-
 
         #endregion
     }

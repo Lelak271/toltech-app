@@ -70,14 +70,15 @@ namespace Toltech.App.Services
 
         // Fonction création des lignes de MetaDonnées
         // Appeler à la création d'un modèle
-        public async Task<int> RegisterModelInMetaDb(string modelName, string filePath, string description = "")
+        public async Task<Guid> RegisterModelAsync(Guid modelId, string filePath, string description = "")
         {
             await InitAsync();
 
             var modelMeta = new ModelMeta
             {
                 //
-                NameData = modelName,
+                IdModel = modelId,
+                NameData=Path.GetFileNameWithoutExtension(filePath),
                 DescriptionModel = description,
                 FilePathModel = filePath,
                 CreatedAtmodel = DateTime.Now
@@ -136,7 +137,7 @@ namespace Toltech.App.Services
             return await _db.Table<ModelMeta>().ToListAsync();
         }
 
-        public async Task<ModelMeta> GetModelMetaByIdAsync(int idModel)
+        public async Task<ModelMeta> GetModelMetaByIdAsync(Guid idModel)
         {
             return await _db.FindAsync<ModelMeta>(idModel);
         }

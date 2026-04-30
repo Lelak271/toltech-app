@@ -87,10 +87,10 @@ namespace Toltech.App.ViewModels
 
             Parts.Clear();
 
-            var parts = await DatabaseService.ActiveInstance.GetAllPartsAsync();
-            if (parts == null) return;
+            var partsResult = await _domainService.GetAllPartsAsync();
+            if (partsResult.IsFailure) return;
 
-            foreach (var part in parts.OrderBy(p => p.NamePart))
+            foreach (var part in partsResult.Value.OrderBy(p => p.NamePart))
             {
                 Parts.Add(part);
                 //System.Diagnostics.Debug.WriteLine( $"[PartVM] Ajout - Id={part.Id}, Nom='{part.NamePart}'");
@@ -148,7 +148,12 @@ namespace Toltech.App.ViewModels
 
         public async Task DeleteByIdAsync(int idPart)
         {
-            string namePart = await DatabaseService.ActiveInstance.GetPartNameByID(idPart);
+            var namePartResult = await _domainService.GetPartNameByIdAsync(idPart);
+
+            if (!namePartResult.IsSuccess)
+                return;
+
+            var namePart = namePartResult.Value;
 
             if (!_dialog.Confirm($"Voulez-vous supprimer la pièce {namePart}"))
                 return;
@@ -191,12 +196,12 @@ namespace Toltech.App.ViewModels
         }
         private async Task ReverseActivePartByIdAsync(Part part)
         {
-            await DatabaseService.ActiveInstance.SetActivePart_PartAsync(part);
+            await _domainService.SetActivePart_PartAsync(part);
         }
         public async Task ReverseActivePartByIdAsync(int idPart)
         {
-            var part = await DatabaseService.ActiveInstance.GetPartByIdAsync(idPart);
-            await DatabaseService.ActiveInstance.SetActivePart_PartAsync(part);
+            var part = await _domainService.GetPartByIdAsync(idPart);
+            await _domainService.SetActivePart_PartAsync(part.Value);
         }
 
 
@@ -210,9 +215,9 @@ namespace Toltech.App.ViewModels
             // Ouvrir un dialog pour choisir l'image
             var openFileDialog = new Microsoft.Win32.OpenFileDialog
             {
-                Title = "Choisir une image",
-                Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp",
-                Multiselect = false
+                Title = Loc("Choose_an_image"),
+                Filter = $"{Loc("Picture")}|*.png;*.jpg;*.jpeg;*.bmp",
+                Multiselect = false, 
             };
 
             bool? result = openFileDialog.ShowDialog();
@@ -231,7 +236,7 @@ namespace Toltech.App.ViewModels
             selectedPart.ImagePart = imageBytes;
 
             // Sauvegarde en base
-            await _domainService.UpdatePartsAsync(new List<Part> { selectedPart });
+            await _domainService.UpdatePartsAsync(selectedPart);
 
             // Notifier l'UI si nécessaire
             OnPropertyChanged(nameof(SelectedParts));

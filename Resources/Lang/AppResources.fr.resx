@@ -672,4 +672,7 @@
   <data name="Error_NoActiveModel" xml:space="preserve">
     <value>Pas de modèle actif.</value>
   </data>
+  <data name="Choose_an_image" xml:space="preserve">
+    <value>Choisir une image</value>
+  </data>
 </root>

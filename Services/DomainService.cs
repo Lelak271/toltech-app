@@ -343,10 +343,11 @@ namespace Toltech.App.Services
         private static List<ModelData> CreateDefaultModelDatas(int partId, int count)
         {
             var result = new List<ModelData>(count);
-            string randomName = $"PO_{Guid.NewGuid().ToString("N")[..6]}";
 
             for (int i = 0; i < count; i++)
             {
+                string randomName = $"PO_{Guid.NewGuid().ToString("N")[..6]}";
+
                 result.Add(new ModelData
                 {
                     CoordX = 0,
@@ -501,6 +502,7 @@ namespace Toltech.App.Services
         {
             return DeleteRequirementAsync(new[] { req });
         }
+       
         public async Task<Result> DeleteRequirementAsync(IEnumerable<Requirements> reqs)
         {
             try
@@ -616,17 +618,14 @@ namespace Toltech.App.Services
                 // 3. Définir modèle actif
                 ModelManager.ModelActif = modelPath;
 
-                // 4. Enregistrement meta DB
-                int newModelId = await DbModelService.ActiveInstance.RegisterModelInMetaDb(modelName, modelPath, modelName);
+                // 1. création physique
+                await _databaseService.CreateDatabaseAsync(modelPath);
 
-                // 5. Ouverture / création DB modèle
+                // 2. ouverture
                 await _databaseService.Open(modelPath);
 
-                // 6. Initialisation DB modèle
-                await _databaseService.UpdateModelIdAsync(
-                    newModelId,
-                    modelName,
-                    modelPath);
+                // 4. enregistrement global
+                await RegisterModelAsync(modelName, modelPath);
 
                 // 7. Notification
                 _ = _notificationService.ShowNotifAsync(
@@ -762,7 +761,7 @@ namespace Toltech.App.Services
                 ModelManager.ModelActif = newFilePath;
 
                 // 3. enregistrement meta
-                await RegisterModelAsync();
+                await RegisterModelAsync(fileName, newFilePath);
 
                 // 4. ouverture DB modèle
                 await _databaseService.Open(newFilePath);
@@ -778,56 +777,6 @@ namespace Toltech.App.Services
             {
                 _logger.LogError("DuplicateModel failed", "", ex);
                 return Result.Failure("Une erreur est survenue lors de la duplication du modèle.", ErrorCode.Unknown);
-            }
-        }
-
-        public async Task RenameModelFileIfNeededAsync(ModelMeta dbModel, ModelMeta currentModel)
-        {
-            try
-            {
-                if (dbModel == null || currentModel == null)
-                    return;
-
-                if (string.Equals(
-                        dbModel.NameData,
-                        currentModel.NameData,
-                        StringComparison.OrdinalIgnoreCase))
-                    return;
-
-                string oldFilePath = dbModel.FilePathModel;
-
-                if (string.IsNullOrWhiteSpace(oldFilePath) ||
-                    !File.Exists(oldFilePath))
-                    return;
-
-                string directory = Path.GetDirectoryName(oldFilePath)!;
-                string extension = Path.GetExtension(oldFilePath);
-
-                string newFilePath =
-                    Path.Combine(directory, currentModel.NameData + extension);
-
-                // 1. opération filesystem
-                await Task.Run(() =>
-                {
-                    File.Move(oldFilePath, newFilePath);
-                });
-
-                // 2. update modèle mémoire
-                currentModel.FilePathModel = newFilePath;
-
-                // 3. update DB
-                await _databaseService.UpdateModelIdAsync(
-                    currentModel.IdModel,
-                    currentModel.NameData,
-                    newFilePath);
-            }
-            catch (IOException ioEx)
-            {
-                _logger.LogError("RenameModelFile failed", "", ioEx);
-
-                throw new InvalidOperationException(
-                    $"Impossible de renommer le fichier du modèle '{currentModel.NameData}'.",
-                    ioEx);
             }
         }
 
@@ -847,10 +796,19 @@ namespace Toltech.App.Services
             }
         }
 
-        public async Task<Result> RegisterModelAsync(string modelPath = null)
+        /// <summary>
+        /// Crée un ID unique pour le model et le lié a la DB global
+        /// </summary>
+        /// <param name="modelId"></param>
+        /// <param name="nameModel"></param>
+        /// <param name="modelPath"></param>
+        /// <returns></returns>
+        public async Task<Result> RegisterModelAsync(string nameModel, string modelPath)
         {
             try
             {
+                var modelId = Guid.NewGuid();
+
                 if (modelPath == null)
                     modelPath = ModelManager.ModelActif;
 
@@ -861,10 +819,8 @@ namespace Toltech.App.Services
 
                 if ((await IsExistModelRegisterAsync(modelPath)).IsSuccess)
                     return Result.Success();
-                // Extraire le nom du modèle depuis le chemin
-                string modelName = Path.GetFileNameWithoutExtension(modelPath);
 
-                if (NameValidationHelper.NamingValidation(modelName).IsFailure)
+                if (NameValidationHelper.NamingValidation(nameModel).IsFailure)
                 {
                     return Result.Failure("Invalid model name.", ErrorCode.Unknown);
                 }
@@ -872,10 +828,10 @@ namespace Toltech.App.Services
                 // Fermer la connexion base de données si ouverte (en tâche de fond)
                 await Task.Run(() => _databaseService.CloseConnection());
 
-                int modelId = await DbModelService.ActiveInstance.RegisterModelInMetaDb(modelName, modelPath, "");
+                // 4. enregistrement global
+                await _databaseService.InitializeModelAsync(modelId, nameModel, modelPath); 
+                await DbModelService.ActiveInstance.RegisterModelAsync(modelId, modelPath, "");
 
-                // Ecraser l'entrée correspondante dans la base de données du modèle
-                await _databaseService.UpdateModelIdAsync(modelId, modelName, modelPath);
                 return Result.Success();
 
             }
@@ -905,18 +861,6 @@ namespace Toltech.App.Services
                     return Result.Success();
 
                 meta.MarkSaving();
-
-                // 1. récupération état DB existant
-                var dbModel = await _dbModelService.GetModelMetaByIdAsync(meta.IdModel);
-
-                if (dbModel == null)
-                {
-                    meta.ClearSaving();
-                    return Result.Failure("Model not found.", ErrorCode.Unknown);
-                }
-
-                // 2. cohérence fichier si rename
-                await RenameModelFileIfNeededAsync(dbModel, meta);
 
                 // 3. règle métier
                 meta.LastModified = DateTime.Now;
@@ -970,6 +914,13 @@ namespace Toltech.App.Services
         #endregion
 
         #region Service Part
+
+        /// <summary>
+        /// Create new Part
+        /// TO DO : Create Batch function for multiple add part
+        /// </summary>
+        /// <param name="newPart"></param>
+        /// <returns></returns>
         public async Task<int> InsertPartAsync(Part newPart)
         {
             if (newPart == null) newPart = CreateDefaultPart("");
@@ -980,6 +931,14 @@ namespace Toltech.App.Services
 
             return newPart.Id;
         }
+
+        /// <summary>
+        /// Delete multiple Parts and their associated data
+        /// </summary>
+        /// <param name="parts"></param>
+        /// <returns>
+        /// A <see cref="Result"/> indicating whether the operation succeeded or failed.
+        /// </returns>
         public async Task<Result> DeletePartsAsync(IEnumerable<Part> parts)
         {
             try
@@ -1018,6 +977,21 @@ namespace Toltech.App.Services
             }
         }
 
+        /// <summary>
+        /// Update one Part
+        /// </summary>
+        public async Task<Result> UpdatePartsAsync(Part part)
+        {
+            return await UpdatePartsAsync(new[] { part });
+        }
+
+        /// <summary>
+        /// Update multiple Parts
+        /// </summary>
+        /// <param name="parts"></param>
+        /// <returns>
+        /// A <see cref="Result"/> indicating whether the operation succeeded or failed.
+        /// </returns>
         public async Task<Result> UpdatePartsAsync(IEnumerable<Part> parts)
         {
             var list = parts?.Where(p => p != null).ToList() ?? new List<Part>();
@@ -1063,41 +1037,47 @@ namespace Toltech.App.Services
             }
         }
 
-        public async Task<Result<int>> UpdatePartAsync(Part part)
+        #region Wrapper DB
+        public async Task<Result<List<Part>>> GetAllPartsAsync()
         {
-            if (part == null)
-                return Result<int>.Failure("Part null.", ErrorCode.InvalidInput);
-
             try
             {
-                part.MarkSaving();
-
-                bool exists = await _databaseService.IsNamePartExisteAsync(part.NamePart, part.Id);
-                if (exists)
-                {
-                    part.ClearSaving();
-                    return Result<int>.Failure($"Le nom '{part.NamePart}' existe déjà.", ErrorCode.DuplicateEntry);
-                }
-
-                await _databaseService.UpdateAsync(part);
-
-                part.ClearDirty();
-                part.ClearSaving();
-
-                await EventsManager.RaisePartAddOrDeletedAsync();
-                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
-
-                return Result<int>.Success(part.Id);
+                var parts = await _databaseService.GetAllPartsAsync();
+                return parts == null ? Result<List<Part>>.Failure("Erreur lors du chargement des pièces.", ErrorCode.NotFound) : Result<List<Part>>.Success(parts);
             }
             catch (Exception ex)
             {
-                part.ClearSaving(); // très important
-
-                _logger.LogError("UpdatePartAsync failed", "", ex);
-
-                return Result<int>.Failure("Erreur lors de la mise à jour.", ErrorCode.Unknown);
+                _logger.LogError("GetAllPartsAsync failed", "", ex);
+                return Result<List<Part>>.Failure("Erreur lors du chargement des pièces.", ErrorCode.Unknown);
             }
         }
+        public async Task<Result> SetActivePart_PartAsync(Part part)
+        {
+            try
+            {
+                await _databaseService.SetActivePart_PartAsync(part);
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("SetActivePart_PartAsync failed", "", ex);
+                return Result.Failure("Erreur lors de la mise à jour de la pièce active.", ErrorCode.Unknown);
+            }
+        }
+        public async Task<Result<Part>> GetPartByIdAsync(int idPart)
+        {
+            try
+            {
+                var part = await _databaseService.GetPartByIdAsync(idPart);
+                return Result<Part>.Success(part);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("SetActivePart_GetPartByIdAsyncPartAsync failed", "", ex);
+                return Result<Part>.Failure("Erreur lors de la récupération de la pièce.", ErrorCode.Unknown);
+            }
+        }
+        #endregion
 
         #region Helper Methods
 

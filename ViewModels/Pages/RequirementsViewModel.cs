@@ -183,6 +183,7 @@ namespace Toltech.App.ViewModels
 
             TreeVM = treeVM;
             AttachTreeVM();
+            EventsManager.ModelOpen += OnModelOpenWrapper;
 
         }
         #endregion
@@ -196,6 +197,12 @@ namespace Toltech.App.ViewModels
         {
             // Event pour le changement  de Folder et Drag & Drop
             EventsManager.RequirementSelectChanged += OnRequirementSelectChangedAsync;
+        }
+
+        private async Task OnModelOpenWrapper()
+        {
+            RestoreCache();
+            await ReloadSafe();
         }
         #endregion
 
@@ -380,6 +387,10 @@ namespace Toltech.App.ViewModels
             });
         }
 
+        public void RestoreCache()
+        {
+            _cache.Clear();
+        }
         public bool HasUnsavedChanges()
             => _cache.Any(r => r.IsDirty);
 

@@ -10,7 +10,7 @@ namespace Toltech.App.Models
         #region Champs DB (non dirty)
 
         [PrimaryKey, AutoIncrement]
-        public int IdModel { get; set; }
+        public Guid IdModel { get; set; }
 
         public DateTime CreatedAtmodel { get; set; }
 

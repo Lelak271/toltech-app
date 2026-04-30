@@ -324,7 +324,7 @@ namespace Toltech.App.ViewModels
 
             if (confirmRegister)
             {
-                var registerResult = await _domainService.RegisterModelAsync(selectedFile);
+                var registerResult = await _domainService.RegisterModelAsync(model.NameData, selectedFile);
                 if (registerResult.IsFailure)
                 {
                     HandleError(registerResult);
@@ -458,12 +458,7 @@ namespace Toltech.App.ViewModels
 
         #region Private helpers
 
-        private async Task RenameModelFileIfNeededAsync(
-            ModelMeta dbModel,
-            ModelMeta currentModel)
-        {
-            await _domainService.RenameModelFileIfNeededAsync(dbModel, currentModel);
-        }
+
 
         #endregion
 

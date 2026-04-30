@@ -232,6 +232,15 @@ namespace Toltech.App.Resources.Lang {
         }
         
         /// <summary>
+        ///   Recherche une chaîne localisée semblable à Choose an image.
+        /// </summary>
+        public static string Choose_an_image {
+            get {
+                return ResourceManager.GetString("Choose_an_image", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Recherche une chaîne localisée semblable à Clear.
         /// </summary>
         public static string Clear {

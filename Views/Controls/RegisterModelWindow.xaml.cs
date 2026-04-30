@@ -44,8 +44,9 @@ namespace Toltech.App.FrontEnd.Controls
         {
             try
             {
+                var nameModel = Path.GetFileNameWithoutExtension(ModelManager.ModelActif);
                 // Enregistre le modèle actif via la VM
-                var result = await _domainService.RegisterModelAsync();
+                var result = await _domainService.RegisterModelAsync(nameModel, ModelManager.ModelActif);
 
                 if (result.IsFailure)
                 {
@@ -77,7 +78,8 @@ namespace Toltech.App.FrontEnd.Controls
                 _dialog.Info($"Fichier sélectionné : {selectedFile}", "Info");
 
                 // Enregistre le modèle sélectionné via la VM
-                await _domainService.RegisterModelAsync(selectedFile);
+                var nameModel = Path.GetFileNameWithoutExtension(selectedFile);
+                var result = await _domainService.RegisterModelAsync(nameModel, selectedFile);
             }
             catch (Exception ex)
             {
@@ -179,7 +181,8 @@ namespace Toltech.App.FrontEnd.Controls
             if (string.IsNullOrWhiteSpace(selectedFile)) return;
 
             _dialog.Info($"Fichier sélectionné : {selectedFile}", "Info");
-            _domainService.RegisterModelAsync(selectedFile);
+            var nameModel = Path.GetFileNameWithoutExtension(selectedFile);
+             _domainService.RegisterModelAsync( nameModel, selectedFile);
         }
         #endregion
     }

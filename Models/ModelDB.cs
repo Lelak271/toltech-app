@@ -10,7 +10,9 @@ namespace Toltech.App.Models
     public class ModelDB
     {
         [PrimaryKey]
-        public int IdModel { get; set; }
+        public int Id { get; set; } = 1; // toujours 1 ligne
+
+        public Guid IdModel { get; set; }
         [Unique]
         public string ModelName { get; set; }
         public string DescriptionModel { get; set; } // Description du modèle
