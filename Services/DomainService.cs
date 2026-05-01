@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using DocumentFormat.OpenXml.Office2010.Excel;
 using Toltech.App.Models;
 using Toltech.App.Services.Logging;
 using Toltech.App.Services.Notification;
@@ -144,7 +143,46 @@ namespace Toltech.App.Services
                     ErrorCode.Unknown);
             }
         }
+        public async Task<Result> DeleteDatasByIdsAsync(int dataId)
+        { 
+             return await DeleteDatasByIdsAsync(new[] { dataId });   
+        } 
+        public async Task<Result> DeleteDatasByIdsAsync(IEnumerable<int> dataIds)
+        {
+            try
+            {
+                // 1. Validation
+                var ids = dataIds?
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
 
+                if (ids == null || ids.Count == 0)
+                    return Result.Failure("Aucune donnée valide à supprimer.", ErrorCode.Unknown);
+
+                // 2. Vérifier existence
+                var existingDatas = await _databaseService.GetModelDataByIdsAsync(ids);
+
+                if (existingDatas == null || existingDatas.Count == 0)
+                    return Result.Failure("Aucune correspondance trouvée en base de données.", ErrorCode.NotFound);
+
+                // Option : ne garder que ceux réellement présents
+                var existingIds = existingDatas.Select(d => d.Id).ToList();
+
+                // 3. Suppression (idéalement transactionnelle)
+                await _databaseService.DeleteRangeAsync(existingIds);
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("DeleteDatasByIdsAsync failed", "", ex);
+
+                return Result.Failure(
+                    "Une erreur est survenue lors de la suppression des données.",
+                    ErrorCode.Unknown);
+            }
+        }
         public async Task<Result> DeletePartWithDatasByIdAsync(int idPart)
         {
             try
@@ -221,6 +259,41 @@ namespace Toltech.App.Services
 
                 _logger.LogError("SaveModelData failed", "", ex);
                 return Result.Failure("Une erreur est survenue lors de la sauvegarde des données.", ErrorCode.Unknown);
+            }
+        }
+
+        public async Task<Result> UpdateModelDataNameAsync(int dataId, string newName)
+        {
+            try
+            {
+                // Validation ID
+                if (dataId <= 0)
+                    return Result.Failure("ID invalide.", ErrorCode.Unknown);
+
+                // Validation nom
+                if (string.IsNullOrWhiteSpace(newName))
+                    return Result.Failure("Nom invalide.", ErrorCode.Unknown);
+
+                // Récupération entité
+                var data = await _databaseService.GetModelDataByIdAsync(dataId);
+
+                if (data == null)
+                    return Result.Failure("Donnée introuvable.", ErrorCode.NotFound);
+
+                // Mise à jour
+                data.Model = newName.Trim();
+
+                await _databaseService.UpdateAsync(data);
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("UpdateModelDataNameAsync failed", "", ex);
+
+                return Result.Failure(
+                    "Erreur lors de la mise à jour de la donnée.",
+                    ErrorCode.Unknown);
             }
         }
 
@@ -321,6 +394,29 @@ namespace Toltech.App.Services
             {
                 _logger.LogError("GetFixedPart failed", "", ex);
                 return Result<Part?>.Failure("Une erreur est survenue lors de la récupération du Part fixé.", ErrorCode.Unknown);
+            }
+        }
+
+        public async Task ToggleActiveModelDataByIdAsync(int modelDataId)
+        {
+            try
+            {
+                if (modelDataId <= 0)
+                    return;
+
+                var data = await _databaseService.GetModelDataByIdAsync(modelDataId);
+
+                if (data == null)
+                    return;
+
+                data.Active = !data.Active;
+
+                await _databaseService.UpdateAsync(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("ToggleActiveModelDataByIdAsync failed", "", ex);
+                throw;
             }
         }
 
@@ -497,12 +593,42 @@ namespace Toltech.App.Services
             }
         }
 
+        public async Task<Result> UpdateRequirementNameAsync(int? requirementId, string newName)
+        {
+            try
+            {
+                if (!requirementId.HasValue || requirementId.Value <= 0)
+                    return Result.Failure("ID de requirement invalide.", ErrorCode.Unknown);
 
-        public Task<Result> RemoveRequirementAsync(Requirements req)
+                if (string.IsNullOrWhiteSpace(newName))
+                    return Result.Failure("Nom invalide.", ErrorCode.Unknown);
+
+                var requirement = await _databaseService.GetReqsByIdAsync(requirementId.Value);
+
+                if (requirement == null)
+                    return Result.Failure("Requirement introuvable.", ErrorCode.NotFound);
+
+                requirement.NameReq = newName.Trim();
+
+                await _databaseService.UpdateAsync(requirement);
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("UpdateRequirementNameAsync failed", "", ex);
+
+                return Result.Failure(
+                    "Erreur lors de la mise à jour du requirement.",
+                    ErrorCode.Unknown);
+            }
+        }
+
+        public Task<Result> DeleteRequirementAsync(Requirements req)
         {
             return DeleteRequirementAsync(new[] { req });
         }
-       
+
         public async Task<Result> DeleteRequirementAsync(IEnumerable<Requirements> reqs)
         {
             try
@@ -532,33 +658,33 @@ namespace Toltech.App.Services
             }
         }
 
-        public async Task<Result> ReverseActiveReqByIdAsync(int? idReq)
+        public async Task<Result> ToggleActiveRequirementByIdAsync(int? idReq)
         {
             try
             {
-                if (!idReq.HasValue)
+                if (!idReq.HasValue || idReq.Value <= 0)
                     return Result.Failure("ID de l'exigence invalide.", ErrorCode.InvalidInput);
 
                 // 1. récupération métier
-                var req = await _databaseService.GetReqsByIdAsync(idReq);
+                var req = await _databaseService.GetReqsByIdAsync(idReq.Value);
 
                 if (req == null)
                     return Result.Failure("Exigence introuvable.", ErrorCode.NotFound);
 
-                // 2. application règle métier
+                // 2. règle métier
                 req.IsActive = !req.IsActive;
 
                 await _databaseService.UpdateAsync(req);
-
-                await EventsManager.RaiseRequirementAddOrDeletedAsync();
-                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
 
                 return Result.Success();
             }
             catch (Exception ex)
             {
-                _logger.LogError("ReverseActiveReqById failed", "", ex);
-                return Result.Failure("Une erreur est survenue lors de la modification de l'exigence.", ErrorCode.Unknown);
+                _logger.LogError("ToggleActiveRequirementByIdAsync failed", "", ex);
+
+                return Result.Failure(
+                    "Une erreur est survenue lors de la modification de l'exigence.",
+                    ErrorCode.Unknown);
             }
         }
 
@@ -829,7 +955,7 @@ namespace Toltech.App.Services
                 await Task.Run(() => _databaseService.CloseConnection());
 
                 // 4. enregistrement global
-                await _databaseService.InitializeModelAsync(modelId, nameModel, modelPath); 
+                await _databaseService.InitializeModelAsync(modelId, nameModel, modelPath);
                 await DbModelService.ActiveInstance.RegisterModelAsync(modelId, modelPath, "");
 
                 return Result.Success();
@@ -891,14 +1017,13 @@ namespace Toltech.App.Services
                 var modelsFromDb = await _dbModelService.GetAllModelsAsync();
 
                 var models = modelsFromDb
-                    .OrderByDescending(m => m.IdModel)
-                    .Select(dbModel =>
-                    {
-                        var uiModel = new ModelMeta();
-                        uiModel.LoadFromDb(dbModel);
-                        return uiModel;
-                    })
-                    .ToList();
+                             .Select(dbModel =>
+                             {
+                                 var uiModel = new ModelMeta();
+                                 uiModel.LoadFromDb(dbModel);
+                                 return uiModel;
+                             })
+                             .ToList();
 
                 return Result<List<ModelMeta>>.Success(models);
             }
@@ -1012,7 +1137,7 @@ namespace Toltech.App.Services
                 // 2) conflits avec la base (en excluant les Id existants)
                 foreach (var p in list)
                 {
-                    bool exists = await _databaseService.IsNamePartExisteAsync(p.NamePart,p.Id);
+                    bool exists = await _databaseService.IsNamePartExisteAsync(p.NamePart, p.Id);
                     if (exists)
                         return Result.Failure($"Le nom '{p.NamePart}' existe déjà.", ErrorCode.DuplicateEntry);
                 }
@@ -1022,7 +1147,7 @@ namespace Toltech.App.Services
                 var toUpdate = list.Where(p => p.Id != 0).ToList();
 
                 // --- Transaction unique ---
-                await _databaseService.SavePartsRangeAsync(toUpdate,toInsert);
+                await _databaseService.SavePartsRangeAsync(toUpdate, toInsert);
 
                 // Reset uniquement après succès global
                 foreach (var part in parts)
@@ -1034,6 +1159,63 @@ namespace Toltech.App.Services
             {
                 _logger.LogError("SavePartsAsync failed", "", ex);
                 return Result.Failure("Erreur lors de la sauvegarde.", ErrorCode.Unknown);
+            }
+        }
+
+        public async Task<Result> UpdatePartNameAsync(int partId, string newName)
+        {
+            try
+            {
+                if (partId <= 0)
+                    return Result.Failure("ID de pièce invalide.", ErrorCode.Unknown);
+
+                if (string.IsNullOrWhiteSpace(newName))
+                    return Result.Failure("Nom invalide.", ErrorCode.Unknown);
+
+                var part = await _databaseService.GetPartByIdAsync(partId);
+
+                if (part == null)
+                    return Result.Failure("Pièce introuvable.", ErrorCode.NotFound);
+
+                part.NamePart = newName.Trim();
+
+                await _databaseService.UpdateAsync(part);
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("UpdatePartNameAsync failed", "", ex);
+
+                return Result.Failure(
+                    "Erreur lors de la mise à jour de la pièce.",
+                    ErrorCode.Unknown);
+            }
+        }
+
+        public async Task<Result> ToggleActivePartByIdAsync(int idPart)
+        {
+            try
+            {
+                if (idPart <= 0)
+                    return Result.Failure("ID de pièce invalide.", ErrorCode.Unknown);
+
+                var partResult = await GetPartByIdAsync(idPart);
+
+                if (!partResult.IsSuccess || partResult.Value == null)
+                    return Result.Failure("Pièce introuvable.", ErrorCode.NotFound);
+
+                await SetActivePart_PartAsync(partResult.Value);
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("ReverseActivePartByIdAsync failed", "", ex);
+
+                return Result.Failure(
+                    "Erreur lors de la modification de l'état actif.",
+                    ErrorCode.Unknown);
             }
         }
 

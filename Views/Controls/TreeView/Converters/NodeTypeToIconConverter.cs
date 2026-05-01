@@ -25,7 +25,7 @@ namespace Toltech.App.Views.Controls.TreeView.Converters
                 NodeType.PartNode => "pack://application:,,,/Asset/Engrenage.png",
                 NodeType.RequirementNode => "pack://application:,,,/Asset/Exigence.png",
                 NodeType.DataNode => "pack://application:,,,/Asset/Contact.png",
-                NodeType.Normal => "pack://application:,,,/Asset/SimpleFolder.png",
+                NodeType.Folder => "pack://application:,,,/Asset/SimpleFolder.png",
                 _ => "pack://application:,,,/Asset/TestGrapheButton.png"
             };
 

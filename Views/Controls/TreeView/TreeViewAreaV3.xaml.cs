@@ -121,13 +121,14 @@ namespace Toltech.App.FrontEnd.Controls
 
             if (node.Type == NodeType.RequirementNode)
             {
-                var visibleRequirementIds = await ViewModel.ListIDReqOfSelectFolderAsync();
-                var nameParentFolder = await ViewModel.NameParentFolderAsync();
+                // TODO
+                //var visibleRequirementIds = await ViewModel.ListIDReqOfSelectFolderAsync();
+                //var nameParentFolder = await ViewModel.NameParentFolderAsync();
 
-                await EventsManager.RaiseNodReqSelectChangedAsync(
-                    visibleRequirementIds,
-                    nameParentFolder
-                );
+                //await EventsManager.RaiseNodReqSelectChangedAsync(
+                //    visibleRequirementIds,
+                //    nameParentFolder
+                //);
             }
         }
 
@@ -176,24 +177,7 @@ namespace Toltech.App.FrontEnd.Controls
 
             _renameCommitted = true;
 
-            switch (node.Type)
-            {
-                case NodeType.ExigencesFolder:
-                case NodeType.PositionnementFolder:
-                case NodeType.ModelFolder:
-                    EndRenameFolder(node);
-                    break;
-
-                case NodeType.PartNode:
-                    EndRenamePart(node);
-                    break;
-
-                case NodeType.RequirementNode:
-                    EndRenameReq(node);
-                    break;
-                case NodeType.Normal:
-                    break;
-            }
+            EndRenameFolder(node);
 
             // Sortie contrôlée du mode édition
             tb.IsReadOnly = true;
@@ -202,32 +186,14 @@ namespace Toltech.App.FrontEnd.Controls
             _renameCommitted = false;
         }
 
-        private void EndRenameFolder(NodesDefinition folder)
+        private void EndRenameFolder(NodesDefinition node)
         {
-            folder.IsEditing = false;
-            string newname = folder.NodeName;
-            if (!NameValidationHelper.TryValidateName(folder.NodeName, out string errorMessage)) return;
+            node.IsEditing = false;
+            string newname = node.NodeName;
+            if (!NameValidationHelper.TryValidateName(node.NodeName, out string errorMessage)) return;
 
             if (DataContext is TreeViewAreaV3ViewModel vm)
-                vm.RenameFolderAsync(folder, folder.NodeName);
-        }
-        private void EndRenamePart(NodesDefinition part)
-        {
-            part.IsEditing = false;
-
-            if (!NameValidationHelper.TryValidateName(part.NodeName, out string errorMessage)) return;
-
-            if (DataContext is TreeViewAreaV3ViewModel vm)
-                vm.RenamePartAsync(part); // New name déjà présent, on utilise l'ID pour tout renommer
-        }
-        private void EndRenameReq(NodesDefinition req)
-        {
-            req.IsEditing = false;
-
-            if (!NameValidationHelper.TryValidateName(req.NodeName, out string errorMessage)) return;
-
-            if (DataContext is TreeViewAreaV3ViewModel vm)
-                vm.RenameReqAsync(req, req.NodeName);
+                vm.RenameNodeAsync(node, node.NodeName);
         }
 
         #region Focus on TextBox For Renaming
@@ -379,7 +345,7 @@ namespace Toltech.App.FrontEnd.Controls
          
             menu.Items.Add(addItem);
 
-            if (folder.Type == NodeType.Normal)
+            if (folder.Type == NodeType.Folder)
                 menu.Items.Add(deleteItem);
             menu.Items.Add(renameItem);
 
@@ -623,7 +589,12 @@ namespace Toltech.App.FrontEnd.Controls
             ClearInsertionLine();
         }
 
-        // Méthode utilitaire pour remonter l'arborescence
+        /// <summary>
+        /// Méthode utilitaire pour remonter l'arborescence
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source"></param>
+        /// <returns></returns>
         private static T? VisualUpwardSearch<T>(DependencyObject source) where T : DependencyObject
         {
             while (source != null && !(source is T))
@@ -845,7 +816,11 @@ namespace Toltech.App.FrontEnd.Controls
                 .ToList();
         }
 
-        // Sélectionne tous les TreeViewItem entre start et end
+        /// <summary>
+        /// Sélectionne tous les TreeViewItem entre start et end
+        /// </summary>
+        /// <param name="start">Le TreeViewItem de début de la sélection</param>
+        /// <param name="end">Le TreeViewItem de fin de la sélection</param>
         private void SelectRange(TreeViewItem start, TreeViewItem end)
         {
             var allItems = GetAllTreeViewItems(); // méthode à implémenter pour récupérer tous les items visibles

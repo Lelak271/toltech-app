@@ -26,7 +26,7 @@ namespace Toltech.App.Models
             set => SetField(ref _isFixed, value);
         }
 
-        private NodeType _type = NodeType.Normal;
+        private NodeType _type = NodeType.Folder;
         public NodeType Type
         {
             get => _type;
@@ -123,7 +123,7 @@ namespace Toltech.App.Models
 
         public enum NodeType
         {
-            Normal = 0,
+            Folder = 0,
             ModelFolder = 1,
             PositionnementFolder = 2,
             ExigencesFolder = 3,

@@ -18,7 +18,7 @@ namespace Toltech.App.Services
     /// Centralise les opérations d’accès aux données et isole la logique de stockage
     /// du reste de l’application (Domain / UI).
     /// </summary>
-    public class DatabaseService
+    public class DatabaseService 
     {
         // Instance globale unique
         private static string _modelPath = "template_db.tolx";
@@ -251,6 +251,18 @@ namespace Toltech.App.Services
             await _asyncDb.UpdateAllAsync(entities);
         }
 
+        public async Task RunInTransactionAsync(Func<Task> action)
+        {
+            if (_asyncDb == null)
+                throw new InvalidOperationException("Connexion DB non initialisée.");
+
+            await _asyncDb.RunInTransactionAsync(conn =>
+            {
+                // On bloque ici le thread SQLite, donc pas de await direct
+                action().GetAwaiter().GetResult();
+            });
+        }
+
         #endregion
 
         #region Fonctions Tolerances
@@ -362,28 +374,7 @@ namespace Toltech.App.Services
 
 
         // Rename part 
-        public async Task UpdatePartNameAsync(int partId, string newName)
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(newName);
-            if (partId <= 0)
-                throw new ArgumentException("Identifiant de part invalide.", nameof(partId));
-
-            // Récupération de la part
-            var part = await _asyncDb.Table<Part>()
-                                .Where(p => p.Id == partId)
-                                .FirstOrDefaultAsync();
-
-            ArgumentNullException.ThrowIfNull(part);
-
-            // Mise à jour du nom
-            part.NamePart = newName;
-
-            await UpdateAsync(part);
-
-            await NotifyPartAddDeleted();
-            await NotifyModelDataChanged();
-            RequestSyncAsync();
-        }
+      
 
 
         public async Task SetFixedPartAsync(Part part)
@@ -416,7 +407,7 @@ namespace Toltech.App.Services
             {
                 node.IsFixed = false;
             }
-            await UpdateAllNodesAsync(otherNodes);
+            await UpdateRangeAsync(otherNodes);
 
             await NotifyNodeUpdated();
         }
@@ -578,25 +569,7 @@ namespace Toltech.App.Services
                                .CountAsync() > 0;
         }
 
-        // TODO A revoir lors du refacto treeview 
-        public async Task UpdateRequirementNameAsync(int? idReq, string newName)
-        {
-            var requirement = await _asyncDb.Table<Requirements>()
-                           .Where(r => r.Id_req == idReq)
-                           .FirstOrDefaultAsync();
 
-            if (requirement == null)
-                throw new InvalidOperationException($"Aucune exigence trouvée avec Id = {idReq}");
-
-            // Met à jour le nom
-            requirement.NameReq = newName;
-
-            // Sauvegarde dans la DB
-            // TODO a revoir refacto db tree => 26/04/2026
-            await _asyncDb.UpdateAsync(requirement);
-            RequestSyncAsync();
-            await NotifyRequirementChanged();
-        }
 
         #endregion
 
@@ -633,245 +606,22 @@ namespace Toltech.App.Services
 
         #region NodesDefinition
 
-        #region Syncronisation NodesDefinition
-        /// <summary>
-        /// Synchronise la table des nœuds <see cref="NodesDefinition"/> avec les données existantes 
-        /// dans les tables <see cref="Requirements"/> et <see cref="ModelData"/>.
-        /// </summary>
-        /// <remarks>
-        /// Cette méthode effectue plusieurs opérations pour maintenir la cohérence entre la base de données
-        /// et l'arborescence des nœuds :
-        /// <list type="bullet">
-        ///     <item>Récupère tous les nœuds existants, requirements et modèles.</item>
-        ///     <item>Filtre les nœuds pertinents : <see cref="NodeType.PartNode"/> et <see cref="NodeType.RequirementNode"/>.</item>
-        ///     <item>Compare les nœuds existants avec les données sources en utilisant <c>LinkedOriginalId</c> comme référence unique.</item>
-        ///     <item>Mets à jour les nœuds dont les propriétés ont changé (par exemple <c>NodeName</c>).</item>
-        ///     <item>Ajoute les nœuds manquants pour les requirements et les parts.</item>
-        ///     <item>Supprime les nœuds orphelins ne correspondant plus à aucune entrée des tables sources.</item>
-        ///     <item>Assure l’unicité des <see cref="NodeType.PartNode"/> par <c>Extremite</c> pour éviter les doublons.</item>
-        /// </list>
-        /// </remarks>
-        /// 
-        public async Task SyncNodesTableAsync()
+        public async Task<NodesDefinition?> GetNodeByIdAsync(int id)
         {
-            // --- 1. Récupération des données ---
-            var allRequirements = await GetAllRequirementsAsync();
-            var allModelData = await GetAllModelDataAsync();
-            var allPart = await GetAllPartsAsync();
-            var allNodes = await GetAllNodesAsync();
-
-            // --- 2. Filtrer les nœuds existants par type ---
-            var existingRequirementNodes = allNodes
-                .Where(n => n.Type == NodeType.RequirementNode)
-                .ToList();
-
-            var existingPartNodes = allNodes
-                .Where(n => n.Type == NodeType.PartNode)
-                .ToList();
-
-            // --- 3. Préparer les dictionnaires pour la synchronisation ---
-            var requirementsById = allRequirements
-                .Where(r => r.Id_req > 0)
-                .ToDictionary(r => r.Id_req, r => r);
-
-            // Part name list
-            var uniqueModelsByExtremite = allPart
-                .Where(m => m.Id > 0)
-                .ToDictionary(m => m.Id, m => m);
-
-            var partsById = allPart
-                .Where(p => p.Id > 0)
-                .ToDictionary(p => p.Id);
-
-            var existingDataNodes = allNodes
-                .Where(n => n.Type == NodeType.DataNode)
-                .ToList();
-
-
-            await SyncRequirementNodes(existingRequirementNodes, requirementsById, allNodes);
-            await SyncPartNodes(existingPartNodes, uniqueModelsByExtremite, allNodes, allModelData);
-            await SyncDataNodes(existingDataNodes, partsById, allModelData, allNodes);
-        }
-
-        // --- Méthode dédiée à la synchronisation des RequirementNodes ---
-        private async Task SyncRequirementNodes(
-          List<NodesDefinition> existingRequirementNodes,
-          Dictionary<int, Requirements> requirementsById,
-          List<NodesDefinition> allNodes)
-        {
-            // Indexer les nodes existants par LinkedRequirementId
-            var existingNodesByRequirementId = existingRequirementNodes
-                .Where(n => n.LinkedRequirementId.HasValue && n.LinkedRequirementId.Value > 0)
-                .ToDictionary(n => n.LinkedRequirementId!.Value);
-
-            // Synchroniser les nœuds existants
-            foreach (var kvp in existingNodesByRequirementId)
+            try
             {
-                int requirementId = kvp.Key;
-                var node = kvp.Value;
+                if (id <= 0)
+                    return null;
 
-                if (requirementsById.TryGetValue(requirementId, out var requirement))
-                {
-                    var newName = requirement.NameReq.Trim();
-                    if (node.NodeName != newName || node.IsActive != requirement.IsActive)
-                    {
-                        node.NodeName = newName;
-                        node.IsActive = requirement.IsActive;
-                        await _asyncDb.UpdateAsync(node);
-                        NodesDefinition.RaiseNodeChanged(NodeChangeType.Updated, node);
-                    }
-
-                    // Marqué comme traité
-                    requirementsById.Remove(requirementId);
-                }
-                else
-                {
-                    // Requirement supprimé → node orphelin
-                    await DeleteNodeAsync(node);
-                    NodesDefinition.RaiseNodeChanged(NodeChangeType.Deleted, node);
-                }
+                return await _asyncDb.Table<NodesDefinition>()
+                    .FirstOrDefaultAsync(n => n.Id == id);
             }
-
-            // Ajouter les RequirementNode manquants
-            foreach (var requirement in requirementsById.Values)
+            catch (Exception ex)
             {
-                var newNode = new NodesDefinition
-                {
-                    NodeName = requirement.NameReq.Trim(),
-                    Type = NodeType.RequirementNode,
-                    LinkedOriginalId = 0,
-                    LinkedRequirementId = requirement.Id_req,
-                    ParentId = 0, // TBD
-                    DisplayOrder = allNodes.Count(n => n.ParentId == null)
-                };
-
-                await _asyncDb.InsertAsync(newNode);
-                NodesDefinition.RaiseNodeChanged(NodeChangeType.Added, newNode);
-                allNodes.Add(newNode);
+                Debug.WriteLine($"[DatabaseService] GetNodeByIdAsync error: {ex.Message}");
+                return null;
             }
         }
-
-
-        // --- Méthode dédiée à la synchronisation des PartNodes ---
-        private async Task SyncPartNodes(
-            List<NodesDefinition> existingPartNodes,
-            Dictionary<int, Part> listPart,
-            List<NodesDefinition> allNodes,
-            List<ModelData> modeldatas)
-        {
-            // Créer un dictionnaire des nœuds existants par LinkedOriginalId
-            var existingPartNodesById = existingPartNodes
-                .Where(n => n.LinkedOriginalId > 0)
-                .ToDictionary(n => n.LinkedOriginalId, n => n);
-
-            // Synchroniser les nœuds existants
-            foreach (var kvp in listPart)
-            {
-                int partId = kvp.Key;
-                var part = kvp.Value;
-
-                if (existingPartNodesById.TryGetValue(partId, out var existingNode))
-                {
-                    if (existingNode.NodeName != part.NamePart.Trim() || existingNode.IsActive != part.IsActive)
-                    {
-                        existingNode.NodeName = part.NamePart.Trim();
-                        existingNode.IsActive = part.IsActive;
-                        await _asyncDb.UpdateAsync(existingNode);
-                        NodesDefinition.RaiseNodeChanged(NodeChangeType.Updated, existingNode);
-                    }
-                    existingPartNodesById.Remove(partId);
-                }
-                else
-                {
-                    // Ajouter un nouveau nœud
-                    var newNode = new NodesDefinition
-                    {
-                        NodeName = part.NamePart.Trim(),
-                        Type = NodeType.PartNode,
-                        LinkedOriginalId = part.Id,
-                        LinkedRequirementId = null,
-                        ParentId = 0, //TBD
-                        IsActive = part.IsActive,
-                        DisplayOrder = allNodes.Count(n => n.ParentId == null)
-                    };
-                    await _asyncDb.InsertAsync(newNode);
-
-                    NodesDefinition.RaiseNodeChanged(NodeChangeType.Added, newNode);
-                    allNodes.Add(newNode);
-                }
-            }
-
-            // Supprimer les nœuds orphelins
-            foreach (var orphanNode in existingPartNodesById.Values)
-            {
-                await DeleteNodeAsync(orphanNode);
-                NodesDefinition.RaiseNodeChanged(NodeChangeType.Deleted, orphanNode);
-            }
-        }
-
-        private async Task SyncDataNodes(
-            List<NodesDefinition> existingDataNodes,
-            Dictionary<int, Part> partsById,
-            List<ModelData> allModelData,
-            List<NodesDefinition> allNodes)
-        {
-            var partNodesByPartId = allNodes
-                .Where(n => n.Type == NodeType.PartNode && n.LinkedOriginalId > 0)
-                .ToDictionary(n => n.LinkedOriginalId, n => n.Id);
-
-            var existingDataByModelId = existingDataNodes
-                .Where(n => n.LinkedOriginalId > 0)
-                .ToDictionary(n => n.LinkedOriginalId);
-
-            foreach (var data in allModelData)
-            {
-                if (!data.ExtremitePartId.HasValue || !partNodesByPartId.TryGetValue(data.ExtremitePartId.Value, out var parentNodeId))
-                    continue;
-
-                if (existingDataByModelId.TryGetValue(data.Id, out var dataNode))
-                {
-                    // Mise à jour éventuelle
-                    if (dataNode.NodeName != data.Model || dataNode.ParentId != parentNodeId || dataNode.IsActive != data.Active)
-                    {
-                        dataNode.NodeName = data.Model;
-                        dataNode.ParentId = parentNodeId;
-                        dataNode.IsActive = data.Active;
-                        await _asyncDb.UpdateAsync(dataNode);
-                        NodesDefinition.RaiseNodeChanged(NodeChangeType.Updated, dataNode);
-                    }
-                    existingDataByModelId.Remove(data.Id);
-                }
-                else
-                {
-                    var newDataNode = new NodesDefinition
-                    {
-                        NodeName = data.Model,
-                        Type = NodeType.DataNode,
-                        LinkedOriginalId = data.Id,
-                        ParentId = parentNodeId,
-                        IsActive = data.Active,
-                        DisplayOrder = allNodes
-                                        .Where(n => n.ParentId == parentNodeId)
-                                        .Select(n => n.DisplayOrder)
-                                        .DefaultIfEmpty(0)
-                                        .Max() + 1
-
-                    };
-
-                    await _asyncDb.InsertAsync(newDataNode);
-                    NodesDefinition.RaiseNodeChanged(NodeChangeType.Added, newDataNode);
-                    allNodes.Add(newDataNode);
-                }
-            }
-
-            // Supprimer les DataNodes orphelins
-            foreach (var orphan in existingDataByModelId.Values)
-            {
-                await DeleteNodeAsync(orphan);
-                NodesDefinition.RaiseNodeChanged(NodeChangeType.Deleted, orphan);
-            }
-        }
-
 
         public Task<List<NodesDefinition>> GetChildrenAsync(int? parentId)
         {
@@ -881,22 +631,6 @@ namespace Toltech.App.Services
                       .ToListAsync();
         }
 
-        private Task UpdateNodeParent(int nodeId, int? parentId, int? displayOrder = 0)
-        {
-            return Task.Run(async () =>
-            {
-                var node = await _asyncDb.Table<NodesDefinition>().FirstOrDefaultAsync(n => n.Id == nodeId);
-                if (node != null)
-                {
-                    node.ParentId = parentId;
-                    if (displayOrder.HasValue)
-                        node.DisplayOrder = displayOrder.Value;
-
-                    await _asyncDb.UpdateAsync(node);
-                }
-            });
-        }
-
 
         public async Task<List<NodesDefinition>> GetAllNodesAsync()
         {
@@ -904,47 +638,10 @@ namespace Toltech.App.Services
 
             // Charger les nœuds triés
             var nodes = await _asyncDb.Table<NodesDefinition>()
-                                 .OrderBy(p => p.DisplayOrder)
-                                 .ToListAsync();
+                                      .OrderBy(n => n.DisplayOrder)
+                                      .ToListAsync();
 
             return nodes ?? new List<NodesDefinition>();
-        }
-
-        public async Task UpdateNodeAsync(NodesDefinition node)
-        {
-            await _asyncDb.UpdateAsync(node);
-        }
-        public async Task UpdateAllNodesAsync(IEnumerable<NodesDefinition> nodes)
-        {
-            if (nodes == null || !nodes.Any()) return;
-
-            await _asyncDb.UpdateAllAsync(nodes);
-        }
-
-        #endregion
-
-        public async Task DeleteNodeAsync(NodesDefinition part)
-        {
-            await _asyncDb.DeleteAsync(part);
-        }
-
-        public async Task<int> AddNodeAsync(NodesDefinition node)
-        {
-            if (node == null)
-                throw new ArgumentNullException(nameof(node));
-
-            try
-            {
-                int result = await _asyncDb.InsertAsync(node);
-                await NotifyNodeUpdated();
-
-                return node.Id;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[DB] AddNodeAsync error: {ex.Message}");
-                throw;
-            }
         }
 
         /// <summary>
@@ -954,8 +651,7 @@ namespace Toltech.App.Services
         {
             try
             {
-                var connection = await GetConnectionAsync();
-                return await connection.Table<NodesDefinition>()
+                return await _asyncDb.Table<NodesDefinition>()
                                        .Where(n => n.ParentId == parentId)
                                        .OrderBy(n => n.DisplayOrder)
                                        .ToListAsync();
@@ -966,27 +662,7 @@ namespace Toltech.App.Services
                 return new List<NodesDefinition>();
             }
         }
-        public async Task UpdateNodeExpansionAsync(NodesDefinition node, bool isExpanded)
-        {
-            try
-            {
-                if (node != null)
-                {
-                    node.IsExpanded = isExpanded;
-                    await _asyncDb.UpdateAsync(node);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[DatabaseService] Erreur UpdateNodeExpansionAsync : {ex.Message}");
-            }
-        }
-        private async Task<SQLiteAsyncConnection> GetConnectionAsync()
-        {
-            if (_asyncDb == null)
-                throw new InvalidOperationException("Connexion DB non initialisée.");
-            return _asyncDb;
-        }
+      
 
         /// <summary>
         /// 
@@ -1052,59 +728,25 @@ namespace Toltech.App.Services
         }
 
 
-        public async Task UpdateDisplayOrderForMoveAsync(
-            IReadOnlyList<NodesDefinition> movedNodes,
-            int? parentFolderId,
-            int insertIndex)
+
+        public async Task NormalizeDisplayOrderAsync(int? parentId)
         {
+            var children = await GetChildrenAsync(parentId);
+            var ordered = children.OrderBy(c => c.DisplayOrder).ToList();
+            var nodesToUpdate = new List<NodesDefinition>();
 
-            if (movedNodes == null || movedNodes.Count == 0)
-                return;
-
-            // Chargement initial des siblings
-            var siblings = (await GetChildrenAsync(parentFolderId))
-                .OrderBy(s => s.DisplayOrder)
-                .ToList();
-
-            foreach (var node in movedNodes)
+            for (int i = 0; i < ordered.Count; i++)
             {
-                node.ParentId = parentFolderId;
-                node.DisplayOrder = insertIndex;
-
-                // Décalage incrémental existant
-                foreach (var s in siblings
-                    .Where(s => s.DisplayOrder <= insertIndex && !movedNodes.Contains(s)))
+                if (ordered[i].DisplayOrder != i)
                 {
-                    s.DisplayOrder -= 1;
-                    await UpdateNodeParent(s.Id, s.ParentId, s.DisplayOrder);
+                    ordered[i].DisplayOrder = i;
+                    nodesToUpdate.Add(ordered[i]); // collection des nœuds à mettre à jour
                 }
-
-                await UpdateNodeParent(node.Id, node.ParentId, node.DisplayOrder);
-                insertIndex++;
             }
 
-            // --- Normalisation finale ---
-            await NormalizeDisplayOrderAsync(parentFolderId);
-
-            await NotifyNodeUpdated();
-        }
-        private async Task NormalizeDisplayOrderAsync(int? parentId)
-        {
-            var siblings = (await GetChildrenAsync(parentId))
-                .OrderBy(s => s.DisplayOrder)
-                .ToList();
-
-            int index = 0;
-
-            foreach (var node in siblings)
+            if (nodesToUpdate.Any())
             {
-                if (node.DisplayOrder != index)
-                {
-                    node.DisplayOrder = index;
-                    await UpdateNodeParent(node.Id, node.ParentId, node.DisplayOrder);
-                }
-
-                index++;
+                await UpdateRangeAsync(nodesToUpdate);
             }
         }
 
@@ -1224,7 +866,7 @@ namespace Toltech.App.Services
             Debug.WriteLine("[DataBaseService] - InternalSyncTablesAsync()");
 
             await UpdateModelMetaCountsAsync();
-            await SyncNodesTableAsync();
+            //await _nodeSyncService.SyncNodesTableAsync();
             await NotifyNodeUpdated();
         }
 

@@ -7,10 +7,9 @@ using System.Windows.Data;
 using System.Windows.Input;
 using Microsoft.Win32;// Nécessaire pour OpenFileDialog
 using Toltech.App.FrontEnd.Controls;
-using Toltech.App.Services.Notification;
 using Toltech.App.Models;
 using Toltech.App.Services;
-using Toltech.App.Services.Logging;
+using Toltech.App.Services.Notification;
 using Toltech.App.Utilities;
 using static Toltech.App.FrontEnd.Controls.TemplateCreateWindow;
 using TtCore = Toltech.App.ViewModels;
@@ -85,13 +84,15 @@ namespace Toltech.App.ViewModels
             var vm = this;
             _mainVM = mainVM;
             _domainService = mainVM.DomainService;
-
+             
             _mainVM.PropertyChanged += MainVM_PropertyChanged;
 
             _notificationService = App.NotificationService;
 
             FilteredModels = new ListCollectionView(Models);
             FilteredModels.Filter = FilterModel;
+            FilteredModels.SortDescriptions.Add(
+                new SortDescription(nameof(ModelMeta.CreatedAtmodel), ListSortDirection.Descending));
 
             _reloadAction = () => _ = ReloadSafe();
 
@@ -174,35 +175,35 @@ namespace Toltech.App.ViewModels
 
             token.ThrowIfCancellationRequested();
 
-            // ✔ Stockage dans le cache
+            // Stockage dans le cache
             _cache = tempModels.Value;
 
-            // ✔ Sync optimisée vers UI
+            // Sync optimisée vers UI
             await SyncCollectionAsync(_cache);
 
-            // ✔ Rafraîchit la vue filtrée
-            ApplyFilter();
+            // Rafraîchit la vue filtrée
+            FilteredModels.Refresh();
         }
         private async Task SyncCollectionAsync(List<ModelMeta> source)
         {
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
-                for (int i = 0; i < source.Count; i++)
-                {
-                    var item = source[i];
-                    int current = Models.IndexOf(item);
+                var sourceIds = source.Select(m => m.IdModel).ToHashSet();
 
-                    if (current == -1)
-                        Models.Insert(i, item);
-                    else if (current != i)
-                        Models.Move(current, i);
+                // Suppression des obsolètes
+                for (int i = Models.Count - 1; i >= 0; i--)
+                {
+                    if (!sourceIds.Contains(Models[i].IdModel))
+                        Models.RemoveAt(i);
                 }
 
-                var sourceSet = new HashSet<ModelMeta>(source);
-
-                for (int i = Models.Count - 1; i >= 0; i--)
-                    if (!sourceSet.Contains(Models[i]))
-                        Models.RemoveAt(i);
+                // Ajout des nouveaux
+                var existingIds = Models.Select(m => m.IdModel).ToHashSet();
+                foreach (var item in source)
+                {
+                    if (!existingIds.Contains(item.IdModel))
+                        Models.Add(item);
+                }
             });
         }
 
@@ -215,7 +216,7 @@ namespace Toltech.App.ViewModels
                 if (_searchText == value) return;
                 _searchText = value;
                 OnPropertyChanged();
-                ApplyFilter();
+                FilteredModels.Refresh();
             }
         }
 
@@ -224,20 +225,11 @@ namespace Toltech.App.ViewModels
         {
             if (obj is not ModelMeta model)
                 return false;
-
             if (string.IsNullOrWhiteSpace(_searchText))
                 return true;
-
             return model.NameData?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) == true;
         }
 
-        private void ApplyFilter()
-        {
-            using (FilteredModels.DeferRefresh())
-            {
-                FilteredModels.Filter = FilterModel;
-            }
-        }
 
         #endregion
 
@@ -261,7 +253,7 @@ namespace Toltech.App.ViewModels
 
             if (CurrentEditablePanel == null && panel.DataContext is ModelMeta meta)
             {
-                var saveResult =await _domainService.SaveModelAsync(meta);
+                var saveResult = await _domainService.SaveModelAsync(meta);
                 if (saveResult.IsFailure)
                 {
                     HandleError(saveResult);
@@ -397,7 +389,7 @@ namespace Toltech.App.ViewModels
 
             bool? confirm = openFileDialog.ShowDialog();
 
-            if (confirm==true)
+            if (confirm == true)
             {
                 string selectedFile = openFileDialog.FileName;
 

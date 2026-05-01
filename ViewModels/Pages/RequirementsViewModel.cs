@@ -3,11 +3,11 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
-using Toltech.App.Services.Notification;
 using Toltech.App.Models;
 using Toltech.App.Properties;
 using Toltech.App.Services;
 using Toltech.App.Services.Logging;
+using Toltech.App.Services.Notification;
 using Toltech.App.Utilities;
 using Toltech.App.Views.Controls.TreeView;
 using TtCore = Toltech.App.ViewModels;
@@ -140,10 +140,10 @@ namespace Toltech.App.ViewModels
         #endregion
 
         #region Constructor
-        public RequirementsViewModel(MainViewModel mainVM, TreeViewAreaV3ViewModel treeVM)
+        public RequirementsViewModel(MainViewModel mainVM, DomainService domainService, TreeViewAreaV3ViewModel treeVM)
         {
+            _domainService = domainService;
             _mainVM = mainVM;
-            _domainService = mainVM.DomainService;
             _notificationService = App.NotificationService;
 
             _uiSettings = App.UiSettings;
@@ -504,7 +504,7 @@ namespace Toltech.App.ViewModels
 
             await RemoveItemAsync(req);
 
-            var removeResult = await _domainService.RemoveRequirementAsync(req);
+            var removeResult = await _domainService.DeleteRequirementAsync(req);
             if (removeResult.IsFailure)
             {
                 await AddItemAsync(req);
@@ -539,15 +539,6 @@ namespace Toltech.App.ViewModels
 
         #endregion
 
-
-        public async Task ReverseActiveReqByIdAsync(int? idReq)
-        {
-            var result = await _domainService.ReverseActiveReqByIdAsync(idReq);
-            if (result.IsFailure)
-            {
-                HandleError(result);
-            }
-        }
 
         #region CheckBox Handling
         //private void SubscribeToRequirement(Requirements req)

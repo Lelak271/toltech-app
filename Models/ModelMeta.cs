@@ -195,6 +195,7 @@ namespace Toltech.App.Models
             OptionMM1 = db.OptionMM1;
             OptionMM2 = db.OptionMM2;
             LastModified = db.LastModified;
+            CreatedAtmodel = db.CreatedAtmodel;
 
             EndLoad();
         }

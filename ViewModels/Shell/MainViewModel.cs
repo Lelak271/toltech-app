@@ -9,9 +9,10 @@ using Toltech.App.Models;
 using Toltech.App.Services;
 using Toltech.App.ToltechCalculation.Helpers;
 using Toltech.App.ToltechCalculation.Resux;
+using Toltech.App.Utilities;
 using Toltech.App.Views.Controls.TreeView;
 using Toltech.App.Visualisateur;
-using  Toltech.ComputeEngine.Contracts;
+using Toltech.ComputeEngine.Contracts;
 
 namespace Toltech.App.ViewModels
 {
@@ -47,6 +48,7 @@ namespace Toltech.App.ViewModels
         public ResultsViewModel ResultsVM { get; private set; }
         public TreeViewAreaV3ViewModel TreeViewViewModel { get; private set; }
         public LogViewerViewModel StatusBarVM { get; private set; }
+        public TreeNodeService TreeNodeService { get; private set; }
 
         public DbModelService DbModelService { get; }
         public DomainService DomainService { get; }
@@ -136,6 +138,9 @@ namespace Toltech.App.ViewModels
                 App.Logger
                 ); // Instance Unique
 
+            TreeNodeService = new TreeNodeService(DatabaseService, DomainService);
+
+
             LoadVM();
             LoadPages(); // TODO  obsole soon
 
@@ -152,8 +157,8 @@ namespace Toltech.App.ViewModels
 
         private void LoadVM()
         {
-            TreeViewViewModel = new TreeViewAreaV3ViewModel(this);
-            RequirementVM = new RequirementsViewModel(this, TreeViewViewModel);
+            TreeViewViewModel = new TreeViewAreaV3ViewModel(this, TreeNodeService);
+            RequirementVM = new RequirementsViewModel(this, DomainService, TreeViewViewModel);
             PartVM = new PartDBViewModel(this);
             DataVM = new DatasViewModel(this, TreeViewViewModel);
             HomeVM = new HomePageViewModel();
