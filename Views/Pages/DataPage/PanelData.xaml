@@ -14,7 +14,9 @@
              Width="1000" Height="Auto"
              HorizontalAlignment="Stretch"
              VerticalAlignment="Stretch"
-             Focusable="True">
+             Focusable="True"
+             Unloaded="UserControl_Unloaded"
+             >
 
    
     <UserControl.Resources>

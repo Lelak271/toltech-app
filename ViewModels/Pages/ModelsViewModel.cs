@@ -5,6 +5,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using DocumentFormat.OpenXml.EMMA;
 using Microsoft.Win32;// Nécessaire pour OpenFileDialog
 using Toltech.App.FrontEnd.Controls;
 using Toltech.App.Models;
@@ -12,6 +13,7 @@ using Toltech.App.Services;
 using Toltech.App.Services.Notification;
 using Toltech.App.Utilities;
 using static Toltech.App.FrontEnd.Controls.TemplateCreateWindow;
+using static Toltech.App.Services.EventsManager;
 using TtCore = Toltech.App.ViewModels;
 
 namespace Toltech.App.ViewModels
@@ -95,6 +97,8 @@ namespace Toltech.App.ViewModels
                 new SortDescription(nameof(ModelMeta.CreatedAtmodel), ListSortDirection.Descending));
 
             _reloadAction = () => _ = ReloadSafe();
+
+            _mainVM.MetaModelSyncService.MetaChanged += OnMetaChanged;
 
             #region EventManager
 
@@ -454,7 +458,56 @@ namespace Toltech.App.ViewModels
 
         #endregion
 
+        #region Number of Parts & Requirements
 
+        private async void OnMetaChanged(ModelMetaChangedEvent e)
+        {
+            var model = Models.FirstOrDefault(m => m.IdModel == e.ModelId);
+            if (model == null)
+                return;
+
+            if (e.PartCount.HasValue)
+            {
+                model.PartCount = e.PartCount.Value;
+                NumberOfParts = e.PartCount.Value;
+            }
+
+            if (e.ReqCount.HasValue)
+            {
+                model.RequirementCount = e.ReqCount.Value;
+                NumberOfReq = e.ReqCount.Value;
+            }
+        }
+
+        private int _numberOfParts;
+        public int NumberOfParts
+        {
+            get => _numberOfParts;
+            set
+            {
+                if (_numberOfParts != value)
+                {
+                    _numberOfParts = value;
+                    OnPropertyChanged(nameof(NumberOfParts));
+                }
+            }
+        }
+
+        private int _numberOfReq;
+        public int NumberOfReq
+        {
+            get => _numberOfReq;
+            set
+            {
+                if (_numberOfReq != value)
+                {
+                    _numberOfReq = value;
+                    OnPropertyChanged(nameof(NumberOfReq));
+                }
+            }
+        }
+
+        #endregion
 
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using System.Windows.Documents;
 using System.Windows.Input;
 using Toltech.App.Models;
 using Toltech.App.Services;
@@ -8,6 +9,8 @@ using Toltech.App.Services.Dialog;
 using Toltech.App.Services.Notification;
 using Toltech.App.Utilities;
 using Westermo.GraphX.Common.Exceptions;
+using static Toltech.App.Models.NodesDefinition;
+using static Toltech.App.Services.EventsManager;
 
 namespace Toltech.App.ViewModels
 {
@@ -42,11 +45,15 @@ namespace Toltech.App.ViewModels
             #endregion
 
             #region Events
+
+            EventsManager.PartCrud += OnPartCrudAsync;
+            EventsManager.NodeChanged += OnNodeChangedAsync;
+
             if (!_subscribed)
             {
                 // Gestion centrale du Chargement des Parts du modèle actif
                 EventsManager.ModelOpen += WrapperLoadAsync;
-                EventsManager.PartAddedOrDelete += WrapperLoadAsync;
+                //EventsManager.PartAddedOrDelete += WrapperLoadAsync;
                 _subscribed = true;
             }
             #endregion
@@ -54,9 +61,7 @@ namespace Toltech.App.ViewModels
             _ = LoadAsync();
         }
 
-        // ------------------------------------------------------------
         #region Collections
-        // ------------------------------------------------------------
 
         public ObservableCollection<Part> Parts { get; set; } = new ObservableCollection<Part>();
         private ObservableCollection<Part> _selectedParts = new ObservableCollection<Part>();
@@ -65,6 +70,22 @@ namespace Toltech.App.ViewModels
             get => _selectedParts;
             set => SetProperty(ref _selectedParts, value); // Permet au binding TwoWay de fonctionner
         }
+        #endregion
+
+        #region Properties
+
+        private Part? _fixedPart;
+        public Part? FixedPart
+        {
+            get => _fixedPart;
+            set
+            {
+                if (_fixedPart == value) return;
+                _fixedPart = value;
+                OnPropertyChanged();
+            }
+        }
+
         #endregion
 
         #region Commands
@@ -79,6 +100,106 @@ namespace Toltech.App.ViewModels
         #endregion
 
         #region Méthodes
+
+        private Task OnNodeChangedAsync(NodeChangedEvent e)
+        {
+            // Pas concerné si ce n'est pas un PartNode
+            if (e.Type != NodeType.PartNode) return Task.CompletedTask;
+           
+            // Convertit NodeChangedEvent en PartCrudEvent
+            var crudEvent = new PartCrudEvent
+            {
+                Operation = e.Operation,
+                Source = EventSource.Tree,
+                EntityId = e.LinkedOriginalId,
+                Entity = e.Operation == CrudOperation.Updated
+                            ? new Part { Id = e.LinkedOriginalId, NamePart = e.NewName }
+                            : null,
+            };
+
+            return OnPartCrudAsync(crudEvent);
+        }
+
+        private async Task OnPartCrudAsync(PartCrudEvent e)
+        {
+            // Modification provennant du treeview
+            if (e.Source != EventSource.Tree && e.Source != EventSource.Data) return;
+
+            switch (e.Operation)
+            {
+                case CrudOperation.Added:
+                    if (e.Entity != null)
+                        AddOrUpdatePart(e.Entity);
+
+                    if (e.Entities?.Any() == true)
+                        foreach (var part in e.Entities)
+                            AddOrUpdatePart(part);
+                    break;
+
+                case CrudOperation.Deleted:
+                    if (e.EntityId > 0)
+                        RemovePart(e.EntityId);
+
+                    if (e.EntityIds?.Any() == true)
+                        foreach (var id in e.EntityIds)
+                            RemovePart(id);
+                    break;
+
+                case CrudOperation.Updated:
+                    var updatedParts = e.Entities?.Any() == true
+                        ? e.Entities
+                        : e.Entity != null
+                            ? new List<Part> { e.Entity }
+                            : null;
+
+                    if (updatedParts != null)
+                        foreach (var part in updatedParts)
+                            AddOrUpdatePart(part);
+                    break;
+            }
+        }
+
+        #region Helpers chirurgicaux
+
+        private void AddOrUpdatePart(Part part)
+        {
+                var collection = _mainVM.Parts;
+                var existing = collection.FirstOrDefault(p => p.Id == part.Id);
+
+                if (existing != null)
+                {
+                    // Mise à jour des propriétés en place — préserve la référence pour le ComboBox
+                    existing.NamePart = part.NamePart;
+                    existing.IsFixed = part.IsFixed;
+                    existing.IsActive = part.IsActive;
+                }
+                else
+                {
+                    // Insertion triée par nom
+                    var insertAt = collection
+                        .TakeWhile(p => string.Compare(p.NamePart, part.NamePart) < 0)
+                        .Count();
+                    collection.Insert(insertAt, part);
+                }
+        }
+
+        private void RemovePart(int partId)
+        {
+            var part = Parts.FirstOrDefault(p => p.Id == partId);
+            if (part != null)
+                Parts.Remove(part);
+        }
+
+        // ── Dispose ──────────────────────────────────────────────────────────
+
+        public void Dispose()
+        {
+            EventsManager.ModelOpen -= WrapperLoadAsync;
+            EventsManager.PartCrud -= OnPartCrudAsync;
+            EventsManager.NodeChanged -= OnNodeChangedAsync;
+        }
+
+        #endregion
 
         private async Task LoadAsync()
         {
@@ -112,6 +233,7 @@ namespace Toltech.App.ViewModels
             }
         }
 
+        #region CRUD
         private async Task CreateAsync()
         {
             string namePart = "Nouvelle pièce";
@@ -144,7 +266,6 @@ namespace Toltech.App.ViewModels
 
             _ = _notificationService.ShowNotifAsync("Données sauvegardées.");
         }
-
 
         public async Task DeleteByIdAsync(int idPart)
         {
@@ -203,8 +324,6 @@ namespace Toltech.App.ViewModels
             var part = await _domainService.GetPartByIdAsync(idPart);
             await _domainService.SetActivePart_PartAsync(part.Value);
         }
-
-
         private async Task InsertImageAsync()
         {
             // On prend la première ligne sélectionnée uniquement
@@ -242,9 +361,17 @@ namespace Toltech.App.ViewModels
             OnPropertyChanged(nameof(SelectedParts));
         }
 
+        #endregion
 
+        private async Task DefinedFixedPart()
+        {
+            var fixedPart = await _domainService.GetFixedPartAsync();
+            if (fixedPart.IsFailure || fixedPart.Value == null) return;
 
-
+            var partInCollection = _mainVM.Parts.FirstOrDefault(p => p.Id == fixedPart.Value.Id);
+            if (partInCollection != null)
+                FixedPart = partInCollection;
+        }
 
     }
 }

@@ -11,6 +11,7 @@ using Toltech.App.Resources;
 using Toltech.App.Services;
 using Toltech.App.Utilities;
 using Toltech.App.Views.Controls.TreeView;
+using static Toltech.App.FrontEnd.Controls.Dashboard.BarChartControl;
 using static Toltech.App.Models.NodesDefinition;
 
 namespace Toltech.App.FrontEnd.Controls
@@ -41,14 +42,6 @@ namespace Toltech.App.FrontEnd.Controls
             if(ViewModel== null) return; // TODO pourquoi la VM est null
             ViewModel.SelectedNode = e.NewValue as NodesDefinition ?? ViewModel.SelectedNode;
         }
-        private async void TreeViewControlV3_MouseDoubleClick(object sender, MouseButtonEventArgs e)
-        {
-            if (sender is System.Windows.Controls.TreeView treeView &&
-                treeView.SelectedItem is NodesDefinition node)
-            {
-                await HandleNodeDoubleClickAsync(node);
-            }
-        }
 
         private async void TreeViewItem_PreviewMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -57,31 +50,9 @@ namespace Toltech.App.FrontEnd.Controls
 
             if (item.DataContext is not NodesDefinition node)
                 return;
-
-            // Type = 6 → pas d'expand / collapse au double-clic
-            if (node.Type == NodeType.PartNode)
-            {
-                // Forcer la sélection
-                item.IsSelected = true;
-                //item.Focus();
-
-                await HandleNodeDoubleClickAsync(node);
-
-                e.Handled = true;
-
-            }
-            //
-            if (node.Type == NodeType.DataNode)
-            {
-                // Forcer la sélection
-                item.IsSelected = true;
-                //item.Focus();
-
-                await HandleNodeDoubleClickAsync(node);
-
-                e.Handled = true;
-
-            }
+            item.IsSelected = true;
+            await ViewModel.HandleNodeDoubleClickAsync(node);
+            e.Handled = true;
         }
 
         private async void TreeViewControlV3_Expanded(object sender, RoutedEventArgs e)
@@ -104,33 +75,6 @@ namespace Toltech.App.FrontEnd.Controls
             }
         }
 
-        private async Task HandleNodeDoubleClickAsync(NodesDefinition node)
-        {
-            if (node.Type == NodeType.PartNode)
-            {
-                //ModelManager.PartIDActif = node.LinkedOriginalId;
-                await EventsManager.RaisePartSelectedChangedAsync(node.LinkedOriginalId);
-                Debug.WriteLine("EventsManager.RaisePartSelectedChanged");
-                return;
-            }
-            if (node.Type == NodeType.DataNode)
-            {
-                ViewModel.PropagateSelectionToDataVM(node);
-                return;
-            }
-
-            if (node.Type == NodeType.RequirementNode)
-            {
-                // TODO
-                //var visibleRequirementIds = await ViewModel.ListIDReqOfSelectFolderAsync();
-                //var nameParentFolder = await ViewModel.NameParentFolderAsync();
-
-                //await EventsManager.RaiseNodReqSelectChangedAsync(
-                //    visibleRequirementIds,
-                //    nameParentFolder
-                //);
-            }
-        }
 
         #region Renaming Inline
 
@@ -251,6 +195,7 @@ namespace Toltech.App.FrontEnd.Controls
                 {
                     tb.Focus();
                     tb.CaretIndex = tb.Text.Length; // curseur à la fin
+                    tb.IsReadOnly = false;
                     return true;
                 }
 

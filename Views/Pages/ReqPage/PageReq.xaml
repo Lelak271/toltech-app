@@ -55,13 +55,13 @@
                                 <TextBlock Margin="10,0" FontSize="15" HorizontalAlignment="Left" >
                                     <Run Text="{lang:Loc NumberPart}" />
                                     <Run Text=" " /> 
-                                    <Run Text="{Binding MainVM.NumberOfParts}" />
+                                    <Run Text="{Binding NumberOfParts,Mode=OneWay}" />
                                 </TextBlock>
 
                                 <TextBlock Margin="10,0" FontSize="15" HorizontalAlignment="Left">
                                     <Run Text="{lang:Loc NumberReq}" />
                                     <Run Text=" " /> 
-                                    <Run Text="{Binding MainVM.NumberOfReq}" />
+                                    <Run Text="{Binding NumberOfReq,Mode=OneWay}" />
                                 </TextBlock>
                             </StackPanel>
 

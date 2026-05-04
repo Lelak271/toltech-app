@@ -1,16 +1,18 @@
 ﻿using System.Collections.ObjectModel;
-using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 using Toltech.App.FrontEnd.Controls;
-using Toltech.App.Services.Notification;
 using Toltech.App.Models;
 using Toltech.App.Properties;
 using Toltech.App.Services;
+using Toltech.App.Services.Notification;
 using Toltech.App.Utilities;
 using Toltech.App.Views.Controls.TreeView;
 using static Toltech.App.FrontEnd.Controls.TemplateCreateWindow;
+using static Toltech.App.Models.NodesDefinition;
+using static Toltech.App.Services.EventsManager;
 using TtCore = Toltech.App.ViewModels;
 
 // TODO 
@@ -112,6 +114,8 @@ namespace Toltech.App.ViewModels
 
         #endregion
 
+        public int NumberOfParts => MainVM.NumberOfParts;
+        public int NumberOfReq => MainVM.NumberOfReq;
         public int NbLiaisons => Datas?.Count ?? 0;
 
         // Champ interne stockant le Part fixé
@@ -119,38 +123,16 @@ namespace Toltech.App.ViewModels
 
         public Part? FixedPart
         {
-            get => _fixedPart;
+            get => _mainVM.PartVM?.FixedPart;
             set
             {
-                if (_fixedPart == value)
-                    return;
-
-                _fixedPart = value;
-
-                // Synchronisation modèle
-                UpdateIsFixedFlags(_fixedPart);
-
+                if (_mainVM.PartVM == null || _mainVM.PartVM.FixedPart == value) return;
+                _mainVM.PartVM.FixedPart = value;
+                UpdateIsFixedFlags(value);
                 OnPropertyChanged(nameof(FixedPart));
-                OnPropertyChanged(nameof(FixedPartId));
+                //OnPropertyChanged(nameof(FixedPartId));
 
-                if (_fixedPart != null)
-                    _ = UpdateFixedPartAsync(_fixedPart);
-            }
-        }
-
-
-        // Propriété pour SelectedValue binding dans la ComboBox
-        public int FixedPartId
-        {
-            get => FixedPart?.Id ?? 0;
-            set
-            {
-                if (FixedPart?.Id == value)
-                    return;
-
-                var part = Parts?.FirstOrDefault(p => p.Id == value);
-                if (part != null)
-                    FixedPart = part;
+                UpdateFixedPartAsync(FixedPart);
             }
         }
 
@@ -216,11 +198,32 @@ namespace Toltech.App.ViewModels
                 if (SetProperty(ref _selectedPartId, value)) // déclenche OnPropertyChanged
                 {
                     OnSelectedPartChanged();
+                    UpdateSelectedPartName();
                 }
 
             }
         }
 
+        private string _selectedPartName;
+        public string SelectedPartName
+        {
+            get => _selectedPartName;
+            set => SetProperty(ref _selectedPartName, value);
+        }
+
+        /// <summary>
+        /// Fonction pour refresh l'interface si a lieu un changement de nom d'une Part
+        /// </summary>
+        private void UpdateSelectedPartName()
+        {
+            if (!SelectedPartId.HasValue)
+            {
+                SelectedPartName = string.Empty;
+                return;
+            }
+            var part = Parts.FirstOrDefault(p => p.Id == SelectedPartId.Value);
+            SelectedPartName = part?.NamePart ?? string.Empty;
+        }
         // Méthode pour réagir au changement
         private async void OnSelectedPartChanged()
         {
@@ -239,16 +242,12 @@ namespace Toltech.App.ViewModels
             _mainVM = mainVM;
             _domainService = mainVM.DomainService;
 
-            // TODO bof 
-            if (_mainVM?.Parts != null)
-            {
-                _mainVM.Parts.CollectionChanged -= OnPartsCollectionChanged;
-                _mainVM.Parts.CollectionChanged += OnPartsCollectionChanged;
-            }
-
             _notificationService = App.NotificationService;
 
             _uiSettings = App.UiSettings;
+
+            _mainVM.PropertyChanged += OnMainVMPropertyChanged;
+
             #region Command
 
             // Commandes avec paramètres async ou sans paramètres
@@ -295,16 +294,99 @@ namespace Toltech.App.ViewModels
 
             #region Event Manager
 
-            EventsManager.TreeViewDataNodeDrag += OnTreeChanged;
+            //EventsManager.TreeViewDataNodeDrag += OnTreeChanged;
             EventsManager.PartSelectedChanged += OnPartSelectedChanged;
             EventsManager.ModelOpen += OnModelOpenWrapper;
+            EventsManager.NodeChanged += async e =>
+            {
+                OnNodeChangedAsync(e);
+            };
+
 
             #endregion
+        }
+
+        private void OnMainVMPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MainVM.NumberOfParts) ||
+                e.PropertyName == nameof(MainVM.NumberOfReq))
+            {
+                OnPropertyChanged(e.PropertyName);
+            }
         }
 
         #endregion
 
         #region Main Event Function
+
+        private Task OnNodeChangedAsync(NodeChangedEvent e)
+        {
+            switch (e.Type)
+            {
+                case NodeType.PartNode:
+                    return OnPartCrudAsync(new PartCrudEvent
+                    {
+                        Operation = e.Operation,
+                        Source = EventSource.Tree,
+                        EntityId = e.LinkedOriginalId,
+                        Entity = e.Operation == CrudOperation.Updated
+                                    ? new Part { Id = e.LinkedOriginalId, NamePart = e.NewName }
+                                    : null
+                    });
+
+                //case NodeType.DataNode:
+                //    return OnModelDataCrudAsync(new ModelDataCrudEvent
+                //    {
+                //        Operation = e.Operation,
+                //        Source = EventSource.Tree,
+                //        EntityId = e.LinkedOriginalId,
+                //        Entity = e.Operation == CrudOperation.Updated
+                //                    ? new ModelData { Id = e.LinkedOriginalId, Model = e.NewName }
+                //                    : null
+                //    });
+
+                default:
+                    return Task.CompletedTask;
+            }
+        }
+
+        private async Task OnPartCrudAsync(PartCrudEvent e)
+        {
+            //DefinedCBFixedPart();
+
+            switch (e.Operation)
+            {
+                case CrudOperation.Added:
+                    await ReloadSafe();
+                    break;
+
+                case CrudOperation.Deleted:
+                    await ReloadSafe();
+                    break;
+
+                case CrudOperation.Updated:
+                    var updatedParts = e.Entities?.Any() == true
+                 ? e.Entities
+                 : e.Entity != null ? new List<Part> { e.Entity } : null;
+
+                    if (updatedParts?.Any(p => p.Id == SelectedPartId) == true)
+                        UpdateSelectedPartName();
+                    break;
+            }
+
+            //// Uniquement pour rafraîchir le nom affiché si la part sélectionnée a changé
+            //if (e.Operation != CrudOperation.Updated) return Task.CompletedTask;
+
+            //var updatedParts = e.Entities?.Any() == true
+            //    ? e.Entities
+            //    : e.Entity != null ? new List<Part> { e.Entity } : null;
+
+            //if (updatedParts?.Any(p => p.Id == SelectedPartId) == true)
+            //    UpdateSelectedPartName();
+
+            //return Task.CompletedTask;
+        }
+
         ///Summary  
         /// Fonction pour définir la valeur actuelle de la CB après ouverture d'un modéle et changement de la liste des Parts
         ///Peut etre amelioré => pas mieux pour le moment 
@@ -313,7 +395,7 @@ namespace Toltech.App.ViewModels
         {
             var fixedPart = await _domainService.GetFixedPartAsync();
 
-            if (fixedPart.IsFailure || Parts == null || fixedPart.Value==null)
+            if (fixedPart.IsFailure || Parts == null || fixedPart.Value == null)
                 return;
 
             var partInCollection = Parts.FirstOrDefault(p => p.Id == fixedPart.Value.Id);
@@ -329,19 +411,11 @@ namespace Toltech.App.ViewModels
             await DefinedCBFixedPart();
         }
 
-        private async Task OnTreeChanged()
-        {
-            await ReloadSafe();
-        }
-
         private async Task OnPartSelectedChanged(int? idPart)
         {
+            //await DefinedCBFixedPart();
             if (idPart != null)
                 SelectedPartId = idPart;
-        }
-        private async void OnPartsCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-        {
-            await DefinedCBFixedPart();
         }
 
         private void UpdateIsFixedFlags(Part? fixedPart)
@@ -428,7 +502,7 @@ namespace Toltech.App.ViewModels
             }
 
             var sortedData = await _domainService.LoadSortedDataAsync(dataList.Value, partId);
-            if(sortedData.IsFailure)
+            if (sortedData.IsFailure)
             {
                 HandleError(sortedData);
                 return;
@@ -655,6 +729,12 @@ namespace Toltech.App.ViewModels
                     $"Erreur lors de la suppression {data.Model}.",
                     true);
             }
+
+            await EventsManager.RaiseModelDataCrudAsync(new ModelDataCrudEvent
+            {
+                Operation = CrudOperation.Deleted,
+                EntityId = data.Id,
+            });
         }
 
         // Méthode privée commune
@@ -663,8 +743,14 @@ namespace Toltech.App.ViewModels
             var saveResult = await _domainService.SaveModelDataAsync(toSave);
             if (saveResult.IsFailure)
             {
-               HandleError(saveResult.Error); return;
+                HandleError(saveResult.Error); return;
             }
+
+            await EventsManager.RaiseModelDataCrudAsync(new ModelDataCrudEvent
+            {
+                Operation = CrudOperation.Updated,
+                Entities = toSave,
+            });
 
         }
 
@@ -681,9 +767,9 @@ namespace Toltech.App.ViewModels
                 return;
             }
 
-
-                await SaveModelDataInternalAsync(new List<ModelData> { data });
+            await SaveModelDataInternalAsync(new List<ModelData> { data });
             _ = _notificationService.ShowNotifAsync($"Données sauvegardées pour la ponctuelle {data.Model}.");
+
 
         }
 
@@ -730,12 +816,25 @@ namespace Toltech.App.ViewModels
             if (string.IsNullOrWhiteSpace(nomPiece))
                 return;
 
-            var creatResult = await _domainService.CreatePartAndDatasAsync(nomPiece);
-            if (creatResult.IsFailure)
+            var createResult = await _domainService.CreatePartAndDatasAsync(nomPiece);
+            if (createResult.IsFailure)
             {
-                HandleError(creatResult);
+                HandleError(createResult);
                 return;
             }
+
+            await EventsManager.RaisePartCrudAsync(new PartCrudEvent
+            {
+                Operation = CrudOperation.Added,
+                Entity = createResult.Value.Part
+            });
+
+            await EventsManager.RaiseModelDataCrudAsync(new ModelDataCrudEvent
+            {
+                Operation = CrudOperation.Added,
+                Entities = createResult.Value.Datas  // liste complète des datas créées
+            });
+
         }
 
         public async Task CreateData(int idPartActif)
@@ -757,12 +856,20 @@ namespace Toltech.App.ViewModels
             if (result.IsFailure)
             {
                 await RemoveItem(placeholder, idPartActif);
-                HandleError(result);  
+                HandleError(result);
                 return;
             }
 
             // 4. hydration
             placeholder.LoadFromDb(result.Value);
+
+            await EventsManager.RaiseModelDataCrudAsync(new ModelDataCrudEvent
+            {
+                Operation = CrudOperation.Added,
+                Entity = result.Value,
+                ParentId = idPartActif
+            });
+
         }
 
         // Supprimer pièce du modèle TODO
@@ -786,11 +893,11 @@ namespace Toltech.App.ViewModels
 
             // 1. récupérer le nom via domain (lecture autorisée)
             var partName = await _domainService.GetPartNameByIdAsync(partId);
-            if(partName.IsFailure)
+            if (partName.IsFailure)
             {
                 HandleError(partName);
                 return;
-            } 
+            }
 
             // 2. décision utilisateur (UI layer)
             bool confirmed = _dialog.Confirm(
@@ -812,6 +919,19 @@ namespace Toltech.App.ViewModels
             {
                 SelectedPartId = null;
             }
+
+            await EventsManager.RaisePartCrudAsync(new PartCrudEvent
+            {
+                Operation = CrudOperation.Deleted,
+                EntityId = partId
+            });
+
+            await EventsManager.RaiseModelDataCrudAsync(new ModelDataCrudEvent
+            {
+                Operation = CrudOperation.Deleted,
+                EntityIds = success.Value.Datas?.Select(d => d.Id).ToList()  // liste complète des datas supprimées
+            });
+
         }
 
         public async Task DeletePartById(int idPart)
@@ -827,6 +947,13 @@ namespace Toltech.App.ViewModels
             {
                 SelectedPartId = null;
             }
+
+            await EventsManager.RaisePartCrudAsync(new PartCrudEvent
+            {
+                Operation = CrudOperation.Deleted,
+                EntityId = idPart
+            });
+
         }
 
 
@@ -861,13 +988,20 @@ namespace Toltech.App.ViewModels
 
         private async Task UpdateFixedPartAsync(Part part)
         {
-            var result =await _domainService.UpdateFixedPartAsync(part);
-            if(result.IsFailure)
+            var results = await _domainService.UpdateFixedPartAsync(part);
+            if (results.IsFailure)
             {
-                HandleError(result);
+                HandleError(results);
             }
 
+            await EventsManager.RaisePartCrudAsync(new PartCrudEvent
+            {
+                Operation = CrudOperation.Updated,
+                Entities = results.Value,
+                Source = EventSource.Data
+            });
         }
+
         #endregion
 
 

@@ -13,6 +13,7 @@ using Toltech.App.Utilities;
 using Toltech.App.Views.Controls.TreeView;
 using Toltech.App.Visualisateur;
 using Toltech.ComputeEngine.Contracts;
+using static Toltech.App.Services.EventsManager;
 
 namespace Toltech.App.ViewModels
 {
@@ -49,8 +50,10 @@ namespace Toltech.App.ViewModels
         public TreeViewAreaV3ViewModel TreeViewViewModel { get; private set; }
         public LogViewerViewModel StatusBarVM { get; private set; }
         public TreeNodeService TreeNodeService { get; private set; }
+        public NodeSyncService NodeSyncService { get; private set; }
+        public MetaModelSyncService MetaModelSyncService { get; private set; }
 
-        public DbModelService DbModelService { get; }
+        public MetaModelDatabaseService MetaModelDatabaseService { get; }
         public DomainService DomainService { get; }
         public DatabaseService DatabaseService { get; }
 
@@ -126,27 +129,31 @@ namespace Toltech.App.ViewModels
         public MainViewModel(IComputeEngine computeEngine)
         {
             DatabaseService = new DatabaseService(""); // Instance Unique
-            DbModelService = new DbModelService(); // Instance Unique
+            MetaModelDatabaseService = new MetaModelDatabaseService(); // Instance Unique
+            MetaModelSyncService = new MetaModelSyncService(MetaModelDatabaseService, DatabaseService);
 
             ComputeEngine = computeEngine; // Instance Unique
             ComputeValidationService = new ComputeValidationService(ComputeEngine, DatabaseService); // Instance QUASI Unique => Page Resultats
 
+            //MetaModelSyncService.MetaChanged += OnMetaChanged;
+
             DomainService = new DomainService(
                 DatabaseService,
-                DbModelService,
+                MetaModelDatabaseService,
                 ComputeValidationService,
                 App.Logger
                 ); // Instance Unique
 
             TreeNodeService = new TreeNodeService(DatabaseService, DomainService);
+            NodeSyncService = new NodeSyncService(DatabaseService);
 
 
             LoadVM();
             LoadPages(); // TODO  obsole soon
 
-            SubscribeToModelManagerEvents();
-            NumbersPartReqChanged();
+            ModelsVM.PropertyChanged += OnModelsVMPropertyChanged;
 
+            SubscribeToModelManagerEvents();
             _resuxSerializer = new ResuxSerializer();
 
             LoadToDoItems();
@@ -157,7 +164,7 @@ namespace Toltech.App.ViewModels
 
         private void LoadVM()
         {
-            TreeViewViewModel = new TreeViewAreaV3ViewModel(this, TreeNodeService);
+            TreeViewViewModel = new TreeViewAreaV3ViewModel(this, TreeNodeService, NodeSyncService);
             RequirementVM = new RequirementsViewModel(this, DomainService, TreeViewViewModel);
             PartVM = new PartDBViewModel(this);
             DataVM = new DatasViewModel(this, TreeViewViewModel);
@@ -247,33 +254,17 @@ namespace Toltech.App.ViewModels
 
         #region Nombre de Parts & Requests + Liste de pièces
 
-        private int _numberOfParts;
-        public int NumberOfParts
+        private void OnModelsVMPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            get => _numberOfParts;
-            set
+            if (e.PropertyName == nameof(ModelsViewModel.NumberOfParts) ||
+                e.PropertyName == nameof(ModelsViewModel.NumberOfReq))
             {
-                if (_numberOfParts != value)
-                {
-                    _numberOfParts = value;
-                    OnPropertyChanged(nameof(NumberOfParts));
-                }
+                OnPropertyChanged(e.PropertyName);
             }
         }
 
-        private int _numberOfReq;
-        public int NumberOfReq
-        {
-            get => _numberOfReq;
-            set
-            {
-                if (_numberOfReq != value)
-                {
-                    _numberOfReq = value;
-                    OnPropertyChanged(nameof(NumberOfReq));
-                }
-            }
-        }
+        public int NumberOfParts => ModelsVM.NumberOfParts;
+        public int NumberOfReq => ModelsVM.NumberOfReq; 
 
         #endregion
 
@@ -301,48 +292,6 @@ namespace Toltech.App.ViewModels
         #endregion
 
 
-        // TODO revoir cette partie
-        #region Events Manager - Number Part & Req
-
-        private async Task NumbersPartReqChanged()
-        {
-            Debug.WriteLine("[MainViewModel] - NumbersPartReqChanged()");
-            EventsManager.ModelOpen -= UpdateCountPartReqWrapper;
-            EventsManager.ModelOpen += UpdateCountPartReqWrapper;
-            EventsManager.RequirementAddedOrDelete -= UpdateCountPartReqWrapper;
-            EventsManager.RequirementAddedOrDelete += UpdateCountPartReqWrapper;
-            EventsManager.PartAddedOrDelete -= UpdateCountPartReqWrapper;
-            EventsManager.PartAddedOrDelete += UpdateCountPartReqWrapper;
-        }
-
-        // Wrapper pour gérer async correctement dans un événement
-        private async Task UpdateCountPartReqWrapper()
-        {
-            await UpdateCountsAsync();
-        }
-
-        // TODO a revoir 
-        public async Task UpdateCountsAsync()
-        {
-            Debug.WriteLine("[MainViewModel] - UpdateCountsAsync()");
-            try
-            {
-                int numberOfParts = await DatabaseService.ActiveInstance.GetPartsCountAsync();
-                int numberOfReq = await DatabaseService.ActiveInstance.GetNumberReqAsync();
-
-                await Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    NumberOfParts = numberOfParts;
-                    NumberOfReq = numberOfReq;
-                });
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"UpdateCountsAsync Exception : {ex.Message}");
-            }
-        }
-
-        #endregion
 
         #region Provisoire ToDoItem
 

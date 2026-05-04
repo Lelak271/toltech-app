@@ -56,13 +56,13 @@
                                 <TextBlock Margin="10,0" FontSize="15" HorizontalAlignment="Left" >
                                     <Run Text="{lang:Loc NumberPart}" />
                                     <Run Text=" " /> 
-                                    <Run Text="{Binding MainVM.NumberOfParts}" />
+                                    <Run Text="{Binding NumberOfParts,Mode=OneWay}" />
                                 </TextBlock>
 
                                 <TextBlock Margin="10,0" FontSize="15" HorizontalAlignment="Left">
                                     <Run Text="{lang:Loc NumberReq}" />
                                     <Run Text=" " /> 
-                                    <Run Text="{Binding MainVM.NumberOfReq}" />
+                                    <Run Text="{Binding NumberOfReq,Mode=OneWay}" />
                                 </TextBlock>
                             </StackPanel>
 
@@ -82,8 +82,7 @@
                                     ToolTip="Définition de la pièce fixe" 
                                     ItemsSource="{Binding MainVM.Parts}"
                                     DisplayMemberPath="NamePart" 
-                                    SelectedValuePath="Id"
-                                    SelectedValue="{Binding FixedPartId, Mode=TwoWay}" >
+                                    SelectedItem="{Binding FixedPart, Mode=TwoWay}">
                                     
                                     
                                     <ComboBox.ItemContainerStyle>
@@ -106,7 +105,7 @@
 
                         <StackPanel Orientation="Horizontal" Grid.Column="2">
                             <TextBlock  x:Name="TextBoxPartActif" 
-                                        Text="{Binding  SelectedPartId, Converter={StaticResource IdToNameConverter}}"  
+                                        Text="{Binding  SelectedPartName}"  
                                         FontWeight="Bold" 
                                         FontSize="20" 
                                         Grid.Column="1" 

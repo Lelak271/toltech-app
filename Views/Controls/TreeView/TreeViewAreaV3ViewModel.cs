@@ -7,9 +7,9 @@ using Toltech.App.Models;
 using Toltech.App.Services;
 using Toltech.App.Utilities;
 using Toltech.App.ViewModels;
-using Westermo.GraphX.Common.Exceptions;
 using static Toltech.App.FrontEnd.Controls.Dashboard.BarChartControl;
 using static Toltech.App.Models.NodesDefinition;
+using static Toltech.App.Services.EventsManager;
 
 
 namespace Toltech.App.Views.Controls.TreeView
@@ -22,6 +22,7 @@ namespace Toltech.App.Views.Controls.TreeView
         private readonly DomainService _domainService;
 
         private readonly TreeNodeService _treeService;
+        private readonly NodeSyncService _nodeSyncService;
 
         #region INotifyPropertyChanged
         public event PropertyChangedEventHandler PropertyChanged;
@@ -108,9 +109,10 @@ namespace Toltech.App.Views.Controls.TreeView
         #endregion
 
         #region Constructeur
-        public TreeViewAreaV3ViewModel(MainViewModel mainVM, TreeNodeService treeNodeService)
+        public TreeViewAreaV3ViewModel(MainViewModel mainVM, TreeNodeService treeNodeService, NodeSyncService nodeSyncService)
         {
             _treeService = treeNodeService;
+            _nodeSyncService = nodeSyncService;
             _mainVM = mainVM;
 
             _domainService = _mainVM.DomainService;
@@ -161,15 +163,113 @@ namespace Toltech.App.Views.Controls.TreeView
 
             #endregion
 
+
+            #endregion
+
+            #region EventsManager subscription
+
             _treeUpdateAction = () => _ = LoadTreeViewDataAsync();
-            EventsManager.TreeViewUpdated += _treeUpdateAction;
             EventsManager.ModelOpen += _treeUpdateAction;
-            //LoadTreeViewDataAsync();
+            EventsManager.PartCrud += OnPartCrudAsync;
+            EventsManager.ModelDataCrud += OnModelDataCrudAsync;
+            EventsManager.RequirementCrud += OnRequirementCrudAsync;
+           
             #endregion
 
         }
 
 
+        #endregion
+
+        #region Events
+
+        /// <summary>
+        /// Ecoute les évènements et met à jour le treeview en conséquence via le TreeNodeService
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        private async Task OnPartCrudAsync(PartCrudEvent e)
+        {
+            switch (e.Operation)
+            {
+                case CrudOperation.Added:
+                    await _nodeSyncService.SyncAddedAsync(e.Entity);
+                    break;
+
+                case CrudOperation.Deleted:
+                    await _nodeSyncService.SyncPartDeletedAsync(e.EntityId);
+                    break;
+
+                case CrudOperation.Updated:
+                    // Unitaire
+                    if (e.Entity != null)
+                        await _nodeSyncService.SyncUpdatedAsync(e.Entity);
+
+                    // Masse — ex: SetFixedPart touche plusieurs parts
+                    if (e.Entities?.Any() == true)
+                        await _nodeSyncService.SyncUpdatedAsync(entities: e.Entities);
+                    break;
+            }
+
+            await LoadTreeViewDataAsync();
+        }
+        private async Task OnModelDataCrudAsync(ModelDataCrudEvent e)
+        {
+            switch (e.Operation)
+            {
+                case CrudOperation.Added:
+                    if (e.Entities?.Any() == true)
+                        await _nodeSyncService.SyncAddedAsync(entities: e.Entities);
+                    else if (e.Entity != null)
+                        await _nodeSyncService.SyncAddedAsync(e.Entity);
+                    break;
+
+                case CrudOperation.Deleted:
+                    if (e.EntityIds?.Any() == true)
+                        await _nodeSyncService.SyncModelDataDeletedAsync(entityIds: e.EntityIds);
+                    else if (e.EntityId != null)
+                        await _nodeSyncService.SyncModelDataDeletedAsync(e.EntityId);
+                    break;
+
+                case CrudOperation.Updated:
+                    if (e.Entities?.Any() == true)
+                        await _nodeSyncService.SyncUpdatedAsync(entities: e.Entities);
+                    else if (e.Entity != null)
+                        await _nodeSyncService.SyncUpdatedAsync(e.Entity);
+                    break;
+            }
+
+            await LoadTreeViewDataAsync();
+        }
+        private async Task OnRequirementCrudAsync(RequirementCrudEvent e)
+        {
+            switch (e.Operation)
+            {
+                case CrudOperation.Added:
+                    if (e.Entities?.Any() == true)
+                        await _nodeSyncService.SyncAddedAsync(entities: e.Entities);
+                    else if (e.Entity != null)
+                        await _nodeSyncService.SyncAddedAsync(e.Entity);
+                    break;
+
+                case CrudOperation.Deleted:
+                    if (e.EntityIds?.Any() == true)
+                        await _nodeSyncService.SyncRequirementDeletedAsync(entityIds: e.EntityIds);
+                    else if (e.EntityId != null)
+                        await _nodeSyncService.SyncRequirementDeletedAsync(e.EntityId);
+                    break;
+
+                case CrudOperation.Updated:
+                    if (e.Entities?.Any() == true)
+                        await _nodeSyncService.SyncUpdatedAsync(entities: e.Entities);
+                    else if (e.Entity != null)
+                        await _nodeSyncService.SyncUpdatedAsync(e.Entity);
+                    break;
+            }
+
+            await LoadTreeViewDataAsync();
+        }
+       
         #endregion
 
         #region Loader
@@ -229,7 +329,6 @@ namespace Toltech.App.Views.Controls.TreeView
             }
         }
 
-
         #endregion
 
         #region Context Menu - Elementary Functions
@@ -241,6 +340,7 @@ namespace Toltech.App.Views.Controls.TreeView
                 return;
 
             await CreateFolderParentId(clickedNode.Id);
+            await LoadTreeViewDataAsync();
         }
 
         private async void GroupSelectionIntoSubFolderAsync(List<NodesDefinition> selectedNodes)
@@ -280,6 +380,7 @@ namespace Toltech.App.Views.Controls.TreeView
 
             // Facultatif : expand le nouveau dossier dans l'arbre
             newFolder.IsExpanded = true;
+            await LoadTreeViewDataAsync();
         }
 
         private async Task<NodesDefinition> CreateFolderParentId(int? parentId)
@@ -293,7 +394,7 @@ namespace Toltech.App.Views.Controls.TreeView
             };
 
             await _treeService.InsertAsync(folder);
-
+            await LoadTreeViewDataAsync();
             return folder;
         }
 
@@ -308,9 +409,7 @@ namespace Toltech.App.Views.Controls.TreeView
                 return;
 
             await _treeService.DeleteFolderAndPromoteChildrenAsync(folder);
-
-            // Notifie la mise à jour de l'arbre
-            //EventsManager.RaiseNodesUpdated();
+            await LoadTreeViewDataAsync();
         }
 
 
@@ -326,6 +425,18 @@ namespace Toltech.App.Views.Controls.TreeView
                 return;
 
             await _treeService.RenameNodeAsync(node, newName);
+
+            // Publie le nœud — pas de hit DB, pas de logique métier
+            await EventsManager.RaiseNodeChangedAsync(new NodeChangedEvent
+            {
+                Type = node.Type,
+                Operation = CrudOperation.Updated,
+                LinkedOriginalId = node.LinkedOriginalId,
+                LinkedRequirementId = node.LinkedRequirementId,
+                NewName = newName,
+                Source = EventSource.Tree
+            });
+
         }
 
         #endregion
@@ -334,24 +445,14 @@ namespace Toltech.App.Views.Controls.TreeView
         private async Task DeleteNodePartAsync(NodesDefinition node)
         {
             await _treeService.DeleteNodeAsync(node);
+            await LoadTreeViewDataAsync();
+
         }
         private async Task DeleteNodeReqAsync(NodesDefinition node)
         {
             await _treeService.DeleteNodeAsync(node);
-        }
-    
-       
-        public void PropagateSelectionToDataVM(NodesDefinition? node)
-        {
-            if (node == null)
-                return;
+            await LoadTreeViewDataAsync(); // Todo mettre suppresion precise si besoin
 
-            // Ne propager que pour les DataNode (ou autre type voulu)
-            if (node.Type == NodeType.DataNode)
-            {
-                // Appel à la fonction de la DatasVM
-                _mainVM.DataVM.SelectDataByNodeId(node.LinkedOriginalId);
-            }
         }
 
 
@@ -381,7 +482,8 @@ namespace Toltech.App.Views.Controls.TreeView
 
         public async Task MoveNodes(List<NodesDefinition>? nodes, NodesDefinition? dropTarget, bool insertAbove)
         {
-          await _treeService.MoveNodesAsync(nodes, dropTarget, insertAbove);
+            await _treeService.MoveNodesAsync(nodes, dropTarget, insertAbove);
+            await LoadTreeViewDataAsync();
         }
 
         #endregion
@@ -435,6 +537,34 @@ namespace Toltech.App.Views.Controls.TreeView
         private async Task RepairTreeIfNeededAsync()
         {
             await _treeService.RepairTreeIfNeededAsync();
+        }
+
+        // TreeViewAreaV3ViewModel.cs
+        public async Task HandleNodeDoubleClickAsync(NodesDefinition node)
+        {
+            if (node.Type == NodeType.PartNode)
+            {
+                Debug.WriteLine("EventsManager.RaisePartSelectedChanged");
+                await EventsManager.RaisePartSelectedChangedAsync(node.LinkedOriginalId);
+                return;
+            }
+            if (node.Type == NodeType.DataNode)
+            {
+                // todo mettre event 
+                _mainVM.DataVM.SelectDataByNodeId(node.LinkedOriginalId);
+                return;
+            }
+
+            if (node.Type == NodeType.RequirementNode)
+            {
+               var visibleRequirementIds = await _treeService.ListIDReqOfSelectFolderAsync();
+                var nameParentFolder = await _treeService.NameParentFolderAsync();
+
+                await EventsManager.RaiseRequirementSelectChangedAsync(
+                    visibleRequirementIds,
+                    nameParentFolder
+                );
+            }
         }
 
     }

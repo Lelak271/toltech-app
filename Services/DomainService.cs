@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using QuickGraph;
 using Toltech.App.Models;
 using Toltech.App.Services.Logging;
 using Toltech.App.Services.Notification;
@@ -19,11 +20,11 @@ namespace Toltech.App.Services
         private readonly ILoggerService _logger;
 
         private readonly DatabaseService _databaseService;
-        private readonly DbModelService _dbModelService;
+        private readonly MetaModelDatabaseService _dbModelService;
         private readonly ComputeValidationService _computeValidationService;
         public DomainService(
             DatabaseService databaseService,
-            DbModelService dbModelService,
+            MetaModelDatabaseService dbModelService,
             ComputeValidationService computeValidationService,
             ILoggerService loggerService
             )
@@ -38,39 +39,39 @@ namespace Toltech.App.Services
 
         #region Service ModelData
 
-        public async Task<Result> CreatePartAndDatasAsync(string nomPiece)
+        public async Task<Result<PartWithDatasResult>> CreatePartAndDatasAsync(string nomPiece)
         {
             try
             {
                 if (!ModelValidationHelper.CheckModelActif(false))
-                    return Result<ModelData>.Failure("No active model.", ErrorCode.NoActiveModel);
+                    return Result<PartWithDatasResult>.Failure("No active model.", ErrorCode.NoActiveModel);
 
                 if (NameValidationHelper.NamingValidation(nomPiece).IsFailure)
-                    return Result.Failure("Nom de pièce invalide.", ErrorCode.Unknown);
+                    return Result<PartWithDatasResult>.Failure("Nom de pièce invalide.", ErrorCode.Unknown);
 
                 // 1. vérification existence
                 if (await _databaseService.IsNamePartExisteAsync(nomPiece))
-                    return Result.Failure("Le nom de la pièce existe déjà dans la base.", ErrorCode.Unknown);
+                    return Result<PartWithDatasResult>.Failure("Le nom de la pièce existe déjà dans la base.", ErrorCode.Unknown);
 
                 // 2. création part
-                int newPartID = await InsertPartAsync(nomPiece);
+                var newPart = await InsertPartAsync(nomPiece);
 
-                await AddDataOfPartExtremiteAsync(newPartID, 6);
+                var datas = await AddDataOfPartExtremiteAsync(newPart.Id, 6);
 
                 _ = _notificationService.ShowNotifAsync($"Pièce \"{nomPiece}\" ajoutée avec succès !", false);
 
-                // 5. event métier
-                await EventsManager.RaisePartSelectedChangedAsync(newPartID);
+                
 
-                await EventsManager.RaiseModelDataAddOrDeletedAsync();
-                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
-
-                return Result.Success();
+                return Result<PartWithDatasResult>.Success(new PartWithDatasResult
+                {
+                    Part = newPart,
+                    Datas = datas
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError("CreatePartAndDatas failed", "", ex);
-                return Result.Failure("Une erreur est survenue lors de la création de la pièce et des données.", ErrorCode.Unknown);
+                return Result<PartWithDatasResult>.Failure("Une erreur est survenue lors de la création de la pièce et des données.", ErrorCode.Unknown);
             }
         }
 
@@ -122,7 +123,7 @@ namespace Toltech.App.Services
                     return Result.Failure("Aucune correspondance trouvée en base de données.", ErrorCode.Unknown);
 
                 // 2. suppression atomique
-                await _databaseService.DeleteRangeAsync(ids);
+                await _databaseService.DeleteRangeAsync(existingDatas);
 
                 // 3. notification batch
                 _ = _notificationService.ShowNotifAsync(
@@ -130,8 +131,8 @@ namespace Toltech.App.Services
                     false);
 
                 // 4. events métier
-                await EventsManager.RaiseModelDataAddOrDeletedAsync();
-                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
+                
+                
 
                 return Result.Success();
             }
@@ -170,7 +171,7 @@ namespace Toltech.App.Services
                 var existingIds = existingDatas.Select(d => d.Id).ToList();
 
                 // 3. Suppression (idéalement transactionnelle)
-                await _databaseService.DeleteRangeAsync(existingIds);
+                await _databaseService.DeleteRangeAsync(existingDatas);
 
                 return Result.Success();
             }
@@ -183,12 +184,16 @@ namespace Toltech.App.Services
                     ErrorCode.Unknown);
             }
         }
-        public async Task<Result> DeletePartWithDatasByIdAsync(int idPart)
+        public async Task<Result<PartWithDatasResult>> DeletePartWithDatasByIdAsync(int idPart)
         {
             try
             {
                 if (!ModelValidationHelper.CheckModelActif(false))
-                    return Result<ModelData>.Failure("No active model.", ErrorCode.NoActiveModel);
+                    return Result<PartWithDatasResult>.Failure("No active model.", ErrorCode.NoActiveModel);
+
+                // 1. Charger les données AVANT suppression
+                var part = await _databaseService.GetPartByIdAsync(idPart);
+                var datas = await _databaseService.GetModelDataByPartIdAsync(idPart);
 
                 // Suppression atomique (transaction recommandée côté service)
                 await _databaseService.DeletePartsWithDatasRangeAsync(new List<int> { idPart });
@@ -198,17 +203,18 @@ namespace Toltech.App.Services
                     $"Données supprimées pour la pièce {idPart}.",
                     false);
 
-                // 4. event métier
-                await EventsManager.RaisePartAddOrDeletedAsync();
-                await EventsManager.RaiseModelDataAddOrDeletedAsync();
-                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
+                
 
-                return Result.Success();
+                return Result<PartWithDatasResult>.Success(new PartWithDatasResult
+                {
+                    Part = part,
+                    Datas = datas ?? new List<ModelData>()
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError("DeletePartById failed", "", ex);
-                return Result.Failure("Une erreur est survenue lors de la suppression de la pièce.", ErrorCode.Unknown);
+                return Result<PartWithDatasResult>.Failure("Une erreur est survenue lors de la suppression de la pièce.", ErrorCode.Unknown);
             }
         }
 
@@ -244,8 +250,8 @@ namespace Toltech.App.Services
                     d.ClearSaving();
                 }
 
-                await EventsManager.RaiseModelDataAddOrDeletedAsync();
-                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
+                
+                
 
                 return Result.Success();
             }
@@ -365,21 +371,21 @@ namespace Toltech.App.Services
             }
         }
 
-        public async Task<Result> UpdateFixedPartAsync(Part part)
+        public async Task<Result<List<Part>>> UpdateFixedPartAsync(Part part)
         {
             try
             {
                 if (part == null)
-                    return Result.Failure("Part is null", ErrorCode.Unknown);
+                    return Result<List<Part>>.Failure("Part is null", ErrorCode.Unknown);
 
-                await _databaseService.SetFixedPartAsync(part);
+                var result = await _databaseService.SetFixedPartAsync(part);
 
-                return Result.Success();
+                return Result<List<Part>>.Success(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError("UpdateFixedPart failed", "", ex);
-                return Result.Failure("Error UpdateFixedPartAsync", ErrorCode.Unknown);
+                return Result<List<Part>>.Failure("Error UpdateFixedPartAsync", ErrorCode.Unknown);
             }
         }
 
@@ -444,21 +450,23 @@ namespace Toltech.App.Services
             {
                 string randomName = $"PO_{Guid.NewGuid().ToString("N")[..6]}";
 
+                bool useRandom = true;
                 result.Add(new ModelData
                 {
-                    CoordX = 0,
-                    CoordY = 0,
-                    CoordZ = 0,
-                    CoordU = 1,
-                    CoordV = 0,
-                    CoordW = 0,
+                    CoordX = useRandom ? Random.Shared.Next(-300, 301) : 0,
+                    CoordY = useRandom ? Random.Shared.Next(-300, 301) : 0,
+                    CoordZ = useRandom ? Random.Shared.Next(-300, 301) : 0,
+
+                    CoordU = useRandom ? Random.Shared.Next(-300, 301) : 1,
+                    CoordV = useRandom ? Random.Shared.Next(-300, 301) : 0,
+                    CoordW = useRandom ? Random.Shared.Next(-300, 301) : 0,
 
                     OriginePartId = 0,
                     ExtremitePartId = partId,
 
-                    TolOri = 0,
-                    TolInt = 0,
-                    TolExtr = 0,
+                    TolOri = useRandom ? Random.Shared.Next(0, 3) : 0,
+                    TolInt = useRandom ? Random.Shared.Next(0, 3) : 0,
+                    TolExtr = useRandom ? Random.Shared.Next(0, 3) : 0,
 
                     Active = true,
                     Model = randomName
@@ -523,8 +531,7 @@ namespace Toltech.App.Services
                 // 4. notification
                 _ = _notificationService.ShowNotifAsync($"Exigence \"{nomRequirement}\" ajoutée avec succès !", false);
 
-                await EventsManager.RaiseRequirementAddOrDeletedAsync();
-                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
+                
 
                 return Result<Requirements?>.Success(uiModel);
             }
@@ -578,8 +585,8 @@ namespace Toltech.App.Services
                     req.ClearSaving();
                 }
 
-                await EventsManager.RaiseRequirementAddOrDeletedAsync();
-                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
+                
+                
 
                 return Result.Success();
             }
@@ -640,8 +647,8 @@ namespace Toltech.App.Services
 
                 await _databaseService.DeleteRangeAsync(list);
 
-                await EventsManager.RaiseRequirementAddOrDeletedAsync();
-                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
+                
+                
 
                 return Result.Success();
             }
@@ -698,21 +705,24 @@ namespace Toltech.App.Services
             return await DeleteRequirementAsync(new[] { req });
         }
 
-        public async Task<Result<string?>> GetRequirementNameByIdAsync(int? idReq)
+        /// <summary>
+        /// Wrapper
+        /// </summary>
+        public async Task<Result<Requirements>> GetReqByIdAsync(int? idReq)
         {
             try
             {
                 if (!idReq.HasValue || idReq.Value <= 0)
-                    return Result<string?>.Failure("ID de l'exigence invalide.", ErrorCode.InvalidInput);
+                    return Result<Requirements>.Failure("ID de l'exigence invalide.", ErrorCode.InvalidInput);
 
-                var name = await _databaseService.GetReqNameByIdAsync(idReq.Value);
+                var requirement = await _databaseService.GetReqsByIdAsync(idReq.Value);
 
-                return string.IsNullOrWhiteSpace(name) ? Result<string?>.Failure("Nom de l'exigence introuvable.", ErrorCode.NotFound) : Result<string?>.Success(name);
+                return Result<Requirements>.Success(requirement);
             }
             catch (Exception ex)
             {
                 _logger.LogError("GetRequirementNameById failed", "", ex);
-                return Result<string?>.Failure("Une erreur est survenue lors de la récupération du nom de l'exigence.", ErrorCode.Unknown);
+                return Result<Requirements>.Failure("Une erreur est survenue lors de la récupération du nom de l'exigence.", ErrorCode.Unknown);
             }
         }
 
@@ -910,11 +920,11 @@ namespace Toltech.App.Services
         {
             try
             {
-                var exists = await DbModelService.ActiveInstance.IsExistModelDB(fullPath);
+                var exists = await MetaModelDatabaseService.ActiveInstance.IsExistModelDBAsync(fullPath);
                 if (!exists)
                     return;
 
-                await DbModelService.ActiveInstance.DeleteModelFromMetaDb(fullPath);
+                await MetaModelDatabaseService.ActiveInstance.DeleteModelFromMetaDbAsync(fullPath);
             }
             catch (Exception ex)
             {
@@ -956,7 +966,7 @@ namespace Toltech.App.Services
 
                 // 4. enregistrement global
                 await _databaseService.InitializeModelAsync(modelId, nameModel, modelPath);
-                await DbModelService.ActiveInstance.RegisterModelAsync(modelId, modelPath, "");
+                await MetaModelDatabaseService.ActiveInstance.RegisterModelAsync(modelId, modelPath, "");
 
                 return Result.Success();
 
@@ -969,7 +979,7 @@ namespace Toltech.App.Services
 
         public async Task<Result> IsExistModelRegisterAsync(String modelPath)
         {
-            var IsExist = await DbModelService.ActiveInstance.IsExistModelDB(modelPath);
+            var IsExist = await MetaModelDatabaseService.ActiveInstance.IsExistModelDBAsync(modelPath);
             if (IsExist)
             {
                 return Result.Success();
@@ -1051,8 +1061,8 @@ namespace Toltech.App.Services
             if (newPart == null) newPart = CreateDefaultPart("");
             await _databaseService.InsertAsync(newPart);
 
-            await EventsManager.RaisePartAddOrDeletedAsync();
-            await _databaseService.Refactor_SynchronizeNodeGraphAsync();
+            
+            
 
             return newPart.Id;
         }
@@ -1087,9 +1097,11 @@ namespace Toltech.App.Services
                     false);
 
                 // Events métier
-                await EventsManager.RaisePartAddOrDeletedAsync();
-                await EventsManager.RaiseModelDataAddOrDeletedAsync();
-                await _databaseService.Refactor_SynchronizeNodeGraphAsync();
+                
+                
+                
+
+                
 
                 return Result.Success();
             }
@@ -1237,7 +1249,7 @@ namespace Toltech.App.Services
         {
             try
             {
-                await _databaseService.SetActivePart_PartAsync(part);
+                 await _databaseService.SetActivePart_PartAsync(part);
                 return Result.Success();
             }
             catch (Exception ex)
@@ -1268,12 +1280,12 @@ namespace Toltech.App.Services
         /// Sans syncronisation des tables car fonction utiliser en parralele de la création 
         /// des contacts => pas de surcharge de syncronisation
         /// </summary>
-        private async Task<int> InsertPartAsync(string nameNewPart)
+        private async Task<Part> InsertPartAsync(string nameNewPart)
         {
             Part newPart = CreateDefaultPart(nameNewPart);
             await InsertPartAsync(newPart);
             _logger.LogInfo($"Création de la Part '{nameNewPart}' - ID :{newPart.Id}", nameof(DatabaseService));
-            return newPart.Id;
+            return newPart;
         }
 
         private Part CreateDefaultPart(string nameNewPart = "")

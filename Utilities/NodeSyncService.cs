@@ -6,13 +6,228 @@ namespace Toltech.App.Utilities
 {
     public class NodeSyncService
     {
+        #region Test 
+        // ── Mapper générique ─────────────────────────────────────────────
+
+        private async Task<NodesDefinition> MapToNodeAsync<T>(T entity)
+        {
+            var allNodes = await _databaseService.GetAllNodesAsync();
+
+            return entity switch
+            {
+                Part part => new NodesDefinition
+                {
+                    NodeName = part.NamePart?.Trim(),
+                    Type = NodeType.PartNode,
+                    IsFolder = false,
+                    IsActive = part.IsActive,
+                    LinkedOriginalId = part.Id,
+                    ParentId = await GetDefaultFolderIdForPartAsync(allNodes)
+                },
+
+                ModelData data => new NodesDefinition
+                {
+                    NodeName = data.Model,
+                    Type = NodeType.DataNode,
+                    IsFolder = false,
+                    IsActive = data.Active,
+                    LinkedOriginalId = data.Id,
+                    ParentId = GetParentNodeIdForData(allNodes, data)
+                },
+
+                Requirements req => new NodesDefinition
+                {
+                    NodeName = req.NameReq?.Trim(),
+                    Type = NodeType.RequirementNode,
+                    IsFolder = false,
+                    IsActive = req.IsActive,
+                    LinkedRequirementId = req.Id_req,
+                    ParentId = await GetDefaultFolderIdForReqAsync(allNodes)
+                },
+
+                _ => throw new NotSupportedException($"Type {typeof(T).Name} non supporté")
+            };
+        }
+
+        #region CRUD ciblé
+        public async Task SyncAddedAsync<T>(T entity = default, IEnumerable<T> entities = null)
+        {
+            var list = entities?.ToList() ?? (entity != null ? new List<T> { entity } : new List<T>());
+            if (!list.Any()) return;
+
+            var toInsert = new List<NodesDefinition>();
+
+            foreach (var item in list)
+            {
+                var existing = await GetExistingNodeAsync(item);
+                if (existing != null) continue; // déjà présent — on skip, pas de stop
+
+                var node = await MapToNodeAsync(item);
+                if (node.ParentId == null)
+                {
+                    await SafeSyncAsync(); // fallback si structure manquante
+                    return;
+                }
+
+                toInsert.Add(node);
+            }
+
+            if (toInsert.Any())
+                await _databaseService.InsertRangeAsync(toInsert);
+        }
+
+        private async Task SyncDeletedAsync<T>(int entityId = 0, IEnumerable<int> entityIds = null)
+        {
+            var ids = entityIds?.ToList() ?? (entityId > 0 ? new List<int> { entityId } : new List<int>());
+            if (!ids.Any()) return;
+
+            var toDelete = new List<NodesDefinition>();
+
+            foreach (var id in ids)
+            {
+                var node = await GetExistingNodeByIdAsync<T>(id);
+                if (node == null) continue;
+                toDelete.Add(node);
+            }
+
+            if (toDelete.Any())
+                await _databaseService.DeleteRangeAsync(toDelete);
+        }
+
+        public Task SyncPartDeletedAsync(int entityId = 0, IEnumerable<int> entityIds = null)
+            => SyncDeletedAsync<Part>(entityId, entityIds);
+
+        public Task SyncRequirementDeletedAsync(int entityId = 0, IEnumerable<int> entityIds = null)
+            => SyncDeletedAsync<Requirements>(entityId, entityIds);
+
+        public Task SyncModelDataDeletedAsync(int entityId = 0, IEnumerable<int> entityIds = null)
+            => SyncDeletedAsync<ModelData>(entityId, entityIds);
+
+        public async Task SyncUpdatedAsync<T>(T entity = default, IEnumerable<T> entities = null)
+        {
+            var list = entities?.ToList() ?? (entity != null ? new List<T> { entity } : new List<T>());
+            if (!list.Any()) return;
+
+            var toUpdate = new List<NodesDefinition>();
+
+            foreach (var item in list)
+            {
+                var node = await GetExistingNodeAsync(item);
+                if (node == null)
+                {
+                    await SafeSyncAsync(); // fallback et stop
+                    return;
+                }
+                UpdateNodeFromEntity(node, item);
+                toUpdate.Add(node);
+            }
+
+            await _databaseService.UpdateRangeAsync(toUpdate);
+        }
+
+        private void UpdateNodeFromEntity<T>(NodesDefinition node, T entity)
+        {
+            switch (entity)
+            {
+                case Part part:
+                    node.NodeName = part.NamePart?.Trim();
+                    node.IsActive = part.IsActive;
+                    node.IsFixed = part.IsFixed;
+                    break;
+
+                case ModelData data:
+                    node.NodeName = data.Model;
+                    node.IsActive = data.Active;
+                    break;
+
+                case Requirements req:
+                    node.NodeName = req.NameReq?.Trim();
+                    node.IsActive = req.IsActive;
+                    break;
+
+                default:
+                    throw new NotSupportedException($"Type {typeof(T).Name} non supporté");
+            }
+        }
+
+
+        #endregion
+
+        // ── Helper lookup nœud existant ──────────────────────────────────
+
+        private async Task<NodesDefinition> GetExistingNodeAsync<T>(T entity)
+        {
+            var allNodes = await _databaseService.GetAllNodesAsync();
+
+            return entity switch
+            {
+                Part part => allNodes.FirstOrDefault(n =>
+                                         n.Type == NodeType.PartNode &&
+                                         n.LinkedOriginalId == part.Id),
+
+                ModelData data => allNodes.FirstOrDefault(n =>
+                                         n.Type == NodeType.DataNode &&
+                                         n.LinkedOriginalId == data.Id),
+
+                Requirements req => allNodes.FirstOrDefault(n =>
+                                         n.Type == NodeType.RequirementNode &&
+                                         n.LinkedRequirementId == req.Id_req),
+
+                _ => null
+            };
+        }
+
+        private async Task<NodesDefinition> GetExistingNodeByIdAsync<T>(int entityId)
+        {
+            var allNodes = await _databaseService.GetAllNodesAsync();
+  
+          
+            var targetType = typeof(T) switch
+            {
+                Type t when t == typeof(Part) => NodeType.PartNode,
+                Type t when t == typeof(ModelData) => NodeType.DataNode,
+                Type t when t == typeof(Requirements) => NodeType.RequirementNode,
+                _ => throw new NotSupportedException($"Type {typeof(T).Name} non supporté")
+            };
+
+            if (allNodes == null)
+                return null;
+
+            //TODO refactor le  LinkedRequirementId => garder que le LinkedOriginalId
+            return allNodes.FirstOrDefault(n =>
+            {
+                if (n.Type != targetType)
+                    return false;
+
+                return targetType == NodeType.RequirementNode
+                    ? n.LinkedRequirementId == entityId
+                    : n.LinkedOriginalId == entityId;
+            });
+        }
+
+        private int? GetParentNodeIdForData(List<NodesDefinition> allNodes, ModelData data)
+        {
+            if (!data.ExtremitePartId.HasValue) return null;
+
+            return allNodes
+                .FirstOrDefault(n =>
+                    n.Type == NodeType.PartNode &&
+                    n.LinkedOriginalId == data.ExtremitePartId.Value)
+                ?.Id;
+        }
+
+
+        #endregion
+
+        #region Sync - Fallback
+
         private readonly DatabaseService _databaseService;
         public NodeSyncService(DatabaseService databaseService)
         {
             _databaseService = databaseService;
         }
 
-        private bool _isSyncRunning;
+        private bool _isSyncRunning=false;
 
         public async Task SafeSyncAsync()
         {
@@ -333,6 +548,8 @@ namespace Toltech.App.Utilities
             // fallback racine (ParentId = 0 ou null selon votre modèle)
             return 0;
         }
+
+#endregion
 
     }
 }

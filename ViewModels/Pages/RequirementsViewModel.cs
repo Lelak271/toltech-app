@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Data;
@@ -10,6 +11,7 @@ using Toltech.App.Services.Logging;
 using Toltech.App.Services.Notification;
 using Toltech.App.Utilities;
 using Toltech.App.Views.Controls.TreeView;
+using static Toltech.App.Services.EventsManager;
 using TtCore = Toltech.App.ViewModels;
 
 namespace Toltech.App.ViewModels
@@ -59,6 +61,8 @@ namespace Toltech.App.ViewModels
         #endregion
 
         #region Properties
+        public int NumberOfParts => MainVM.NumberOfParts;
+        public int NumberOfReq => MainVM.NumberOfReq;
 
         private Requirements _selectedRequirement;
         public Requirements SelectedRequirement
@@ -181,10 +185,20 @@ namespace Toltech.App.ViewModels
             DeleteRequirementCommand = new TtCore.RelayCommand(async _ => await DeleteRequirementAsync());
             #endregion
 
+            _mainVM.PropertyChanged += OnMainVMPropertyChanged;
             TreeVM = treeVM;
             AttachTreeVM();
             EventsManager.ModelOpen += OnModelOpenWrapper;
 
+        }
+
+        private void OnMainVMPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MainVM.NumberOfParts) ||
+                e.PropertyName == nameof(MainVM.NumberOfReq))
+            {
+                OnPropertyChanged(e.PropertyName);
+            }
         }
         #endregion
 
@@ -406,41 +420,39 @@ namespace Toltech.App.ViewModels
         public async Task SaveAllReqAsync()
         {
             Debug.WriteLine("RequirementsViewModel - SaveAsync()");
-            try
-            {
-                var toSave = Requirements.Where(r => r.IsDirty).ToList();
-                if (toSave.Count == 0) return;
+            var toSave = Requirements.Where(r => r.IsDirty).ToList();
+            if (toSave.Count == 0) return;
 
-                var saveResResult = await _domainService.SaveRequirementsAsync(toSave);
-                if (saveResResult.IsFailure)
-                {
-                    HandleError(saveResResult);
-                    return;
-                }
-                _ = _notificationService.ShowNotifAsync("Données sauvegardées pour les exigences.");
-            }
-            catch (Exception ex)
+            var saveResResult = await _domainService.SaveRequirementsAsync(toSave);
+            if (saveResResult.IsFailure)
             {
-                Debug.WriteLine($"Erreur SaveAsync: {ex}");
-                throw;
+                HandleError(saveResResult);
+                return;
             }
-            finally
+            _ = _notificationService.ShowNotifAsync("Données sauvegardées pour les exigences.");
+
+            await EventsManager.RaiseRequirementCrudAsync(new RequirementCrudEvent
             {
-                (SaveCommand as TtCore.RelayCommand)?.RaiseCanExecuteChanged();
-            }
+                Operation = CrudOperation.Updated,
+                Entities = toSave,
+            });
+
+            // todo why 
+            (SaveCommand as TtCore.RelayCommand)?.RaiseCanExecuteChanged();
+
         }
 
         public async Task DeleteRequirementByIdAsync(int? idReq)
         {
 
-            var nameReq = await _domainService.GetRequirementNameByIdAsync(idReq);
-            if (nameReq.IsFailure)
+            var reqToDelete = await _domainService.GetReqByIdAsync(idReq);
+            if (reqToDelete.IsFailure)
             {
-                HandleError(nameReq);
+                HandleError(reqToDelete);
                 return;
             }
 
-            if (!_dialog.Confirm($"Voulez-vous supprimer l'exigence {nameReq}"))
+            if (!_dialog.Confirm($"Voulez-vous supprimer l'exigence {reqToDelete.Value.NameReq}"))
                 return;
 
             var deleteResult = await _domainService.DeleteRequirementByIdAsync(idReq);
@@ -450,6 +462,13 @@ namespace Toltech.App.ViewModels
                 return;
             }
             await RemoveItemAsync(Requirements.FirstOrDefault(r => r.Id_req == idReq));
+
+            await EventsManager.RaiseRequirementCrudAsync(new RequirementCrudEvent
+            {
+                Operation = CrudOperation.Deleted,
+                EntityId = reqToDelete.Value.Id_req,
+            });
+
         }
 
         // 
@@ -478,6 +497,12 @@ namespace Toltech.App.ViewModels
             _treeFilterIds.Add(placeholder.Id_req);
             ApplyFilterAndSort(forceRefresh: true);
 
+            await EventsManager.RaiseRequirementCrudAsync(new RequirementCrudEvent
+            {
+                Operation = CrudOperation.Added,
+                Entity = uiModel.Value,
+            });
+
         }
 
         #region Panel Button Function
@@ -492,24 +517,38 @@ namespace Toltech.App.ViewModels
                 return;
             }
             _ = _notificationService.ShowNotifAsync($"Données sauvegardées pour l'exigence {req.NameReq}.");
+
+            await EventsManager.RaiseRequirementCrudAsync(new RequirementCrudEvent
+            {
+                Operation = CrudOperation.Updated,
+                Entity = req,
+            });
+
         }
 
-        private async Task RemoveUniqueAsync(Requirements req)
+        private async Task RemoveUniqueAsync(Requirements reqToDelete)
         {
             bool confirm = _dialog.Confirm(
-                $"Voulez-vous supprimer l'exigence '{req.NameReq}' ?");
+                $"Voulez-vous supprimer l'exigence '{reqToDelete.NameReq}' ?");
 
             if (!confirm)
                 return;
 
-            await RemoveItemAsync(req);
+            await RemoveItemAsync(reqToDelete);
 
-            var removeResult = await _domainService.DeleteRequirementAsync(req);
+            var removeResult = await _domainService.DeleteRequirementAsync(reqToDelete);
             if (removeResult.IsFailure)
             {
-                await AddItemAsync(req);
+                await AddItemAsync(reqToDelete);
                 HandleError(removeResult);
+                return;
             }
+
+            await EventsManager.RaiseRequirementCrudAsync(new RequirementCrudEvent
+            {
+                Operation = CrudOperation.Deleted,
+                EntityId = reqToDelete.Id_req,
+            });
 
         }
 

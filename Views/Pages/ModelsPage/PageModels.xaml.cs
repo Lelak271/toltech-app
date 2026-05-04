@@ -12,7 +12,7 @@ namespace Toltech.App.Views
     {
         private MainWindow _myfirstwindow;
         private DatabaseService _databaseservice;
-        private DbModelService _dbmodelservice;
+        private MetaModelDatabaseService _dbmodelservice;
         public List<PanelModelMeta> PanelsModelControl = new List<PanelModelMeta>();
 
         public PageModels()

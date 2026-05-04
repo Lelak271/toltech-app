@@ -159,7 +159,6 @@
                   PreviewMouseMove="TreeView_PreviewMouseMove"
                   PreviewMouseLeftButtonDown="TreeView_PreviewMouseLeftButtonDown"
                   PreviewMouseLeftButtonUp="TreeView_PreviewMouseLeftButtonUp"
-                  MouseDoubleClick="TreeViewControlV3_MouseDoubleClick"
                   AllowDrop="True"
                   Drop="TreeView_Drop"
                   >

@@ -52,11 +52,6 @@ namespace Toltech.App.Utilities
 
             _nodeSyncService = new NodeSyncService(_databaseService);
 
-            EventsManager.TreeViewUpdated += async () =>
-            {
-                Debug.WriteLine("[TreeNodeService] - TreeViewUpdated event received, refreshing nodes...");
-                await _nodeSyncService.SafeSyncAsync();
-            };
         }
 
         public async Task InsertAsync(NodesDefinition node)
@@ -77,53 +72,6 @@ namespace Toltech.App.Utilities
             await _databaseService.UpdateRangeAsync(nodesToUpdate);
         }
 
-        public async Task UpdatePartNameAsync(int partId, string newName)
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(newName);
-            if (partId <= 0)
-                throw new ArgumentException("Identifiant de part invalide.", nameof(partId));
-
-            // Récupération de la part
-            var part = await _databaseService.GetPartByIdAsync(partId);
-
-            // Mise à jour du nom
-            part.NamePart = newName;
-
-            await _databaseService.UpdateAsync(part);
-
-            Debug.WriteLine("[DatabaseService] - NotifyModelDataChanged()");
-            await EventsManager.RaiseModelDataAddOrDeletedAsync();
-            Debug.WriteLine("[DatabaseService] - NotifyPartAddDeleted()");
-            await EventsManager.RaisePartAddOrDeletedAsync();
-
-            //RequestSyncAsync(); TODO: à voir si on doit faire une sync complète ou juste une notification de changement
-        }
-
-        public async Task UpdateRequirementNameAsync(int? idReq, string newName)
-        {
-            var requirement = await _databaseService.GetReqsByIdAsync(idReq);
-
-            if (requirement == null)
-                throw new InvalidOperationException($"Aucune exigence trouvée avec Id = {idReq}");
-
-            // Met à jour le nom
-            requirement.NameReq = newName;
-
-            // Sauvegarde dans la DB
-            // TODO a revoir refacto db tree => 26/04/2026
-            await _databaseService.UpdateAsync(requirement);
-
-            //RequestSyncAsync(); TODO: à voir si on doit faire une sync complète ou juste une notification de changement
-
-            Debug.WriteLine("[DatabaseService] - NotifyRequirementChanged()");
-            await EventsManager.RaiseRequirementAddOrDeletedAsync();
-        }
-
-        public Task<List<NodesDefinition>> GetChildrenAsync(int? parentId)
-        {
-            return _databaseService.GetChildrenAsync(parentId);
-        }
-
         public async Task<List<NodesDefinition>> GetAllNodesAsync()
         {
             return await _databaseService.GetAllNodesAsync();
@@ -136,7 +84,7 @@ namespace Toltech.App.Utilities
         /// <param name="parentFolderId"></param>
         /// <param name="insertIndex"></param>
         /// <returns></returns>
-        public async Task UpdateDisplayOrderForMoveAsync(
+        private async Task UpdateDisplayOrderForMoveAsync(
            IReadOnlyList<NodesDefinition> movedNodes,
            int? parentFolderId,
            int insertIndex)
@@ -171,7 +119,7 @@ namespace Toltech.App.Utilities
             await _databaseService.NormalizeDisplayOrderAsync(parentFolderId);
 
             Debug.WriteLine("[DatabaseService] - NotifyNodeUpdated()");
-            await EventsManager.RaiseNodesUpdatedAsync();
+            
         }
 
         public async Task DeleteNodeAsync(NodesDefinition node)
@@ -249,6 +197,7 @@ namespace Toltech.App.Utilities
                     // --- Folder (Tree only) ---
                     case NodeType.PositionnementFolder:
                     case NodeType.ModelFolder:
+                    case NodeType.Folder:
                         node.NodeName = newName;
                         await _databaseService.UpdateAsync(node);
                         break;
@@ -256,7 +205,7 @@ namespace Toltech.App.Utilities
                     // --- Part (métier) ---
                     case NodeType.PartNode:
                         await _domainService.UpdatePartNameAsync(node.LinkedOriginalId, newName);
-                        node.NodeName = newName; // sync UI
+                        node.NodeName = newName; 
                         break;
 
                     // --- Requirement (métier) ---
@@ -274,6 +223,8 @@ namespace Toltech.App.Utilities
                     default:
                         throw new NotSupportedException($"Type non supporté : {node.Type}");
                 }
+
+                await UpdateAsync(node);
             }
             catch (Exception ex)
             {
@@ -397,13 +348,13 @@ namespace Toltech.App.Utilities
                 var visibleRequirementIds = await ListIDReqOfSelectFolderAsync();
                 var nameParentFolder = await NameParentFolderAsync();
 
-                await EventsManager.RaiseNodReqSelectChangedAsync(
-                    visibleRequirementIds,
-                    nameParentFolder);
+                //await EventsManager.RaiseNodReqSelectChangedAsync(
+                //    visibleRequirementIds,
+                //    nameParentFolder);
             }
             else if (dropTarget.Type == NodeType.DataNode)
             {
-                EventsManager.RaiseNodesDataDragAsync();
+                // TODO    EventsManager.RaiseNodesDataDragAsync(); 
             }
         }
 
@@ -471,7 +422,6 @@ namespace Toltech.App.Utilities
 
             return parent;
         }
-
 
         private async Task<bool> CanMoveNode(NodesDefinition node, NodesDefinition dropTarget)
         {

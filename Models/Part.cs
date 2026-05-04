@@ -182,4 +182,12 @@ namespace Toltech.App.Models
 
         #endregion
     }
+
+    public class PartWithDatasResult
+    {
+        public Part Part { get; init; }
+        public List<ModelData> Datas { get; init; }
+    }
+
+
 }

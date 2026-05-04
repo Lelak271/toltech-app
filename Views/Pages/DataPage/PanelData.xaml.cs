@@ -1,15 +1,11 @@
-﻿using System.ComponentModel;
-using System.Diagnostics;
-using System.Reflection;
-using System.Resources;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using Toltech.App.Behaviors;
 using Toltech.App.Front;
-using Toltech.App.ViewModels;
 using Toltech.App.Models;
 using Toltech.App.Services;
+using Toltech.App.ViewModels;
+using static Toltech.App.Models.NodesDefinition;
+using static Toltech.App.Services.EventsManager;
 
 namespace Toltech.App.FrontEnd.Controls
 {
@@ -21,6 +17,8 @@ namespace Toltech.App.FrontEnd.Controls
         public PanelData()
         {
             InitializeComponent();
+            EventsManager.NodeChanged += OnNodeChangedAsync;
+            EventsManager.PartCrud += OnPartCrudAsync;
 
             #region Click droit
 
@@ -130,6 +128,55 @@ namespace Toltech.App.FrontEnd.Controls
         }
 
 
+        #endregion
+
+        #region Events
+
+        private Task OnNodeChangedAsync(NodeChangedEvent e)
+        {
+            if (e.Type != NodeType.PartNode) return Task.CompletedTask;
+
+            return OnPartCrudAsync(new PartCrudEvent
+            {
+                Operation = e.Operation,
+                Source = EventSource.Tree,
+                EntityId = e.LinkedOriginalId,
+                Entity = e.Operation == CrudOperation.Updated
+                            ? new Part { Id = e.LinkedOriginalId, NamePart = e.NewName }
+                            : null
+            });
+        }
+
+        private Task OnPartCrudAsync(PartCrudEvent e)
+        {
+            if (e.Operation != CrudOperation.Updated) return Task.CompletedTask;
+
+            var updatedParts = e.Entities?.Any() == true
+                ? e.Entities
+                : e.Entity != null ? new List<Part> { e.Entity } : null;
+
+            if (updatedParts == null) return Task.CompletedTask;
+            if (DataContext is not ModelData data) return Task.CompletedTask;
+
+            App.Current.Dispatcher.Invoke(() =>
+            {
+                var extremite = updatedParts.FirstOrDefault(p => p.Id == data.ExtremitePartId);
+                if (extremite != null)
+                    Part1Text.Text = extremite.NamePart;
+
+                var origine = updatedParts.FirstOrDefault(p => p.Id == data.OriginePartId);
+                if (origine != null)
+                    Part2Text.Text = origine.NamePart;
+            });
+
+            return Task.CompletedTask;
+        }
+
+        private void UserControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            EventsManager.NodeChanged -= OnNodeChangedAsync;
+            EventsManager.PartCrud -= OnPartCrudAsync;
+        }
         #endregion
 
         #region CheckBox INT

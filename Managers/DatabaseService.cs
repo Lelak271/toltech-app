@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Windows;
+using DocumentFormat.OpenXml.Office2010.Excel;
 using SQLite;
 using Toltech.App.Models;
 using Toltech.App.Services.Logging;
@@ -81,6 +82,8 @@ namespace Toltech.App.Services
             // IMPORTANT : pas de création implicite ici
             _asyncDb = new SQLiteAsyncConnection(_dbPath);
 
+            await ApplyPragmasAsync(_asyncDb);
+
             ActiveInstance = this;
 
             if (!isTempPath)
@@ -99,8 +102,16 @@ namespace Toltech.App.Services
             var db = new SQLiteAsyncConnection(modelPath);
 
            await EnsureSchemaAsync(db);
-
+            await ApplyPragmasAsync(db);
             await db.CloseAsync();
+        }
+
+        // PRAGMAs extraits dans une méthode dédiée
+        private async Task ApplyPragmasAsync(SQLiteAsyncConnection db)
+        {
+            //await db.ExecuteScalarAsync<string>("PRAGMA journal_mode=DELETE;");
+            //await db.ExecuteScalarAsync<int>("PRAGMA synchronous=NORMAL;");
+            //await db.ExecuteScalarAsync<int>("PRAGMA foreign_keys=ON;");
         }
 
         public async Task InitializeModelAsync(Guid modelId, string name, string path)
@@ -134,26 +145,6 @@ namespace Toltech.App.Services
         }
 
         #region await EventsManager
-        private async Task NotifyModelDataChanged()
-        {
-            Debug.WriteLine("[DatabaseService] - NotifyModelDataChanged()");
-            await EventsManager.RaiseModelDataAddOrDeletedAsync();
-        }
-        private async Task NotifyRequirementChanged()
-        {
-            Debug.WriteLine("[DatabaseService] - NotifyRequirementChanged()");
-            await EventsManager.RaiseRequirementAddOrDeletedAsync();
-        }
-        private async Task NotifyNodeUpdated()
-        {
-            Debug.WriteLine("[DatabaseService] - NotifyNodeUpdated()");
-            await EventsManager.RaiseNodesUpdatedAsync();
-        }
-        public async Task PublicNotifyNodeUpdated()
-        {
-            Debug.WriteLine("[DatabaseService] - PublicNotifyNodeUpdated()");
-            await NotifyNodeUpdated();
-        }
 
         private async Task NotifyModelOpen()
         {
@@ -167,11 +158,6 @@ namespace Toltech.App.Services
             await EventsManager.RaiseModelDeleteAsync();
         }
 
-        private async Task NotifyPartAddDeleted()
-        {
-            Debug.WriteLine("[DatabaseService] - NotifyPartAddDeleted()");
-            await EventsManager.RaisePartAddOrDeletedAsync();
-        }
         #endregion
 
         public async Task EnsureSchemaAsync(SQLiteAsyncConnection db)
@@ -184,6 +170,7 @@ namespace Toltech.App.Services
             await db.CreateTableAsync<NodesDefinition>();
             await db.CreateTableAsync<ModelDB>();
             await db.CreateTableAsync<Part>();
+
         }
       
         public async Task CloseConnection()
@@ -228,22 +215,16 @@ namespace Toltech.App.Services
         {
             ArgumentNullException.ThrowIfNull(entities);
             await _asyncDb.InsertAllAsync(entities);
-
         }
-        public async Task DeleteRangeAsync<T>(IEnumerable<T> entities)
+        public async Task DeleteRangeAsync<T>(IEnumerable<T> entities) where T : new()
         {
-            ArgumentNullException.ThrowIfNull(entities);
-
-            await _asyncDb.RunInTransactionAsync(tran =>
-            {
-                foreach (var entity in entities)
-                {
-                    if (entity == null)
-                        continue;
-                    tran.Delete(entity);
-                }
-            });
+            // TODO Voir si possibilité de remettre de l'atomicité ici, actuellement SQLite ne gère pas les DELETE en batch et ça génère une requete par entity, à revoir si besoin de performance
+            var list = entities.ToList();
+            if (!list.Any()) return;
+            foreach (var entity in list)
+                await _asyncDb.DeleteAsync(entity);
         }
+
         public async Task UpdateRangeAsync<T>(IEnumerable<T> entities)
         {
             ArgumentNullException.ThrowIfNull(entities);
@@ -362,14 +343,26 @@ namespace Toltech.App.Services
         /// </summary>
         public async Task DeletePartsWithDatasRangeAsync(List<int> partIds)
         {
-            await _asyncDb.RunInTransactionAsync(conn =>
-            {
-                conn.Table<ModelData>()
-                    .Delete(d => partIds.Contains(d.ExtremitePartId.Value));
+            var placeholders = string.Join(",", partIds.Select(_ => "?"));
+            var args = partIds.Cast<object>().ToArray();
 
-                conn.Table<Part>()
-                    .Delete(p => partIds.Contains(p.Id));
-            });
+            await _asyncDb.ExecuteAsync("BEGIN TRANSACTION;");
+            try
+            {
+                await _asyncDb.ExecuteAsync(
+                    $"DELETE FROM ModelData WHERE ExtremitePartId IN ({placeholders})", args);
+
+                await _asyncDb.ExecuteAsync(
+                    $"DELETE FROM Part WHERE Id IN ({placeholders})", args);
+
+                await _asyncDb.ExecuteAsync("COMMIT;");
+            }
+            catch
+            {
+                await _asyncDb.ExecuteAsync("ROLLBACK;");
+                throw;
+            }
+
         }
 
 
@@ -377,12 +370,12 @@ namespace Toltech.App.Services
       
 
 
-        public async Task SetFixedPartAsync(Part part)
+        public async Task<List<Part>> SetFixedPartAsync(Part part)
         {
             if (part == null) throw new ArgumentNullException(nameof(part));
 
-            await SetFixedPart_PartAsync(part);
-            await SetFixedPart_NodeDefinitionAsync(part);
+            return  await SetFixedPart_PartAsync(part);
+            //await SetFixedPart_NodeDefinitionAsync(part);
         }
        
         private async Task SetFixedPart_NodeDefinitionAsync(Part part)
@@ -409,27 +402,37 @@ namespace Toltech.App.Services
             }
             await UpdateRangeAsync(otherNodes);
 
-            await NotifyNodeUpdated();
         }
-        private async Task SetFixedPart_PartAsync(Part part)
+        private async Task<List<Part>> SetFixedPart_PartAsync(Part part)
         {
-            if (part == null) return;
+            if (part == null) return new List<Part>();
 
-            var dbPart = await _asyncDb.Table<Part>().Where(p => p.Id == part.Id).FirstOrDefaultAsync();
-            if (dbPart != null)
+            var dbPart = await _asyncDb.Table<Part>()
+                .Where(p => p.Id == part.Id)
+                .FirstOrDefaultAsync();
+
+            if (dbPart == null) return new List<Part>();
+
+            dbPart.IsFixed = true;
+            await _asyncDb.UpdateAsync(dbPart);
+
+            var otherParts = await _asyncDb.Table<Part>()
+                .Where(p => p.Id != part.Id && p.IsFixed)
+                .ToListAsync();
+
+            if (otherParts.Any())
             {
-                dbPart.IsFixed = true;
-                await _asyncDb.UpdateAsync(dbPart);
-
-                var otherParts = await _asyncDb.Table<Part>().Where(p => p.Id != part.Id).ToListAsync();
                 foreach (var p in otherParts)
-                {
                     p.IsFixed = false;
-                }
+
                 await _asyncDb.UpdateAllAsync(otherParts);
             }
-        }
 
+            // Retourne toutes les parts modifiées
+            var affected = new List<Part> { dbPart };
+            affected.AddRange(otherParts);
+            return affected;
+        }
         public async Task SetActivePart_PartAsync(Part part)
         {
             if (part == null) throw new ArgumentNullException(nameof(part));
@@ -442,8 +445,6 @@ namespace Toltech.App.Services
             }
 
             _logger.LogInfo($"Changement de la pièce fixe en '{part.NamePart}' - ID :{part.Id}", nameof(DatabaseService));
-
-            RequestSyncAsync();
         }
         #endregion
 
@@ -782,7 +783,7 @@ namespace Toltech.App.Services
                 }
 
                 // Récupération du modèle en base
-                var existingModel = await DbModelService.ActiveInstance.GetModelMetaByIdAsync(modelId.Value);
+                var existingModel = await MetaModelDatabaseService.ActiveInstance.GetModelMetaByIdAsync(modelId.Value);
 
                 if (existingModel == null)
                 {
@@ -800,7 +801,7 @@ namespace Toltech.App.Services
                 existingModel.PartCount = numberOfParts;
 
                 // Sauvegarde en base
-                await DbModelService.ActiveInstance.SaveModelAsync(existingModel);
+                await MetaModelDatabaseService.ActiveInstance.SaveModelAsync(existingModel);
             }
             catch (Exception ex)
             {
@@ -810,66 +811,6 @@ namespace Toltech.App.Services
 
         #endregion
 
-        #region Synchronisation des Tables 
 
-        private readonly SemaphoreSlim _syncLock = new(1, 1);
-        private bool _syncPending;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        private async Task RequestSyncAsync()
-        {
-            _syncPending = true;
-
-            // Si le lock est déjà pris, une sync tourne — elle verra _syncPending=true
-            // via le while et repassera. Pas besoin d'en lancer une autre.
-            if (!await _syncLock.WaitAsync(0))
-                return;
-
-            try
-            {
-                while (_syncPending)
-                {
-                    _syncPending = false;
-                    await InternalSyncTablesAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[DatabaseService] - RequestSyncAsync() exception : {ex.Message}");
-                throw;
-            }
-            finally
-            {
-                _syncLock.Release();
-            }
-        }
-
-        public async Task Refactor_SynchronizeNodeGraphAsync()
-        {
-            try
-            {
-                await RequestSyncAsync();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[DatabaseService] - Refactor_SynchronizeNodeGraphAsync() exception : {ex.Message}");
-                throw;
-            }
-        }
-       
-        // Appel sync lors de changement de data / req impactant le treeview
-        private async Task InternalSyncTablesAsync()
-        {
-            Debug.WriteLine("[DataBaseService] - InternalSyncTablesAsync()");
-
-            await UpdateModelMetaCountsAsync();
-            //await _nodeSyncService.SyncNodesTableAsync();
-            await NotifyNodeUpdated();
-        }
-
-        #endregion
     }
 }
