@@ -12,7 +12,7 @@ namespace Toltech.App.Services
         private readonly SQLiteAsyncConnection _db;
         private readonly string _dbPath;
         private readonly ILoggerService _logger;
-        public static MetaModelDatabaseService ActiveInstance { get; private set; }
+        public static MetaModelDatabaseService ActiveInstance { get; private set; } = null!;
 
         public MetaModelDatabaseService(string modelPath = "")
         {

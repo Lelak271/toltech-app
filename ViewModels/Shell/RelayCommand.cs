@@ -24,10 +24,15 @@ namespace Toltech.App.ViewModels
         public bool CanExecute(object parameter) => _canExecute?.Invoke(parameter) ?? true;
         public void Execute(object parameter) => _execute(parameter);
 
-        public event EventHandler CanExecuteChanged;
+        public event EventHandler CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
+        }
 
         // Permet de notifier la vue que CanExecute a changé
-        public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+        public void RaiseCanExecuteChanged()
+            => CommandManager.InvalidateRequerySuggested();
 
         // Méthode helper pour commandes sans paramètre
         public static RelayCommand FromAction(Action action, Func<bool> canExecute = null)
@@ -81,9 +86,14 @@ namespace Toltech.App.ViewModels
                 _execute(t);
         }
 
-        public event EventHandler CanExecuteChanged;
+        public event EventHandler CanExecuteChanged
+        {
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
+        }
 
-        public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+        public void RaiseCanExecuteChanged()
+            => CommandManager.InvalidateRequerySuggested();
     }
 
 }

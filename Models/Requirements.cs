@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using DocumentFormat.OpenXml.EMMA;
 using DocumentFormat.OpenXml.Vml;
 using SQLite;
@@ -13,7 +14,7 @@ using Toltech.App.Views;
 
 namespace Toltech.App.Models
 {
-    public class Requirements : BaseViewModel
+    public partial class Requirements : BaseViewModel
     {
 
         #region Backing fields
@@ -288,7 +289,11 @@ namespace Toltech.App.Models
         public bool IsDirty
         {
             get => _isDirty;
-            private set => SetProperty(ref _isDirty, value);
+            private set
+            {
+                if (SetProperty(ref _isDirty, value))
+                    CommandManager.InvalidateRequerySuggested();
+            }
         }
 
         public bool IsSaving

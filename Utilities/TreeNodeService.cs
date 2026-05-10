@@ -1,10 +1,9 @@
-﻿using System.Diagnostics;
-using DocumentFormat.OpenXml.Wordprocessing;
+﻿using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using Toltech.App.Models;
 using Toltech.App.Services;
 using static Toltech.App.Models.NodesDefinition;
-using System.Collections.ObjectModel;
-using System.IO;
 
 namespace Toltech.App.Utilities
 {
@@ -95,7 +94,7 @@ namespace Toltech.App.Utilities
 
             // Chargement initial des siblings
             var siblings = (await _databaseService.GetChildrenAsync(parentFolderId))
-                .OrderBy(s => s.DisplayOrder)
+                .OrderByDescending(s => s.DisplayOrder)
                 .ToList();
 
             foreach (var node in movedNodes)
@@ -119,7 +118,7 @@ namespace Toltech.App.Utilities
             await _databaseService.NormalizeDisplayOrderAsync(parentFolderId);
 
             Debug.WriteLine("[DatabaseService] - NotifyNodeUpdated()");
-            
+
         }
 
         public async Task DeleteNodeAsync(NodesDefinition node)
@@ -134,7 +133,7 @@ namespace Toltech.App.Utilities
                     break;
 
                 case NodeType.RequirementNode:
-                    await _domainService.DeleteRequirementByIdAsync(node.LinkedRequirementId.Value);
+                    await _domainService.DeleteRequirementByIdAsync(node.LinkedOriginalId);
                     break;
 
                 case NodeType.DataNode:
@@ -205,12 +204,12 @@ namespace Toltech.App.Utilities
                     // --- Part (métier) ---
                     case NodeType.PartNode:
                         await _domainService.UpdatePartNameAsync(node.LinkedOriginalId, newName);
-                        node.NodeName = newName; 
+                        node.NodeName = newName;
                         break;
 
                     // --- Requirement (métier) ---
                     case NodeType.RequirementNode:
-                        await _domainService.UpdateRequirementNameAsync(node.LinkedRequirementId, newName);
+                        await _domainService.UpdateRequirementNameAsync(node.LinkedOriginalId, newName);
                         node.NodeName = newName;
                         break;
 
@@ -247,7 +246,7 @@ namespace Toltech.App.Utilities
                         break;
 
                     case NodeType.RequirementNode:
-                        await _domainService.ToggleActiveRequirementByIdAsync(node.LinkedRequirementId);
+                        await _domainService.ToggleActiveRequirementByIdAsync(node.LinkedOriginalId);
                         break;
 
                     case NodeType.DataNode:
@@ -283,34 +282,34 @@ namespace Toltech.App.Utilities
             await _databaseService.NormalizeDisplayOrderAsync(parentId);
         }
 
-        public async Task MoveNodesAsync(
+        public async Task<bool> MoveNodesAsync(
             List<NodesDefinition>? nodes,
             NodesDefinition? dropTarget,
             bool insertAbove)
         {
             if (nodes == null || nodes.Count == 0 || dropTarget == null)
-                return;
+                return false;
 
             foreach (var node in nodes)
             {
                 if (!await CanMoveNode(node, dropTarget))
-                    return;
+                    return false;
             }
 
-            var (parentFolderId, insertIndex) = await ResolveDropContextAsync(dropTarget, insertAbove, nodes);
+            var (parentFolderId, insertIndex) = await ResolveDropContextAsync(dropTarget, insertAbove);
 
             await UpdateDisplayOrderForMoveAsync(
                 nodes,
                 parentFolderId,
                 insertIndex);
 
-            await HandlePostMoveEventsAsync(dropTarget);
+            //await HandlePostMoveEventsAsync(dropTarget);
+            return true;
         }
 
         private async Task<(int? parentFolderId, int insertIndex)> ResolveDropContextAsync(
                         NodesDefinition dropTarget,
-                        bool insertAbove,
-                        List<NodesDefinition> nodes)
+                        bool insertAbove)
         {
             NodesDefinition parentFolder;
             int insertIndex;
@@ -325,7 +324,7 @@ namespace Toltech.App.Utilities
             }
             else
             {
-                parentFolder = await FindParentFolderAsync(dropTarget);
+                parentFolder = await FindParentFolderFromDbAsync(dropTarget);
 
                 insertIndex = dropTarget.DisplayOrder;
 
@@ -341,86 +340,57 @@ namespace Toltech.App.Utilities
 
             return (parentFolderId, insertIndex);
         }
-        private async Task HandlePostMoveEventsAsync(NodesDefinition dropTarget)
-        {
-            if (dropTarget.Type == NodeType.RequirementNode)
-            {
-                var visibleRequirementIds = await ListIDReqOfSelectFolderAsync();
-                var nameParentFolder = await NameParentFolderAsync();
-
-                //await EventsManager.RaiseNodReqSelectChangedAsync(
-                //    visibleRequirementIds,
-                //    nameParentFolder);
-            }
-            else if (dropTarget.Type == NodeType.DataNode)
-            {
-                // TODO    EventsManager.RaiseNodesDataDragAsync(); 
-            }
-        }
 
         #region Helper
 
-        /// <summary>
-        /// Retourne la liste des IDs des Requirements contenus dans le dossier parent du nœud sélectionné.
-        /// </summary>
-        public async Task<IReadOnlyCollection<int>> ListIDReqOfSelectFolderAsync()
-        {
-            if (SelectedNode == null)
-                return Array.Empty<int>();
-
-            var parentFolder = await FindParentFolderAsync(SelectedNode);
-            if (parentFolder == null)
-                return Array.Empty<int>();
-
-            var allNodes = await _databaseService.GetChildrenAsync(parentFolder.Id);
-
-            // Filtrer uniquement les nœuds "RequirementNode" (non-folder)
-            var requirementIds = allNodes
-                .Where(n => !n.IsFolder
-                            && n.Type == NodeType.RequirementNode
-                            && n.LinkedRequirementId != null)
-                .OrderByDescending(n => n.DisplayOrder)
-                .Select(n => n.LinkedRequirementId.Value)
-                .ToList();
-
-            return requirementIds;
-        }
+        public record FolderRequirementsResult(
+                        NodesDefinition FolderNode,
+                        IReadOnlyCollection<int> RequirementIds);
 
         /// <summary>
-        /// Trouve le parent folder d'un nœud donné en remontant l'arborescence
+        /// Retourne les IDs des <see cref="NodeType.RequirementNode"/> enfants directs
+        /// de <paramref name="folderNode"/>.
+        /// Retourne null si <paramref name="folderNode"/> est null ou n'est pas un dossier.
         /// </summary>
-        public async Task<string> NameParentFolderAsync()
+        public async Task<FolderRequirementsResult?> GetRequirementsOfFolderAsync(NodesDefinition folderNode)
         {
-            if (SelectedNode == null)
-                return "";
-
-            var parentFolder = await FindParentFolderAsync(SelectedNode);
-            if (parentFolder == null)
-                return "";
-
-            string nameParentFolder = parentFolder.NodeName;
-
-            return nameParentFolder;
-        }
-
-
-        /// <summary>
-        /// Trouve le parent folder d'un nœud donné en remontant l'arborescence
-        /// </summary>
-        private async Task<NodesDefinition> FindParentFolderAsync(NodesDefinition node)
-        {
-            if (node.ParentId == null)
+            if (folderNode is null || !folderNode.IsFolder)
                 return null;
 
-            var allNodes = await GetAllNodesAsync();
-            var parent = allNodes.FirstOrDefault(n => n.Id == node.ParentId);
+            var children = await _databaseService.GetChildrenAsync(folderNode.Id);
 
-            while (parent != null && !parent.IsFolder)
-            {
-                parent = allNodes.FirstOrDefault(n => n.Id == parent.ParentId);
-            }
+            var ids = children
+                .Where(n => n.Type == NodeType.RequirementNode)
+                .OrderByDescending(n => n.DisplayOrder)
+                .Select(n => n.LinkedOriginalId!)
+                .ToList();
 
-            return parent;
+            return new FolderRequirementsResult(folderNode, ids);
+        }
+
+        /// <summary>
+        /// Retourne les IDs des <see cref="NodeType.RequirementNode"/> enfants directs
+        /// du dossier parent de <paramref name="node"/>, ainsi que le nom du dossier parent.
+        /// Retourne null si <paramref name="node"/> est null ou sans dossier parent.
+        /// </summary>
+        public async Task<FolderRequirementsResult?> GetFolderRequirementsAsync(NodesDefinition node)
+        {
+            if (node is null)
+                return null;
+
+            var parentFolder = await FindParentFolderFromDbAsync(node);
+            if (parentFolder is null)
+                return null;
+
+            var children = await _databaseService.GetChildrenAsync(parentFolder.Id);
+
+            var ids = children
+                .Where(n => n.Type == NodeType.RequirementNode)
+                .OrderByDescending(n => n.DisplayOrder)
+                .Select(n => n.LinkedOriginalId)
+                .ToList();
+
+            return new FolderRequirementsResult(parentFolder, ids);
         }
 
         private async Task<bool> CanMoveNode(NodesDefinition node, NodesDefinition dropTarget)
@@ -479,11 +449,14 @@ namespace Toltech.App.Utilities
             return false;
         }
 
-        private async Task<NodesDefinition?> FindParentFolderFromDbAsync(NodesDefinition node)
+        /// <summary>
+        /// Trouve le parent folder d'un nœud donné en remontant l'arborescence
+        /// </summary>
+        public async Task<NodesDefinition?> FindParentFolderFromDbAsync(NodesDefinition node)
         {
             var current = node;
 
-            while (current.ParentId.HasValue)
+            while (node.ParentId.HasValue)
             {
                 var parent = await _databaseService.GetNodeByIdAsync(current.ParentId.Value);
 

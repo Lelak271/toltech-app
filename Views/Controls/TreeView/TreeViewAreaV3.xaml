@@ -42,16 +42,17 @@
                             </Border.OpacityMask>
                      </Border>
 
-                        <TextBox x:Name="PART_TextBox" 
-                                 Text="{Binding NodeName}" 
-                                 Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityConverter}}" 
-                                 LostFocus="TextBox_LostFocus" 
-                                 KeyDown="TextBox_KeyDown"
-                                 behaviors:TextBoxEnterBehavior.MoveFocusOnEnter="False"
-                                 behaviors:TextBoxEnterBehavior.AllowEnterKey="True"
-                                 Grid.Column="1" Margin="6,0,0,0" 
-                                 VerticalAlignment="Center">
-                       
+                    <TextBox x:Name="PART_TextBox" 
+                             Text="{Binding NodeName, UpdateSourceTrigger=Explicit}"
+                             IsReadOnly="True"
+                             Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisibilityConverter}}" 
+                             LostFocus="TextBox_LostFocus" 
+                             KeyDown="TextBox_KeyDown"
+                             behaviors:TextBoxEnterBehavior.MoveFocusOnEnter="False"
+                             behaviors:TextBoxEnterBehavior.AllowEnterKey="True"
+                             Grid.Column="1" Margin="6,0,0,0" 
+                             VerticalAlignment="Center">
+
                     </TextBox>
                         <TextBlock x:Name="PART_TextBlock" 
                                    Text="{Binding NodeName}" 
@@ -169,7 +170,7 @@
                     <Setter Property="Tag" Value="{Binding}"/>
                     <EventSetter Event="Expanded" Handler="TreeViewControlV3_Expanded"/>
                     <EventSetter Event="Collapsed" Handler="TreeViewControlV3_Collapsed"/>
-                    <EventSetter Event="PreviewMouseDoubleClick" Handler="TreeViewItem_PreviewMouseDoubleClick"/>
+                    <EventSetter Event="MouseDoubleClick" Handler="TreeViewItem_MouseDoubleClick"/>
                     
                     
                 </Style>

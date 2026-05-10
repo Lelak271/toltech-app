@@ -1,11 +1,11 @@
 ﻿using System.IO;
-using QuickGraph;
 using Toltech.App.Models;
 using Toltech.App.Services.Logging;
 using Toltech.App.Services.Notification;
 using Toltech.App.ToltechCalculation.Helpers;
 using Toltech.App.Utilities;
 using Toltech.App.Utilities.Result;
+using static Toltech.App.Services.EventsManager;
 
 namespace Toltech.App.Services
 {
@@ -60,7 +60,7 @@ namespace Toltech.App.Services
 
                 _ = _notificationService.ShowNotifAsync($"Pièce \"{nomPiece}\" ajoutée avec succès !", false);
 
-                
+
 
                 return Result<PartWithDatasResult>.Success(new PartWithDatasResult
                 {
@@ -80,6 +80,10 @@ namespace Toltech.App.Services
             if (!ModelValidationHelper.CheckModelActif(false))
                 return Result<ModelData>.Failure("No active model.", ErrorCode.NoActiveModel);
 
+            bool isExist = await _databaseService.PartExistsByIdAsync(idPartActif);
+
+                if(isExist)
+                  return Result<ModelData>.Failure("Pas de pièce valide à la création.", ErrorCode.InvalidInput);
             try
             {
                 var newDatas = await AddDataOfPartExtremiteAsync(idPartActif, 1);
@@ -131,8 +135,8 @@ namespace Toltech.App.Services
                     false);
 
                 // 4. events métier
-                
-                
+
+
 
                 return Result.Success();
             }
@@ -145,9 +149,9 @@ namespace Toltech.App.Services
             }
         }
         public async Task<Result> DeleteDatasByIdsAsync(int dataId)
-        { 
-             return await DeleteDatasByIdsAsync(new[] { dataId });   
-        } 
+        {
+            return await DeleteDatasByIdsAsync(new[] { dataId });
+        }
         public async Task<Result> DeleteDatasByIdsAsync(IEnumerable<int> dataIds)
         {
             try
@@ -184,37 +188,67 @@ namespace Toltech.App.Services
                     ErrorCode.Unknown);
             }
         }
+        /// <summary>
+        /// Supprime une part et ses données associées.
+        /// </summary>
         public async Task<Result<PartWithDatasResult>> DeletePartWithDatasByIdAsync(int idPart)
+        {
+            var result = await DeletePartsWithDatasByIdsAsync(new List<int> { idPart });
+            if (result.IsFailure) return Result<PartWithDatasResult>.Failure(result.Error);
+
+            var single = result.Value.FirstOrDefault();
+            return single is not null
+                ? Result<PartWithDatasResult>.Success(single)
+                : Result<PartWithDatasResult>.Failure("Part introuvable.", ErrorCode.NotFound);
+        }
+
+        /// <summary>
+        /// Supprime une collection de parts et leurs données associées en une seule transaction.
+        /// Retourne les données de chaque part avant suppression.
+        /// </summary>
+        public async Task<Result<IReadOnlyList<PartWithDatasResult>>> DeletePartsWithDatasByIdsAsync(
+            IReadOnlyList<int> idParts)
         {
             try
             {
                 if (!ModelValidationHelper.CheckModelActif(false))
-                    return Result<PartWithDatasResult>.Failure("No active model.", ErrorCode.NoActiveModel);
+                    return Result<IReadOnlyList<PartWithDatasResult>>.Failure(
+                        "No active model.", ErrorCode.NoActiveModel);
+
+                if (idParts is null || !idParts.Any())
+                    return Result<IReadOnlyList<PartWithDatasResult>>.Failure(
+                        "Aucun id fourni.", ErrorCode.InvalidInput);
 
                 // 1. Charger les données AVANT suppression
-                var part = await _databaseService.GetPartByIdAsync(idPart);
-                var datas = await _databaseService.GetModelDataByPartIdAsync(idPart);
-
-                // Suppression atomique (transaction recommandée côté service)
-                await _databaseService.DeletePartsWithDatasRangeAsync(new List<int> { idPart });
-
-                // 3. notification
-                _ = _notificationService.ShowNotifAsync(
-                    $"Données supprimées pour la pièce {idPart}.",
-                    false);
-
-                
-
-                return Result<PartWithDatasResult>.Success(new PartWithDatasResult
+                var results = new List<PartWithDatasResult>();
+                foreach (var id in idParts)
                 {
-                    Part = part,
-                    Datas = datas ?? new List<ModelData>()
-                });
+                    var part = await _databaseService.GetPartByIdAsync(id);
+                    var datas = await _databaseService.GetModelDataByPartIdAsync(id);
+                    results.Add(new PartWithDatasResult
+                    {
+                        Part = part,
+                        Datas = datas ?? new List<ModelData>()
+                    });
+                }
+
+                // 2. Suppression atomique
+                await _databaseService.DeletePartsWithDatasRangeAsync(idParts.ToList());
+
+                // 3. Notification
+                var label = idParts.Count == 1
+                    ? $"Données supprimées pour la pièce {idParts[0]}."
+                    : $"{idParts.Count} pièces supprimées.";
+
+                _ = _notificationService.ShowNotifAsync(label, false);
+
+                return Result<IReadOnlyList<PartWithDatasResult>>.Success(results);
             }
             catch (Exception ex)
             {
-                _logger.LogError("DeletePartById failed", "", ex);
-                return Result<PartWithDatasResult>.Failure("Une erreur est survenue lors de la suppression de la pièce.", ErrorCode.Unknown);
+                _logger.LogError("DeletePartsWithDatasByIds failed", "", ex);
+                return Result<IReadOnlyList<PartWithDatasResult>>.Failure(
+                    "Une erreur est survenue lors de la suppression.", ErrorCode.Unknown);
             }
         }
 
@@ -235,13 +269,18 @@ namespace Toltech.App.Services
             }
         }
 
-        public async Task<Result> SaveModelDataAsync(List<ModelData> toSave)
+        public async Task<Result> UpdateModelDataAsync(List<ModelData> toSave)
         {
             foreach (var d in toSave)
                 d.MarkSaving();
 
             try
             {
+                var renamed = await ResolveUniqueNamesAsync(toSave, _databaseService.NameDataExisteAsync);
+
+                foreach (var (original, resolved) in renamed)
+                    _logger.LogInfo($"Contact renommé : \"{original}\" → \"{resolved}\"");
+
                 await _databaseService.UpdateRangeAsync(toSave);
 
                 foreach (var d in toSave)
@@ -249,10 +288,6 @@ namespace Toltech.App.Services
                     d.ClearDirty();
                     d.ClearSaving();
                 }
-
-                
-                
-
                 return Result.Success();
             }
             catch (Exception ex)
@@ -288,6 +323,11 @@ namespace Toltech.App.Services
 
                 // Mise à jour
                 data.Model = newName.Trim();
+
+                var renamed = await ResolveUniqueNamesAsync(data, _databaseService.NameDataExisteAsync);
+
+                foreach (var (original, resolved) in renamed)
+                    _logger.LogInfo($"Contact renommé : \"{original}\" → \"{resolved}\"");
 
                 await _databaseService.UpdateAsync(data);
 
@@ -531,7 +571,7 @@ namespace Toltech.App.Services
                 // 4. notification
                 _ = _notificationService.ShowNotifAsync($"Exigence \"{nomRequirement}\" ajoutée avec succès !", false);
 
-                
+
 
                 return Result<Requirements?>.Success(uiModel);
             }
@@ -577,6 +617,11 @@ namespace Toltech.App.Services
 
             try
             {
+                var renamed = await ResolveUniqueNamesAsync(toSave, _databaseService.NameReqExisteAsync);
+
+                foreach (var (original, resolved) in renamed)
+                    _logger.LogInfo($"Requirement renommé : \"{original}\" → \"{resolved}\"");
+
                 await _databaseService.UpdateRangeAsync(toSave);
 
                 foreach (var req in toSave)
@@ -584,9 +629,6 @@ namespace Toltech.App.Services
                     req.ClearDirty();
                     req.ClearSaving();
                 }
-
-                
-                
 
                 return Result.Success();
             }
@@ -616,6 +658,11 @@ namespace Toltech.App.Services
                     return Result.Failure("Requirement introuvable.", ErrorCode.NotFound);
 
                 requirement.NameReq = newName.Trim();
+
+                var renamed = await ResolveUniqueNamesAsync(requirement, _databaseService.NameReqExisteAsync);
+
+                foreach (var (original, resolved) in renamed)
+                    _logger.LogInfo($"Requirement renommé : \"{original}\" → \"{resolved}\"");
 
                 await _databaseService.UpdateAsync(requirement);
 
@@ -647,8 +694,8 @@ namespace Toltech.App.Services
 
                 await _databaseService.DeleteRangeAsync(list);
 
-                
-                
+
+
 
                 return Result.Success();
             }
@@ -726,10 +773,22 @@ namespace Toltech.App.Services
             }
         }
 
+        #region Helper Requirements
+
+        #endregion
+
         #endregion
 
         #region Service Model
 
+        private async Task NotifyModelOpen(string path)
+        {
+
+            await EventsManager.RaiseModelOpenedAsync(new ModelOpenedEvent
+            {
+                Path = path,
+            });
+        }
         public async Task<Result> CreateModelAsync(string modelName)
         {
             try
@@ -748,7 +807,7 @@ namespace Toltech.App.Services
                 // 2. Vérification existence
                 if (File.Exists(modelPath))
                 {
-                    return Result.Failure("Le modèle existe déjà.");
+                    return Result.Failure("Le modèle existe déjà à l'emplacement par défaut.");
                 }
 
                 // 3. Définir modèle actif
@@ -761,7 +820,9 @@ namespace Toltech.App.Services
                 await _databaseService.Open(modelPath);
 
                 // 4. enregistrement global
-                await RegisterModelAsync(modelName, modelPath);
+                var modelId = await RegisterModelAsync(modelName, modelPath);
+
+                await NotifyModelOpen(modelPath);
 
                 // 7. Notification
                 _ = _notificationService.ShowNotifAsync(
@@ -794,6 +855,8 @@ namespace Toltech.App.Services
 
                 // 3. Switch DB (IMPORTANT : instance existante)
                 await _databaseService.Open(selectedFile);
+
+                await NotifyModelOpen(selectedFile);
 
                 return Result.Success();
             }
@@ -843,6 +906,8 @@ namespace Toltech.App.Services
 
                 // 4. Réouvrir DB par défaut (temp/template)
                 await _databaseService.Open();
+
+                await NotifyModelOpen("");
 
                 // 5. Notification
                 _ = _notificationService.ShowNotifAsync($"Modèle '{System.IO.Path.GetFileNameWithoutExtension(path)}' supprimé", false);
@@ -901,7 +966,7 @@ namespace Toltech.App.Services
 
                 // 4. ouverture DB modèle
                 await _databaseService.Open(newFilePath);
-
+                await NotifyModelOpen(newFilePath);
                 // 5. notification
                 _ = _notificationService.ShowNotifAsync(
                     "Modèle dupliqué avec succès",
@@ -939,26 +1004,26 @@ namespace Toltech.App.Services
         /// <param name="nameModel"></param>
         /// <param name="modelPath"></param>
         /// <returns></returns>
-        public async Task<Result> RegisterModelAsync(string nameModel, string modelPath)
+        public async Task<Result<Guid>> RegisterModelAsync(string nameModel, string modelPath)
         {
             try
             {
-                var modelId = Guid.NewGuid();
+                Guid modelId = Guid.NewGuid();
 
                 if (modelPath == null)
                     modelPath = ModelManager.ModelActif;
 
                 if (string.IsNullOrEmpty(modelPath) || !File.Exists(modelPath))
                 {
-                    return Result.Failure("Invalid model path.", ErrorCode.Unknown);
+                    return Result<Guid>.Failure("Invalid model path.", ErrorCode.Unknown);
                 }
 
                 if ((await IsExistModelRegisterAsync(modelPath)).IsSuccess)
-                    return Result.Success();
+                    return Result<Guid>.Success(modelId);
 
                 if (NameValidationHelper.NamingValidation(nameModel).IsFailure)
                 {
-                    return Result.Failure("Invalid model name.", ErrorCode.Unknown);
+                    return Result<Guid>.Failure("Invalid model name.", ErrorCode.Unknown);
                 }
 
                 // Fermer la connexion base de données si ouverte (en tâche de fond)
@@ -968,12 +1033,12 @@ namespace Toltech.App.Services
                 await _databaseService.InitializeModelAsync(modelId, nameModel, modelPath);
                 await MetaModelDatabaseService.ActiveInstance.RegisterModelAsync(modelId, modelPath, "");
 
-                return Result.Success();
+                return Result<Guid>.Success(modelId);
 
             }
             catch (Exception ex)
             {
-                return Result.Failure("Error during model registration.", ErrorCode.Unknown);
+                return Result<Guid>.Failure("Error during model registration.", ErrorCode.Unknown);
             }
         }
 
@@ -1059,11 +1124,11 @@ namespace Toltech.App.Services
         public async Task<int> InsertPartAsync(Part newPart)
         {
             if (newPart == null) newPart = CreateDefaultPart("");
+
+            var renamed = await ResolveUniqueNamesAsync(newPart, _databaseService.NamePartExisteAsync);
+
             await _databaseService.InsertAsync(newPart);
-
             
-            
-
             return newPart.Id;
         }
 
@@ -1097,11 +1162,11 @@ namespace Toltech.App.Services
                     false);
 
                 // Events métier
-                
-                
-                
 
-                
+
+
+
+
 
                 return Result.Success();
             }
@@ -1138,21 +1203,10 @@ namespace Toltech.App.Services
             try
             {
                 // --- Validation métier (exemple : unicité des noms) ---
-                // 1) doublons dans le lot
-                var dupInBatch = list
-                    .GroupBy(p => p.NamePart)
-                    .FirstOrDefault(g => !string.IsNullOrWhiteSpace(g.Key) && g.Count() > 1);
+                var renamed = await ResolveUniqueNamesAsync(list, _databaseService.NamePartExisteAsync);
 
-                if (dupInBatch != null)
-                    return Result.Failure($"Nom en double dans la sélection : '{dupInBatch.Key}'.", ErrorCode.DuplicateEntry);
-
-                // 2) conflits avec la base (en excluant les Id existants)
-                foreach (var p in list)
-                {
-                    bool exists = await _databaseService.IsNamePartExisteAsync(p.NamePart, p.Id);
-                    if (exists)
-                        return Result.Failure($"Le nom '{p.NamePart}' existe déjà.", ErrorCode.DuplicateEntry);
-                }
+                foreach (var (original, resolved) in renamed)
+                    _logger.LogInfo($"Part renommée : \"{original}\" → \"{resolved}\"");
 
                 // --- Séparation insert / update ---
                 var toInsert = list.Where(p => p.Id == 0).ToList();
@@ -1249,7 +1303,7 @@ namespace Toltech.App.Services
         {
             try
             {
-                 await _databaseService.SetActivePart_PartAsync(part);
+                await _databaseService.SetActivePart_PartAsync(part);
                 return Result.Success();
             }
             catch (Exception ex)
@@ -1273,7 +1327,7 @@ namespace Toltech.App.Services
         }
         #endregion
 
-        #region Helper Methods
+        #region Helper Parts
 
         /// <summary>
         /// Insertion de nouvelle pièce avec nom par défaut.
@@ -1301,7 +1355,60 @@ namespace Toltech.App.Services
             };
         }
 
+
         #endregion
+
+        #endregion
+
+
+        #region Helper
+
+        /// <summary>
+        /// Résout les noms en doublon dans <paramref name="toSave"/> en ajoutant un incrément.
+        /// Vérifie à la fois la DB et les doublons internes à la liste.
+        /// Ex: "Req" → "Req (1)", "Req (2)"...
+        /// </summary>
+        /// <param name="toSave">Liste d'entités à résoudre.</param>
+        /// <param name="nameExistsAsync">Délégué vérifiant l'existence du nom en DB.</param>
+        /// <returns>Noms modifiés — vide si aucun changement.</returns>
+        private async Task<Dictionary<string, string>> ResolveUniqueNamesAsync<T>(
+            List<T> toSave,
+            Func<string, Task<bool>> nameExistsAsync)
+            where T : INameResolvable
+        {
+            var resolvedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var renamedMap = new Dictionary<string, string>(); // baseName → candidate
+
+            foreach (var entity in toSave)
+            {
+                var baseName = entity.Name;
+                var candidate = baseName;
+                int increment = 1;
+
+                while (resolvedNames.Contains(candidate)
+                       || await nameExistsAsync(candidate))
+                {
+                    candidate = $"{baseName} ({increment++})";
+                }
+
+                if (candidate != baseName)
+                {
+                    entity.Name = candidate;
+                    renamedMap[baseName] = candidate;
+                }
+
+                resolvedNames.Add(candidate);
+            }
+
+            return renamedMap;
+        }
+
+        // Surcharge unitaire
+        private async Task<Dictionary<string, string>> ResolveUniqueNamesAsync<T>(
+            T toSave,
+            Func<string, Task<bool>> nameExistsAsync)
+            where T : INameResolvable
+            => await ResolveUniqueNamesAsync(new List<T> { toSave }, nameExistsAsync);
 
         #endregion
 

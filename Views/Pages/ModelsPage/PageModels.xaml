@@ -60,7 +60,7 @@
                                 FontWeight="DemiBold" />
                             <TextBlock 
                                 Margin="35,0,0,5"  
-                                Text="{Binding PathModel}" 
+                                Text="{Binding ModelName}" 
                                 FontSize="25" 
                                 FontWeight="DemiBold" />
                         </StackPanel>
@@ -89,6 +89,7 @@
                 <ListBox Grid.Row="2"
                           x:Name="ListBoxReqs"
                           ItemsSource="{Binding FilteredModels}"
+                          SelectedItem="{Binding SelectedModel, Mode=TwoWay}" 
                           VirtualizingPanel.IsVirtualizing="True"
                           VirtualizingPanel.VirtualizationMode="Recycling"
                           VirtualizingPanel.ScrollUnit="Pixel"

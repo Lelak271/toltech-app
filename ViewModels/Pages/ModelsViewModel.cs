@@ -58,9 +58,6 @@ namespace Toltech.App.ViewModels
 
         #region Properties
 
-        public string? PathModel => _mainVM.ModelActif;
-
-
         private PanelModelMeta? _currentEditablePanel;
 
         public PanelModelMeta? CurrentEditablePanel
@@ -74,9 +71,76 @@ namespace Toltech.App.ViewModels
                 _currentEditablePanel?.SetEditable(false);
                 _currentEditablePanel = value;
                 _currentEditablePanel?.SetEditable(true);
+
+                OnPropertyChanged(nameof(CurrentEditablePanel));
             }
         }
 
+
+        private ModelMeta? _selectedModel;
+        public ModelMeta? SelectedModel
+        {
+            get => _selectedModel;
+            set
+            {
+                if (SetProperty(ref _selectedModel, value, nameof(SelectedModel)))
+                {
+                    OnPropertyChanged(nameof(ModelName));
+                }
+            }
+        }
+
+        private string? _pathModel;
+        public string? PathModel
+        {
+            get => _pathModel;
+            set
+            {
+                if (_pathModel != value)
+                {
+                    _pathModel = value;
+                    OnPropertyChanged(nameof(PathModel));
+                }
+            }
+        }
+
+        private string? _modelName;
+        public string? ModelName
+        {
+            get => _modelName;
+            set
+            {
+                if (_modelName != value)
+                {
+                    _modelName = value;
+                    OnPropertyChanged(nameof(ModelName));
+                }
+            }
+        }
+
+        #endregion
+
+        #region Events
+        private async Task OnModelOpened(ModelOpenedEvent e)
+        {
+            var model = _cache.FirstOrDefault(m => m.FilePathModel == e.Path);
+
+            if (model == null)
+            {
+                await LoadAsync();
+                model = _cache.FirstOrDefault(m => m.FilePathModel == e.Path);
+            }
+
+            if (model == null)
+                return;
+
+            SelectedModel = model;
+            NumberOfParts = model.PartCount;
+            NumberOfReq = model.RequirementCount;
+
+            PathModel = model.FilePathModel;
+            ModelName = model.NameData;
+        }
         #endregion
 
         #region Constructor
@@ -87,8 +151,6 @@ namespace Toltech.App.ViewModels
             _mainVM = mainVM;
             _domainService = mainVM.DomainService;
              
-            _mainVM.PropertyChanged += MainVM_PropertyChanged;
-
             _notificationService = App.NotificationService;
 
             FilteredModels = new ListCollectionView(Models);
@@ -96,14 +158,14 @@ namespace Toltech.App.ViewModels
             FilteredModels.SortDescriptions.Add(
                 new SortDescription(nameof(ModelMeta.CreatedAtmodel), ListSortDirection.Descending));
 
-            _reloadAction = () => _ = ReloadSafe();
+             _ = ReloadSafe();
 
             _mainVM.MetaModelSyncService.MetaChanged += OnMetaChanged;
 
             #region EventManager
 
-            EventsManager.ModelOpen += _reloadAction;
-
+            //EventsManager.ModelOpen += _reloadAction;
+            EventsManager.ModelOpened += OnModelOpened;
             #endregion
 
             #region Command
@@ -131,14 +193,6 @@ namespace Toltech.App.ViewModels
         /// Permet de propager les notifications vers les propriétés locales dépendantes,
         /// afin de maintenir la synchronisation entre la VM centrale et cette ViewModel.
         /// </summary>
-        private void MainVM_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-        {
-            if (e.PropertyName == nameof(_mainVM.ModelActif))
-            {
-                OnPropertyChanged(nameof(PathModel));
-            }
-        }
-
         #endregion
 
 
@@ -188,6 +242,7 @@ namespace Toltech.App.ViewModels
             // Rafraîchit la vue filtrée
             FilteredModels.Refresh();
         }
+
         private async Task SyncCollectionAsync(List<ModelMeta> source)
         {
             await Application.Current.Dispatcher.InvokeAsync(() =>
@@ -255,6 +310,7 @@ namespace Toltech.App.ViewModels
 
             CurrentEditablePanel = CurrentEditablePanel == panel ? null : panel;
 
+            
             if (CurrentEditablePanel == null && panel.DataContext is ModelMeta meta)
             {
                 var saveResult = await _domainService.SaveModelAsync(meta);
@@ -370,9 +426,7 @@ namespace Toltech.App.ViewModels
 
             if (createResult.IsFailure)
             {
-                // TODO: Refactorer vers un Result<T> générique afin de standardiser la gestion des erreurs et des succès retournés par le DomainService, 
-                // et permettre une communication explicite des causes d’échec (validation, doublon, IO, DB, etc.) sans utiliser de bools.
-                _dialog.Warning("Un modèle portant ce nom existe déjà.",
+                _dialog.Warning(createResult.Error,
                     "Création impossible");
             }
         }

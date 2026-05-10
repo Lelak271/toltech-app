@@ -4,7 +4,7 @@ using Toltech.App.ViewModels;
 
 namespace Toltech.App.Models
 {
-    public class ModelData : BaseViewModel
+    public partial class ModelData : BaseViewModel
     {
 
         #region Backing fields
@@ -113,7 +113,13 @@ namespace Toltech.App.Models
 
         #region Parts 
 
-        public int OriginePartId { get; set; }
+
+        private int _originePartId;
+        public int OriginePartId
+        {
+            get => _originePartId;
+            set => SetAndDirty(ref _originePartId, value);
+        }
 
         private int? _extremitePartId;
         public int? ExtremitePartId

@@ -13,7 +13,6 @@ namespace Toltech.App.FrontEnd.Controls
     public partial class RegisterModelWindow : Window
     {
         #region Fields & Properties
-        //private readonly MainViewModel _mainVM;
         private readonly IDialogService _dialog;
         private readonly MainViewModel _mainVM;
         private DomainService _domainService;
@@ -146,7 +145,7 @@ namespace Toltech.App.FrontEnd.Controls
         /// </summary>
         private static DriveItem[] GetPinnedFolders()
         {
-            // TODO Trop compliqué pour le moment , à revoir plus tard si besoin
+            // TODO : Trop compliqué pour le moment, à revoir plus tard si besoin
             return Array.Empty<DriveItem>();
         }
 

@@ -8,8 +8,6 @@ namespace Toltech.App.Services
     public static class ModelManager
     {
         private static string _modelActif;
-        private static string _partActif;
-        private static int _partIDActif;
         private static string _appDataPath;
         private static string _filepathResx;
 
@@ -20,7 +18,6 @@ namespace Toltech.App.Services
         public static event Action<string> FilePathResxChanged;
 
         // Nouvelle propriété pour accéder à l'instance active du service DB
-        public static DatabaseService DatabaseServiceActif { get; set; }
 
         #region Constructeur
 

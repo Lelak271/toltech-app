@@ -70,7 +70,7 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
                 }
                 catch (Exception)
                 {
-                    // TODO: log si besoin
+                    // TODO: Refactor Page Result => log si besoin
                 }
             }
 

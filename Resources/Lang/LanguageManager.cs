@@ -10,10 +10,15 @@ namespace Toltech.App.Resources.Lang
     }
 
     /// <summary>
-    /// todo
+    /// Fournit les utilitaires de correspondance entre <see cref="SupportedLanguage"/>,
+    /// <see cref="CultureInfo"/> et codes culture (ex: "fr", "fr-FR").
+    /// Stateless — aucun effet de bord.
     /// </summary>
     public static class LanguageHelper
     {
+        public const SupportedLanguage DefaultLanguage = SupportedLanguage.fr;
+        private static readonly CultureInfo DefaultCulture = new CultureInfo("fr-FR");
+
         private static readonly Dictionary<SupportedLanguage, CultureInfo> Cultures =
             new()
             {
@@ -28,7 +33,7 @@ namespace Toltech.App.Resources.Lang
         public static SupportedLanguage GetSupportedLanguage(string cultureCode)
         {
             if (string.IsNullOrWhiteSpace(cultureCode))
-                return LanguageManager.LanguageFallBack;
+                return DefaultLanguage;
 
             cultureCode = cultureCode.ToLowerInvariant();
 
@@ -41,7 +46,7 @@ namespace Toltech.App.Resources.Lang
                 }
             }
 
-            return LanguageManager.LanguageFallBack;
+            return DefaultLanguage;
         }
 
         /// <summary>
@@ -51,20 +56,25 @@ namespace Toltech.App.Resources.Lang
         {
             return Cultures.TryGetValue(lang, out var culture)
                 ? culture
-                : LanguageManager.LanguageFallBackCulture;
+                : DefaultCulture;
         }
     }
 
+    /// <summary>
+    /// Gère l'état de la langue active et son application à <see cref="LocalizationManager"/>.
+    /// Point d'entrée unique pour tout changement de langue dans l'application.
+    /// </summary>
     public static class LanguageManager
     {
         private static SupportedLanguage _currentLanguage = SupportedLanguage.fr;
         public static SupportedLanguage CurrentLanguage => _currentLanguage;
-        public static SupportedLanguage LanguageFallBack => SupportedLanguage.fr;
-        public static CultureInfo LanguageFallBackCulture => LanguageHelper.GetCulture(LanguageFallBack);
+        public static SupportedLanguage LanguageFallBack => LanguageHelper.DefaultLanguage;
+        public static CultureInfo CultureFallBackCulture => LanguageHelper.GetCulture(LanguageFallBack);
         public static CultureInfo CurrentCulture => LocalizationManager.Instance.CurrentCulture;
 
         /// <summary>
-        /// Applique la langue depuis les paramètres utilisateur
+        /// Applique la langue persistée dans <see cref="Properties.Settings.Default.Language"/>.
+        /// À appeler au démarrage de l'application.
         /// </summary>
         public static void ApplyFromSettings()
         {
@@ -73,7 +83,9 @@ namespace Toltech.App.Resources.Lang
         }
 
         /// <summary>
-        /// Applique une langue
+        /// Applique <paramref name="language"/> comme langue active.
+        /// Met à jour <see cref="CurrentLanguage"/> et propage la culture à <see cref="LocalizationManager"/>.
+        /// En cas d'échec, bascule sur <see cref="LanguageFallBack"/> et maintient un état cohérent.
         /// </summary>
         public static void ApplyLanguage(SupportedLanguage language)
         {
@@ -90,5 +102,6 @@ namespace Toltech.App.Resources.Lang
                     LanguageHelper.GetCulture(LanguageFallBack).Name);
             }
         }
+   
     }
 }

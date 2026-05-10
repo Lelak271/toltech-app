@@ -7,6 +7,7 @@ using SQLite;
 using Toltech.App.Models;
 using Toltech.App.Services.Logging;
 using static Toltech.App.Models.NodesDefinition;
+using static Toltech.App.Services.EventsManager;
 
 // DatabaseService
 // Description : Ce fichier gère toutes les opérations CRUD (Créer, Lire, Mettre à jour, Supprimer) avec la base de données SQLite.
@@ -25,7 +26,7 @@ namespace Toltech.App.Services
         private static string _modelPath = "template_db.tolx";
         private SQLiteAsyncConnection _asyncDb; // Connexion à la base de données SQLite
         private string _dbPath; // Chemin d'accès à la base de données
-        public static DatabaseService ActiveInstance { get; private set; }
+        public static DatabaseService ActiveInstance { get; private set; } = null!;
         private static ILoggerService _logger;
         public DatabaseService(string dbPath)
         {
@@ -67,7 +68,6 @@ namespace Toltech.App.Services
             if (_asyncDb != null &&
                 string.Equals(_dbPath, modelPath, StringComparison.OrdinalIgnoreCase))
             {
-                NotifyModelOpen();
                 return;
             }
 
@@ -82,14 +82,11 @@ namespace Toltech.App.Services
             // IMPORTANT : pas de création implicite ici
             _asyncDb = new SQLiteAsyncConnection(_dbPath);
 
-            await ApplyPragmasAsync(_asyncDb);
-
             ActiveInstance = this;
 
             if (!isTempPath)
                 _logger.LogInfo($"Connection opened : {modelPath}", nameof(DatabaseService));
 
-            NotifyModelOpen();
         }
         public async Task CreateDatabaseAsync(string modelPath)
         {
@@ -102,17 +99,9 @@ namespace Toltech.App.Services
             var db = new SQLiteAsyncConnection(modelPath);
 
            await EnsureSchemaAsync(db);
-            await ApplyPragmasAsync(db);
             await db.CloseAsync();
         }
 
-        // PRAGMAs extraits dans une méthode dédiée
-        private async Task ApplyPragmasAsync(SQLiteAsyncConnection db)
-        {
-            //await db.ExecuteScalarAsync<string>("PRAGMA journal_mode=DELETE;");
-            //await db.ExecuteScalarAsync<int>("PRAGMA synchronous=NORMAL;");
-            //await db.ExecuteScalarAsync<int>("PRAGMA foreign_keys=ON;");
-        }
 
         public async Task InitializeModelAsync(Guid modelId, string name, string path)
         {
@@ -144,21 +133,6 @@ namespace Toltech.App.Services
             return _asyncDb;
         }
 
-        #region await EventsManager
-
-        private async Task NotifyModelOpen()
-        {
-            Debug.WriteLine("[DatabaseService] - NotifyModelOpen()");
-            await EventsManager.RaiseModelOpenAsync();
-        }
-        private async Task NotifyModelDeleted()
-        {
-            // TODO enlever car pas dappel au 02 / 04 / 2026
-            Debug.WriteLine("[DatabaseService] - NotifyModelOpen()");
-            await EventsManager.RaiseModelDeleteAsync();
-        }
-
-        #endregion
 
         public async Task EnsureSchemaAsync(SQLiteAsyncConnection db)
         {
@@ -179,8 +153,7 @@ namespace Toltech.App.Services
             {
                 try
                 {
-                    _asyncDb.CloseAsync();
-
+                    await _asyncDb.CloseAsync();
                 }
                 catch (Exception ex)
                 {
@@ -218,7 +191,7 @@ namespace Toltech.App.Services
         }
         public async Task DeleteRangeAsync<T>(IEnumerable<T> entities) where T : new()
         {
-            // TODO Voir si possibilité de remettre de l'atomicité ici, actuellement SQLite ne gère pas les DELETE en batch et ça génère une requete par entity, à revoir si besoin de performance
+            // OPTIM: Voir si possibilité de remettre de l'atomicité ici, actuellement SQLite ne gère pas les DELETE en batch et ça génère une requete par entity, à revoir si besoin de performance
             var list = entities.ToList();
             if (!list.Any()) return;
             foreach (var entity in list)
@@ -247,7 +220,11 @@ namespace Toltech.App.Services
         #endregion
 
         #region Fonctions Tolerances
-        // Fonction pour insérer une tol dans la base de données
+        /// <summary>
+        /// Fonction pour insérer une tol dans la base de données
+        /// </summary>
+        /// <param name="tolerances"></param>
+        /// <returns></returns>
         public async Task InsertToleranceAsync(DBTolerances tolerances)
         {
             await _asyncDb.InsertAsync(tolerances);
@@ -259,6 +236,20 @@ namespace Toltech.App.Services
 
         #region Queries - Lecture des données
 
+        public async Task<bool> PartExistsByIdAsync(int id)
+        {
+            if (id <= 0) return false;
+            return await _asyncDb.Table<Part>()
+                            .CountAsync(p => p.Id == id) > 0;
+        }
+
+        // Check si une exigence du meme nom est deja dans la DB
+        public async Task<bool> NamePartExisteAsync(string namepart)
+        {
+            return await _asyncDb.Table<Part>()
+                           .Where(r => r.NamePart == namepart)
+                           .CountAsync() > 0;
+        }
         public async Task<List<Part>> GetAllPartsAsync()
         {
             return await _asyncDb.Table<Part>()
@@ -366,43 +357,13 @@ namespace Toltech.App.Services
         }
 
 
-        // Rename part 
-      
-
-
         public async Task<List<Part>> SetFixedPartAsync(Part part)
         {
             if (part == null) throw new ArgumentNullException(nameof(part));
 
             return  await SetFixedPart_PartAsync(part);
-            //await SetFixedPart_NodeDefinitionAsync(part);
         }
-       
-        private async Task SetFixedPart_NodeDefinitionAsync(Part part)
-        {
-            // Mettre à jour tous les NodeDefinition liés à cette pièce et de type 4
-            var nodesToFix = await _asyncDb.Table<NodesDefinition>()
-                                      .Where(n => n.LinkedOriginalId == part.Id && n.Type == NodeType.PartNode)
-                                      .ToListAsync();
 
-            foreach (var node in nodesToFix)
-            {
-                node.IsFixed = true;
-            }
-            await _asyncDb.UpdateAllAsync(nodesToFix);
-
-            // Désactiver les autres NodeDefinition de type 4
-            var otherNodes = await _asyncDb.Table<NodesDefinition>()
-                                      .Where(n => n.Type == NodeType.PartNode && n.LinkedOriginalId != part.Id)
-                                      .ToListAsync();
-
-            foreach (var node in otherNodes)
-            {
-                node.IsFixed = false;
-            }
-            await UpdateRangeAsync(otherNodes);
-
-        }
         private async Task<List<Part>> SetFixedPart_PartAsync(Part part)
         {
             if (part == null) return new List<Part>();
@@ -455,6 +416,13 @@ namespace Toltech.App.Services
 
         #region Queries - Lecture des données
 
+        // Check si une exigence du meme nom est deja dans la DB
+        public async Task<bool> NameDataExisteAsync(string nameModelData)
+        {
+            return await _asyncDb.Table<ModelData>()
+                           .Where(r => r.Model == nameModelData)
+                           .CountAsync() > 0;
+        }
         /// <summary>
         /// Fonction pour récupérer toutes les données de modèle de la base de données
         /// </summary>
@@ -607,6 +575,7 @@ namespace Toltech.App.Services
 
         #region NodesDefinition
 
+        #region Queries
         public async Task<NodesDefinition?> GetNodeByIdAsync(int id)
         {
             try
@@ -645,25 +614,6 @@ namespace Toltech.App.Services
             return nodes ?? new List<NodesDefinition>();
         }
 
-        /// <summary>
-        /// Récupère tous les nœuds enfants d’un dossier donné via son ParentId.
-        /// </summary>
-        public async Task<List<NodesDefinition>> GetNodesByParentIdAsync(int parentId)
-        {
-            try
-            {
-                return await _asyncDb.Table<NodesDefinition>()
-                                       .Where(n => n.ParentId == parentId)
-                                       .OrderBy(n => n.DisplayOrder)
-                                       .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[DatabaseService] Erreur GetNodesByParentIdAsync : {ex.Message}");
-                return new List<NodesDefinition>();
-            }
-        }
-      
 
         /// <summary>
         /// 
@@ -728,8 +678,10 @@ namespace Toltech.App.Services
             return sortedData;
         }
 
+        #endregion
 
-
+        #region Operations
+      
         public async Task NormalizeDisplayOrderAsync(int? parentId)
         {
             var children = await GetChildrenAsync(parentId);
@@ -752,6 +704,8 @@ namespace Toltech.App.Services
         }
 
         #endregion
+      
+        #endregion
 
         #region Lien MetaModel
         private SQLiteAsyncConnection _dbTemp;
@@ -770,7 +724,10 @@ namespace Toltech.App.Services
         }
 
 
-        // Mise à jour des COUNT PART REQUIREMENT 
+        /// <summary>
+        /// Mise à jour des COUNT PART REQUIREMENT 
+        /// </summary>
+        /// <returns></returns>
         private async Task UpdateModelMetaCountsAsync()
         {
             try

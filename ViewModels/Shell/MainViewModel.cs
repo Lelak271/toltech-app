@@ -149,7 +149,7 @@ namespace Toltech.App.ViewModels
 
 
             LoadVM();
-            LoadPages(); // TODO  obsole soon
+            LoadPages(); // TODO : A enlever apres refactor de la page VST 3D
 
             ModelsVM.PropertyChanged += OnModelsVMPropertyChanged;
 
@@ -170,12 +170,11 @@ namespace Toltech.App.ViewModels
             DataVM = new DatasViewModel(this, TreeViewViewModel);
             HomeVM = new HomePageViewModel();
             ModelsVM = new ModelsViewModel(this);
-            ResultsVM = new ResultsViewModel(this);
+            ResultsVM = new ResultsViewModel(this, RequirementVM);
 
         }
         private void LoadPages()
         {
-            Debug.WriteLine("[MainViewModel] - LoadPages() ancienne fonction enelver la gestion de V3D");
             PageVST = new VSTWindow();
         }
 
@@ -185,24 +184,10 @@ namespace Toltech.App.ViewModels
         #region Modèle actif / Pièce active
 
         private string _modelActif;
-        public string ModelActif
-        {
-            get => string.IsNullOrEmpty(_modelActif) ? "Aucun" : _modelActif;
-            set
-            {
-                if (_modelActif != value)
-                {
-                    _modelActif = value;
-                    OnPropertyChanged(nameof(ModelActif));
-                    OnPropertyChanged(nameof(ModelName));
-                }
-            }
-        }
+        public string ModelActif => ModelsVM.SelectedModel?.FilePathModel ?? "";
 
-        public string ModelName => string.IsNullOrEmpty(_modelActif)
-                                   ? "*"
-                                   : Path.GetFileNameWithoutExtension(_modelActif);
-
+        public string ModelName => ModelsVM.SelectedModel?.NameData ?? "";
+           
 
 
         // Pour faciliter le binding dans l'UI directement sur la liste de parts
@@ -261,6 +246,12 @@ namespace Toltech.App.ViewModels
             {
                 OnPropertyChanged(e.PropertyName);
             }
+            if (e.PropertyName == nameof(ModelsViewModel.SelectedModel))
+            {
+                OnPropertyChanged(nameof(ModelActif)); // propriété MainVM
+                OnPropertyChanged(nameof(ModelName)); // propriété MainVM
+            }
+
         }
 
         public int NumberOfParts => ModelsVM.NumberOfParts;
@@ -272,13 +263,13 @@ namespace Toltech.App.ViewModels
 
         private void SubscribeToModelManagerEvents()
         {
-            ModelManager.OnModelChanged += model =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    ModelActif = model as string;
-                });
-            };
+            //ModelManager.OnModelChanged += model =>
+            //{
+            //    Application.Current.Dispatcher.Invoke(() =>
+            //    {
+            //        ModelActif = model as string;
+            //    });
+            //};
 
             ModelManager.FilePathResxChanged += filresx =>
             {
@@ -287,7 +278,9 @@ namespace Toltech.App.ViewModels
                     FilePathResx = filresx as string;
                 });
             };
+
         }
+
 
         #endregion
 
@@ -335,7 +328,7 @@ namespace Toltech.App.ViewModels
 
         #region RelayCommand
 
-        // TODO Possibilité d'enlever les fonctions non utiles 
+        // TODO : Voir la pertinence des fonctions appélées dans les commandes, et si elles doivent être dans les VM respectives ou dans la MainVM
 
         #region ModelsVM
 
@@ -385,6 +378,7 @@ namespace Toltech.App.ViewModels
         public ICommand InsertImageCommand => PartVM.InsertImageCommand;
 
         #endregion
+      
         #endregion
 
 

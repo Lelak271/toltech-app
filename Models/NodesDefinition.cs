@@ -54,12 +54,7 @@ namespace Toltech.App.Models
             set => SetField(ref _displayOrder, value);
         }
 
-        private int? _linkedRequirementId;
-        public int? LinkedRequirementId
-        {
-            get => _linkedRequirementId;
-            set => SetField(ref _linkedRequirementId, value);
-        }
+
         private int _linkedOriginalId;
         public int LinkedOriginalId
         {
@@ -82,6 +77,7 @@ namespace Toltech.App.Models
         }
 
         private bool _isSelected = false;
+        [Ignore]
         public bool IsSelected
         {
             get => _isSelected;
@@ -89,7 +85,7 @@ namespace Toltech.App.Models
         }
 
         private bool _isEditing;
-        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        [Ignore]
         public bool IsEditing
         {
             get => _isEditing;

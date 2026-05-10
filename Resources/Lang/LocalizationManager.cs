@@ -10,6 +10,9 @@ using Toltech.App.Resources;
 
 namespace Toltech.App.Resources.Lang
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class LocalizationManager : INotifyPropertyChanged
     {
         private static readonly LocalizationManager _instance = new();

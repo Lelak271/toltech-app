@@ -1,13 +1,10 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Toltech.App.FrontEnd.Controls;
-using Toltech.App.ViewModels;
-using Toltech.App.Models;
 using Toltech.App.Services;
-using Toltech.App.Utilities;
+using Toltech.App.ViewModels;
 
 namespace Toltech.App.Views
 {
@@ -33,7 +30,6 @@ namespace Toltech.App.Views
         {
             //await LoadDataVM();
             //FocusSelectedItem(); // TODO a remettre dans le UX
-
         }
 
 

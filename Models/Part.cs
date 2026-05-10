@@ -12,7 +12,7 @@ using Toltech.App.ViewModels;
 
 namespace Toltech.App.Models
 {
-    public class Part : BaseViewModel
+    public partial class Part : BaseViewModel
     {
         #region Backing fields
 

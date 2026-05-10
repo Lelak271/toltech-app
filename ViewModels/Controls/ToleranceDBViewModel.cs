@@ -30,7 +30,7 @@ namespace Toltech.App.ViewModels
                 return;
             }
             _databaseService = new DatabaseService("TODO");
-            // TODO
+            // TODO : Lors du refactor reprendre instance unique de DB
             _databaseService.Open(ModelManager.ModelActif);
 
             Tolerances = new ObservableCollection<ToleranceRow>();

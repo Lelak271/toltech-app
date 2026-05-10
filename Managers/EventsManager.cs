@@ -1,38 +1,21 @@
 ﻿using System.Diagnostics;
 using Toltech.App.Models;
 using static Toltech.App.Models.NodesDefinition;
-using static Toltech.App.Services.EventsManager;
 
 namespace Toltech.App.Services
 {
     public static class EventsManager
     {
         // ── Events signal (sans payload) ────────────────────────────────────
-        public static event Func<Task> ModelOpen;
-        public static event Func<Task> ModelDelete;
+
 
         // ── Events avec payload ──────────────────────────────────────────────
-        public static event Func<RequirementEvent, Task> RequirementVisibilityChanged;
-        public static event Func<RequirementEvent, Task> RequirementSelectChanged;
         public static event Func<int?, Task> PartSelectedChanged;
 
         // ── Events CRUD ──────────────────────────────────────────────────────
         public static event Func<PartCrudEvent, Task> PartCrud;
         public static event Func<RequirementCrudEvent, Task> RequirementCrud;
         public static event Func<ModelDataCrudEvent, Task> ModelDataCrud;
-
-        // ── Raise methods ────────────────────────────────────────────────────
-        public static Task RaiseModelOpenAsync() => InvokeAsync(ModelOpen);
-        public static Task RaiseModelDeleteAsync() => InvokeAsync(ModelDelete);
-
-        public static Task RaiseRequirementVisibilityChangedAsync(IEnumerable<int> reqIds, string nameParentFolder)
-            => InvokeAsync(RequirementVisibilityChanged, BuildRequirementEvent(reqIds, nameParentFolder));
-
-        public static Task RaiseRequirementSelectChangedAsync(IEnumerable<int> reqIds, string nameParentFolder)
-            => InvokeAsync(RequirementSelectChanged, BuildRequirementEvent(reqIds, nameParentFolder));
-
-        public static Task RaisePartSelectedChangedAsync(int? idPart)
-            => InvokeAsync(PartSelectedChanged, idPart);
 
         public static Task RaisePartCrudAsync(PartCrudEvent e) => InvokeAsync(PartCrud, e);
         public static Task RaiseRequirementCrudAsync(RequirementCrudEvent e) => InvokeAsync(RequirementCrud, e);
@@ -47,7 +30,7 @@ namespace Toltech.App.Services
 
         public enum EventSource { Tree, Data, Req, Part, Model }
 
-        public enum CrudOperation { Added, Updated, Deleted }
+        public enum CrudOperation { Added, Updated, Deleted, Move }
 
         public class CrudEvent<T>
         {
@@ -99,12 +82,12 @@ namespace Toltech.App.Services
             public NodeType Type { get; init; }
             public CrudOperation Operation { get; init; }
             public int LinkedOriginalId { get; init; }
-            public int? LinkedRequirementId { get; init; }
             public string NewName { get; init; }
             public EventSource Source { get; init; }
         }
-            public static event Func<NodeChangedEvent, Task> NodeChanged;
-            public static Task RaiseNodeChangedAsync(NodeChangedEvent e) => InvokeAsync(NodeChanged, e);
+        
+        public static event Func<NodeChangedEvent, Task> NodeChanged;
+        public static Task RaiseNodeChangedAsync(NodeChangedEvent e) => InvokeAsync(NodeChanged, e);
 
 
         public class ModelMetaChangedEvent
@@ -115,8 +98,17 @@ namespace Toltech.App.Services
         }
 
 
+        public static event Func<ModelOpenedEvent, Task> ModelOpened;
 
+        public class ModelOpenedEvent
+        {
+            public string Path { get; init; }
+
+        }
+
+        public static Task RaiseModelOpenedAsync(ModelOpenedEvent e)
+    => InvokeAsync(ModelOpened, e);
 
     }
-   
+
 }

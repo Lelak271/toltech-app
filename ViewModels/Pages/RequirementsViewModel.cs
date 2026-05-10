@@ -11,6 +11,7 @@ using Toltech.App.Services.Logging;
 using Toltech.App.Services.Notification;
 using Toltech.App.Utilities;
 using Toltech.App.Views.Controls.TreeView;
+using static Toltech.App.Models.NodesDefinition;
 using static Toltech.App.Services.EventsManager;
 using TtCore = Toltech.App.ViewModels;
 
@@ -35,7 +36,7 @@ namespace Toltech.App.ViewModels
         #region Fields
         private readonly MainViewModel _mainVM;
         public MainViewModel MainVM => _mainVM;
-        private DomainService _domainService;
+        private readonly DomainService _domainService;
         public ObservableCollection<Part> Parts => MainVM.Parts;
         public TreeViewAreaV3ViewModel TreeVM { get; }
         private readonly INotificationService _notificationService;
@@ -44,9 +45,9 @@ namespace Toltech.App.ViewModels
         #endregion
 
         #region Collections
-        public ObservableCollection<Requirements> Requirements { get; } = new ObservableCollection<Requirements>();
+        public ObservableCollection<Requirements> Requirements { get; } = new();
         public ListCollectionView FilteredRequirements { get; }
-        private HashSet<int> _visibleRequirementIds = new();
+        public ListCollectionView AllRequirements { get; }
         #endregion
 
         #region Commands
@@ -79,6 +80,19 @@ namespace Toltech.App.ViewModels
             }
         }
 
+        private NodesDefinition _currentFolderNode;
+        public NodesDefinition CurrentFolderNode
+        {
+            get => _currentFolderNode;
+            set
+            {
+                if (_currentFolderNode != value)
+                {
+                    _currentFolderNode = value;
+                    OnPropertyChanged(nameof(CurrentFolderNode));
+                }
+            }
+        }
         private string _currentFolder;
         public string CurrentFolder
         {
@@ -92,18 +106,32 @@ namespace Toltech.App.ViewModels
                 }
             }
         }
+      
+        private int? _currentFolderId;
+        public int? CurrentFolderId
+        {
+            get => _currentFolderId;
+            set
+            {
+                if (_currentFolderId != value)
+                {
+                    _currentFolderId = value;
+                    OnPropertyChanged(nameof(CurrentFolderId));
+                }
+            }
+        }
 
         #region Eyes 
         private bool GetEye(string key) => _uiSettings.IsPanelExpanded(key);
 
-        private void SetEye(string key, bool value, string rowHeightProperty = null)
+        private void SetEye(string key, bool value, string rowHeightProperty = null, string eyeProperty = null)
         {
             if (_uiSettings.IsPanelExpanded(key) == value)
                 return;
 
             _uiSettings.SetPanelExpanded(key, value);
 
-            OnPropertyChanged(); // propriété Eye
+            OnPropertyChanged(eyeProperty); // propriété Eye
             OnPropertyChanged(rowHeightProperty); // RowXHeight
 
             _ = _uiSettings.SaveAsync();
@@ -112,25 +140,25 @@ namespace Toltech.App.ViewModels
         public bool IsEyeVisible1
         {
             get => GetEye("Req_Eye1");
-            set => SetEye("Req_Eye1", value, nameof(Row1Height));
+            set => SetEye("Req_Eye1", value, nameof(Row1Height), nameof(IsEyeVisible1));
         }
 
         public bool IsEyeVisible2
         {
             get => GetEye("Req_Eye2");
-            set => SetEye("Req_Eye2", value, nameof(Row2Height));
+            set => SetEye("Req_Eye2", value, nameof(Row2Height), nameof(IsEyeVisible2));
         }
 
         public bool IsEyeVisible3
         {
             get => GetEye("Req_Eye3");
-            set => SetEye("Req_Eye3", value, nameof(Row3Height));
+            set => SetEye("Req_Eye3", value, nameof(Row3Height), nameof(IsEyeVisible3));
         }
 
         public bool IsEyeVisible4
         {
             get => GetEye("Req_Eye4");
-            set => SetEye("Req_Eye4", value, nameof(Row4Height));
+            set => SetEye("Req_Eye4", value, nameof(Row4Height), nameof(IsEyeVisible4));
         }
 
 
@@ -146,19 +174,25 @@ namespace Toltech.App.ViewModels
         #region Constructor
         public RequirementsViewModel(MainViewModel mainVM, DomainService domainService, TreeViewAreaV3ViewModel treeVM)
         {
+            TreeVM = treeVM;
+
             _domainService = domainService;
             _mainVM = mainVM;
             _notificationService = App.NotificationService;
 
             _uiSettings = App.UiSettings;
             FilteredRequirements = (ListCollectionView)CollectionViewSource.GetDefaultView(Requirements);
-            //UpdateRequirementsOrder();
             FilteredRequirements.Filter = FilterRequirement;
+
+            AllRequirements = new ListCollectionView(Requirements);
 
             #region Commandes
             // Commandes avec paramètres async ou sans paramètres
             LoadCommand = new TtCore.RelayCommand(async _ => await LoadAsync(), _ => true);
-            SaveCommand = new TtCore.RelayCommand(async _ => await SaveAllReqAsync(), _ => Requirements.Any());
+            SaveCommand = new TtCore.RelayCommand(
+                async _ => await SaveAllReqAsync(),
+                _ => Requirements.Any(r => r.IsDirty && !r.IsSaving)
+            );
 
             // Commandes qui agissent sur un objet Requirements (cast à l'intérieur)
             RemoveUniqueCommand = new TtCore.RelayCommand(async param =>
@@ -186,10 +220,156 @@ namespace Toltech.App.ViewModels
             #endregion
 
             _mainVM.PropertyChanged += OnMainVMPropertyChanged;
-            TreeVM = treeVM;
-            AttachTreeVM();
-            EventsManager.ModelOpen += OnModelOpenWrapper;
 
+            EventsManager.ModelOpened += OnModelOpenWrapper;
+
+            EventsManager.NodeChanged += OnNodeChangedAsync;
+
+            TreeVM.PropertyChanged += OnTreePropertyChanged;
+        }
+
+
+        #endregion
+
+        #region Main Event Function
+
+        // Chaque VM abonnée traduit selon son domaine
+        private async Task OnNodeChangedAsync(NodeChangedEvent e)
+        {
+            switch (e.Type)
+            {
+                case NodeType.RequirementNode:
+                    await OnRequirementCrudAsync(new RequirementCrudEvent
+                    {
+                        Operation = e.Operation,
+                        Source = e.Source,
+                        EntityId = e.LinkedOriginalId,
+                        Entity = e.Operation == CrudOperation.Updated
+                            ? new Requirements { Id_req = e.LinkedOriginalId, NameReq = e.NewName }
+                            : null
+                    });
+                    break;
+
+
+            }
+        }
+
+        private async Task OnRequirementCrudAsync(RequirementCrudEvent e)
+        {
+            switch (e.Operation)
+            {
+                case CrudOperation.Added:
+                    await ReloadSafe();
+                    break;
+
+                case CrudOperation.Deleted:
+                    var idsToInvalidate = e.EntityIds?.Any() == true
+                        ? e.EntityIds
+                        : e.EntityId > 0
+                            ? new List<int> { e.EntityId }
+                            : null;
+
+                    if (idsToInvalidate is not null)
+                        await RefreshFromNodeFolderAsync(_currentFolderNode);
+
+                    ApplyFilterAndSort();
+                    break;
+
+                case CrudOperation.Updated:
+                    var updatedReqs = e.Entities?.Any() == true
+                        ? e.Entities
+                        : e.Entity is not null
+                            ? new List<Requirements> { e.Entity }
+                            : null;
+
+                    if (updatedReqs is null) break;
+
+                    foreach (var updated in updatedReqs)
+                    {
+                        var existing = Requirements.FirstOrDefault(r => r.Id_req == updated.Id_req);
+                        if (existing is null) continue;
+
+                        if (updated.NameReq is not null)
+                            existing.NameReq = updated.NameReq;
+                    }
+
+                    ApplyFilterAndSort();
+                    break;
+            }
+        }
+
+
+        /// <summary>
+        /// Handles changes to the tree selection and applies filtering based on the selected requirement node. 
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">Event data containing information about the property change.</param>
+        private async void OnTreePropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            try
+            {
+                switch (e.PropertyName)
+                {
+                    case nameof(TreeVM.DoubleClickedNode):
+                        if (TreeVM.DoubleClickedNode?.Type == NodeType.RequirementNode)
+                        {
+                            await RefreshFromNodeReqAsync(TreeVM.DoubleClickedNode);
+                        }
+                        break;
+
+                    case nameof(TreeVM.LastDragDrop):
+                        var drop = TreeVM.LastDragDrop;
+                        if (drop is null) return;
+
+                        var drags = drop.RequirementSourceNodes;
+                        if (!drags.Any()) return;
+
+                        // Refresh uniquement si le dossier courant est concerné
+                        bool targetIsCurrentFolder = drop.TargetNode?.ParentId == _currentFolderId;
+                        bool dragFromCurrentFolder = drags.Any(n => n.ParentId == _currentFolderId);
+
+                        await RefreshFromNodeFolderAsync(_currentFolderNode);
+
+                        break;
+
+
+                        //case nameof(TreeVM.LastNodeChanged):
+                        //    await HandleNodeChangedAsync(TreeVM.LastNodeChanged);
+                        //    break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ReqVM] OnTreePropertyChanged : {ex.Message}");
+            }
+        }
+        private async Task RefreshFromNodeFolderAsync(NodesDefinition folderNode)
+        {
+            var result = await TreeVM.GetRequirementsOfFolderAsync(folderNode);
+            if (result is null) return;
+
+            _treeFilterIds = new HashSet<int>(result.RequirementIds);
+            CurrentFolderNode = result.FolderNode;
+            CurrentFolder = CurrentFolderNode.NodeName;
+            CurrentFolderId = CurrentFolderNode.Id;
+            ApplyFilterAndSort();
+        }
+        private async Task RefreshFromNodeReqAsync(NodesDefinition nodeReq)
+        {
+            var result = await TreeVM.GetFolderRequirementsAsync(nodeReq);
+            if (result is null) return;
+
+            _treeFilterIds = new HashSet<int>(result.RequirementIds);
+            CurrentFolderNode = result.FolderNode;
+            CurrentFolder = CurrentFolderNode.NodeName;
+            CurrentFolderId = CurrentFolderNode.Id;
+            ApplyFilterAndSort();
+        }
+
+        private async Task OnModelOpenWrapper(ModelOpenedEvent e)
+        {
+            RestoreCache();
+            await ReloadSafe();
         }
 
         private void OnMainVMPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -200,30 +380,14 @@ namespace Toltech.App.ViewModels
                 OnPropertyChanged(e.PropertyName);
             }
         }
-        #endregion
 
-        #region Main Event Function
-
-        /// <summary>
-        /// Permet le raffraichissment du TreeView lors d'un Drag&Drop
-        /// </summary>
-        private void AttachTreeVM()
-        {
-            // Event pour le changement  de Folder et Drag & Drop
-            EventsManager.RequirementSelectChanged += OnRequirementSelectChangedAsync;
-        }
-
-        private async Task OnModelOpenWrapper()
-        {
-            RestoreCache();
-            await ReloadSafe();
-        }
         #endregion
 
         #region Filter View
 
-        private HashSet<int> _treeFilterIds = new(); // entrée TreeView
-
+        private HashSet<int>? _treeFilterIds = new(); // entrée TreeView
+        private bool HasTreeFilter => _treeFilterIds is not null;
+        private bool ContainsReq(int id) => _treeFilterIds?.Contains(id) ?? false;
         public enum RequirementViewMode { All, TreeOnly, SearchOnly }
 
         public IReadOnlyList<RequirementViewMode> ViewModes { get; }
@@ -267,7 +431,7 @@ namespace Toltech.App.ViewModels
             RequirementViewMode.All => true,
 
             RequirementViewMode.TreeOnly =>
-                !_treeFilterIds.Any() || _treeFilterIds.Contains(req.Id_req),
+                !HasTreeFilter || ContainsReq(req.Id_req),
 
             RequirementViewMode.SearchOnly =>
                 string.IsNullOrWhiteSpace(_searchText)
@@ -277,39 +441,15 @@ namespace Toltech.App.ViewModels
             _ => true
         };
 
-        private void ApplyFilterAndSort(bool forceRefresh = false)
+        private void ApplyFilterAndSort()
         {
             using (FilteredRequirements.DeferRefresh())
             {
                 FilteredRequirements.Filter = FilterRequirement;
-
-                FilteredRequirements.CustomSort = _treeFilterIds.Any()
-                    ? new RequirementIdOrderComparer(_treeFilterIds)
+                FilteredRequirements.CustomSort = HasTreeFilter
+                    ? new RequirementIdOrderComparer(_treeFilterIds!)
                     : null;
             }
-        }
-
-        private async Task OnRequirementSelectChangedAsync(EventsManager.RequirementEvent e)
-        {
-            if (e == null)
-                return;
-
-            if (Requirements.Count == 0)
-                await ReloadSafe();
-
-            _treeFilterIds = e.RequirementIds is { Count: > 0 }
-                ? new HashSet<int>(e.RequirementIds)
-                : new HashSet<int>();
-
-            CurrentFolder = e.NameParentFolder;
-
-            if (_viewMode != RequirementViewMode.TreeOnly)
-            {
-                _viewMode = RequirementViewMode.TreeOnly;
-                OnPropertyChanged(nameof(ViewMode));
-            }
-
-            ApplyFilterAndSort();
         }
 
         #endregion
@@ -354,10 +494,7 @@ namespace Toltech.App.ViewModels
 
             await SyncCollectionAsync(_cache);
 
-            ApplyFilterAndSort(forceRefresh: true);
-
-            (SaveCommand as TtCore.RelayCommand)?.RaiseCanExecuteChanged();
-            (RemoveUniqueCommand as TtCore.RelayCommand)?.RaiseCanExecuteChanged();
+            ApplyFilterAndSort();
         }
 
         public async Task AddItemAsync(Requirements newItem)
@@ -365,7 +502,7 @@ namespace Toltech.App.ViewModels
             _cache.Add(newItem);
             _treeFilterIds.Add(newItem.Id_req); // Ajout à la vue courante
             await SyncCollectionAsync(_cache);
-            ApplyFilterAndSort(forceRefresh: true);
+            ApplyFilterAndSort();
         }
 
         public async Task RemoveItemAsync(Requirements item)
@@ -375,7 +512,7 @@ namespace Toltech.App.ViewModels
 
             _cache.RemoveAt(previousIndex);
             await SyncCollectionAsync(_cache);
-            ApplyFilterAndSort(forceRefresh: true);
+            ApplyFilterAndSort();
         }
 
         private async Task SyncCollectionAsync(List<Requirements> source)
@@ -437,9 +574,6 @@ namespace Toltech.App.ViewModels
                 Entities = toSave,
             });
 
-            // todo why 
-            (SaveCommand as TtCore.RelayCommand)?.RaiseCanExecuteChanged();
-
         }
 
         public async Task DeleteRequirementByIdAsync(int? idReq)
@@ -495,7 +629,7 @@ namespace Toltech.App.ViewModels
             _treeFilterIds.Remove(0);
             placeholder.LoadFromDb(uiModel.Value);
             _treeFilterIds.Add(placeholder.Id_req);
-            ApplyFilterAndSort(forceRefresh: true);
+            ApplyFilterAndSort();
 
             await EventsManager.RaiseRequirementCrudAsync(new RequirementCrudEvent
             {
@@ -577,7 +711,6 @@ namespace Toltech.App.ViewModels
         #endregion
 
         #endregion
-
 
         #region CheckBox Handling
         //private void SubscribeToRequirement(Requirements req)

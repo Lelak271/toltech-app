@@ -221,7 +221,7 @@ namespace Toltech.App.ToltechCalculation.Resux
             var result = new ResultsForReq { IdReq = targetIdReq };
 
             if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
-                return result; // TODO creer fonction pour voir la corruption du fichier 
+                return result; // TODO : Ajouter une fonction de validation du fichier (contrôle d’intégrité, format, cohérence des données) 
 
             var root = JsonSerializer.Deserialize<ResuxFileJson>(File.ReadAllText(filePath), ReadOptions);
             var reqJson = root?.Resultats.FirstOrDefault(r => r.IdReq == targetIdReq);

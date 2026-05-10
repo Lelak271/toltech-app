@@ -304,7 +304,7 @@ namespace Toltech.App.Views
         // Méthode appelée lors du click sur "Édition multiple"
         private void MultiEdit_Click(object sender, RoutedEventArgs e)
         {
-            // TODO : implémenter l'édition multiple
+            // ARCH : implémenter l'édition multiple
         }
 
 

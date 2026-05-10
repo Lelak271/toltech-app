@@ -49,13 +49,9 @@ namespace Toltech.App.ViewModels
             EventsManager.PartCrud += OnPartCrudAsync;
             EventsManager.NodeChanged += OnNodeChangedAsync;
 
-            if (!_subscribed)
-            {
                 // Gestion centrale du Chargement des Parts du modèle actif
-                EventsManager.ModelOpen += WrapperLoadAsync;
+                EventsManager.ModelOpened += OnOpenModel;
                 //EventsManager.PartAddedOrDelete += WrapperLoadAsync;
-                _subscribed = true;
-            }
             #endregion
 
             _ = LoadAsync();
@@ -194,7 +190,7 @@ namespace Toltech.App.ViewModels
 
         public void Dispose()
         {
-            EventsManager.ModelOpen -= WrapperLoadAsync;
+            EventsManager.ModelOpened -= OnOpenModel;
             EventsManager.PartCrud -= OnPartCrudAsync;
             EventsManager.NodeChanged -= OnNodeChangedAsync;
         }
@@ -221,7 +217,7 @@ namespace Toltech.App.ViewModels
         #endregion
 
         // Wrapper void 
-        private async Task WrapperLoadAsync()
+        private async Task OnOpenModel(ModelOpenedEvent e)
         {
             try
             {
@@ -247,7 +243,13 @@ namespace Toltech.App.ViewModels
 
             await _domainService.InsertPartAsync(newPart);
             _ = _notificationService.ShowNotifAsync($"Pièce ajoutée {namePart}.");
-            //Parts.Add(newPart);
+            Parts.Add(newPart);
+
+            await EventsManager.RaisePartCrudAsync(new PartCrudEvent
+            {
+                Operation = CrudOperation.Added,
+                Entity = newPart
+            });
         }
 
         private async Task SaveAsync()
@@ -265,6 +267,13 @@ namespace Toltech.App.ViewModels
             }
 
             _ = _notificationService.ShowNotifAsync("Données sauvegardées.");
+
+            await EventsManager.RaisePartCrudAsync(new PartCrudEvent
+            {
+                Operation = CrudOperation.Updated,
+                Entities = toSave
+            });
+
         }
 
         public async Task DeleteByIdAsync(int idPart)
@@ -281,6 +290,12 @@ namespace Toltech.App.ViewModels
             if (idPart == 0)
                 return;
             await _domainService.DeletePartWithDatasByIdAsync(idPart);
+
+            await EventsManager.RaisePartCrudAsync(new PartCrudEvent
+            {
+                Operation = CrudOperation.Deleted,
+                EntityId = idPart
+            });
         }
         private async Task DeleteAsync()
         {
@@ -298,7 +313,11 @@ namespace Toltech.App.ViewModels
 
             var partsToDelete = SelectedParts.ToList();
 
-            var deleteResult = await _domainService.DeletePartsAsync(partsToDelete);
+            var idsToDelete = SelectedParts
+                .Select(p => p.Id)
+                .ToList();
+
+            var deleteResult = await _domainService.DeletePartsWithDatasByIdsAsync(idsToDelete);
 
             if (!deleteResult.IsSuccess)
             {
@@ -311,9 +330,15 @@ namespace Toltech.App.ViewModels
                 Parts.Remove(part);
             }
 
-            _ = _notificationService.ShowNotifAsync($"{partsToDelete.Count} pièce(s) supprimée(s).");
+            _ = _notificationService.ShowNotifAsync($"{idsToDelete.Count} pièce(s) supprimée(s).");
 
             SelectedParts.Clear();
+
+            await EventsManager.RaisePartCrudAsync(new PartCrudEvent
+            {
+                Operation = CrudOperation.Deleted,
+                EntityIds = partsToDelete.Select(p => p.Id).ToList()
+            });
         }
         private async Task ReverseActivePartByIdAsync(Part part)
         {

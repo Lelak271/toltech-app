@@ -7,28 +7,20 @@ using Toltech.App.Models;
 using Toltech.App.Services;
 using Toltech.App.Utilities;
 using Toltech.App.ViewModels;
-using static Toltech.App.FrontEnd.Controls.Dashboard.BarChartControl;
 using static Toltech.App.Models.NodesDefinition;
 using static Toltech.App.Services.EventsManager;
+using static Toltech.App.Utilities.TreeNodeService;
 
 
 namespace Toltech.App.Views.Controls.TreeView
 {
-    public class TreeViewAreaV3ViewModel : INotifyPropertyChanged // TODO passé en BaseVm
+    public class TreeViewAreaV3ViewModel : BaseViewModel
     {
         private readonly MainViewModel _mainVM;
-        private Func<Task> _treeUpdateAction;
-
-        private readonly DomainService _domainService;
 
         private readonly TreeNodeService _treeService;
         private readonly NodeSyncService _nodeSyncService;
 
-        #region INotifyPropertyChanged
-        public event PropertyChangedEventHandler PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        #endregion
 
         #region Propriétés exposées au XAML
 
@@ -62,15 +54,79 @@ namespace Toltech.App.Views.Controls.TreeView
                 if (_selectedNode != value)
                 {
                     _selectedNode = value;
-                    OnPropertyChanged(nameof(SelectedNode));
-                    //Debug.WriteLine($"[TreeViewVM] SelectedNode changed to: {_selectedNode?.NodeName} - ID : {_selectedNode?.Id}");
-
-                    // Ici vous pouvez aussi déclencher un filtrage automatique
-                    //UpdateVisibleRequirements();
+                    OnPropertyChanged();
                 }
             }
         }
 
+        public void SetSelectedNode(NodesDefinition node)
+        {
+            if (_selectedNode == node) return;
+            _selectedNode = node;
+            OnPropertyChanged(nameof(SelectedNode));
+        }
+
+        private List<NodesDefinition> _selectedNodes = new();
+        public IReadOnlyList<NodesDefinition> SelectedNodes => _selectedNodes;
+
+        /// <summary>
+        /// Synchronise la sélection multiple depuis le code-behind.
+        /// Appelé après chaque changement de sélection visuelle.
+        /// </summary>
+        public void UpdateSelectedNodes(List<NodesDefinition> nodes)
+        {
+            _selectedNodes = nodes ?? new List<NodesDefinition>();
+            OnPropertyChanged(nameof(SelectedNodes));
+        }
+
+
+
+        private NodesDefinition _doubleClickedNode;
+        public NodesDefinition DoubleClickedNode
+        {
+            get => _doubleClickedNode;
+            private set
+            {
+                _doubleClickedNode = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public void SetDoubleClickedNode(NodesDefinition node)
+        {
+            if (_doubleClickedNode == node) return;
+            _doubleClickedNode = node;
+            OnPropertyChanged(nameof(DoubleClickedNode));
+        }
+        public record DragDropResult(
+            IReadOnlyCollection<NodesDefinition> SourceNodes,
+            NodesDefinition TargetNode)
+        {
+            /// <summary>
+            /// Nœuds source de type <see cref="NodeType.RequirementNode"/> uniquement.
+            /// </summary>
+            public IReadOnlyCollection<NodesDefinition> RequirementSourceNodes =>
+                SourceNodes
+                    .Where(n => n.Type == NodeType.RequirementNode)
+                    .ToList();
+
+        }
+
+        private DragDropResult _lastDragDrop;
+        public DragDropResult LastDragDrop
+        {
+            get => _lastDragDrop;
+            private set
+            {
+                _lastDragDrop = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public void OnNodeDropped(IReadOnlyCollection<NodesDefinition> source, NodesDefinition target)
+        {
+            LastDragDrop = new DragDropResult(source, target);
+        }
         public bool IsEditing { get; set; }
 
         protected bool SetField<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
@@ -115,8 +171,6 @@ namespace Toltech.App.Views.Controls.TreeView
             _nodeSyncService = nodeSyncService;
             _mainVM = mainVM;
 
-            _domainService = _mainVM.DomainService;
-
             #region ICommand Initializations
 
             RefreshCommand = new RelayCommand(async _ => await LoadTreeViewDataAsync(), _ => !_isLoadingTreeView);
@@ -137,7 +191,7 @@ namespace Toltech.App.Views.Controls.TreeView
             });
 
 
-            DeleteNodePartCommand = new RelayCommand<NodesDefinition>(DeleteNodePartAsync);
+            DeleteNodePartCommand = new RelayCommand<NodesDefinition>(DeleteNodeAsync);
 
             #endregion
 
@@ -150,7 +204,7 @@ namespace Toltech.App.Views.Controls.TreeView
             });
 
 
-            DeleteRequirementFromTreeCommand = new RelayCommand<NodesDefinition>(DeleteNodeReqAsync);
+            DeleteRequirementFromTreeCommand = new RelayCommand<NodesDefinition>(DeleteNodeAsync);
 
             #endregion
 
@@ -168,18 +222,18 @@ namespace Toltech.App.Views.Controls.TreeView
 
             #region EventsManager subscription
 
-            _treeUpdateAction = () => _ = LoadTreeViewDataAsync();
-            EventsManager.ModelOpen += _treeUpdateAction;
+            _ = LoadTreeViewDataAsync();
+            EventsManager.ModelOpened += OnModelOpened;
             EventsManager.PartCrud += OnPartCrudAsync;
             EventsManager.ModelDataCrud += OnModelDataCrudAsync;
             EventsManager.RequirementCrud += OnRequirementCrudAsync;
-           
+
             #endregion
 
         }
 
-
         #endregion
+
 
         #region Events
 
@@ -197,7 +251,13 @@ namespace Toltech.App.Views.Controls.TreeView
                     break;
 
                 case CrudOperation.Deleted:
-                    await _nodeSyncService.SyncPartDeletedAsync(e.EntityId);
+                    // Unitaire
+                    if (e.EntityId != null)
+                        await _nodeSyncService.SyncPartDeletedAsync(e.EntityId);
+
+                    // Masse
+                    if (e.EntityIds?.Any() == true)
+                        await _nodeSyncService.SyncPartDeletedAsync(entityIds: e.EntityIds);
                     break;
 
                 case CrudOperation.Updated:
@@ -205,7 +265,7 @@ namespace Toltech.App.Views.Controls.TreeView
                     if (e.Entity != null)
                         await _nodeSyncService.SyncUpdatedAsync(e.Entity);
 
-                    // Masse — ex: SetFixedPart touche plusieurs parts
+                    // Masse
                     if (e.Entities?.Any() == true)
                         await _nodeSyncService.SyncUpdatedAsync(entities: e.Entities);
                     break;
@@ -269,7 +329,12 @@ namespace Toltech.App.Views.Controls.TreeView
 
             await LoadTreeViewDataAsync();
         }
-       
+
+        private async Task OnModelOpened(ModelOpenedEvent e)
+        {
+            await LoadTreeViewDataAsync();
+        }
+
         #endregion
 
         #region Loader
@@ -398,7 +463,7 @@ namespace Toltech.App.Views.Controls.TreeView
             return folder;
         }
 
-        #region Delete Folder 
+        #region Delete  
 
         /// <summary>
         /// Supprime un folder donné et remonte ses enfants vers le parent.
@@ -412,17 +477,36 @@ namespace Toltech.App.Views.Controls.TreeView
             await LoadTreeViewDataAsync();
         }
 
+        private async Task DeleteNodeAsync(NodesDefinition node)
+        {
+            await _treeService.DeleteNodeAsync(node);
+            await LoadTreeViewDataAsync();
 
+            await EventsManager.RaiseNodeChangedAsync(new NodeChangedEvent
+            {
+                Type = node.Type,
+                Operation = CrudOperation.Deleted,
+                LinkedOriginalId = node.LinkedOriginalId,
+                Source = EventSource.Tree
+            });
+
+        }
+       
         #endregion
 
 
         #endregion
 
         #region Rename Inline
-        public async Task RenameNodeAsync(NodesDefinition node, string newName)
+
+        // todo nul juste faire update
+        public async Task<bool> RenameNodeAsync(NodesDefinition node, string newName)
         {
-            if (node == null)
-                return;
+            if (node == null )
+                return false;
+
+            if (!NameValidationHelper.TryValidateName(newName, out string errorMessage))
+                return false;
 
             await _treeService.RenameNodeAsync(node, newName);
 
@@ -432,28 +516,49 @@ namespace Toltech.App.Views.Controls.TreeView
                 Type = node.Type,
                 Operation = CrudOperation.Updated,
                 LinkedOriginalId = node.LinkedOriginalId,
-                LinkedRequirementId = node.LinkedRequirementId,
                 NewName = newName,
                 Source = EventSource.Tree
             });
+            return true;
+        }
 
+        /// <summary>
+        /// Tente de renommer le nœud avec le nouveau nom.
+        /// Met à jour IsEditing et NodeName si succès, annule sinon.
+        /// </summary>
+        public async Task<bool> CommitRenameAsync(NodesDefinition node, string newName)
+        {
+            if (node is null) return false;
+
+            // Escape ou nom vide → annule sans appel DB
+            if (string.IsNullOrWhiteSpace(newName) || newName == node.NodeName)
+            {
+                node.IsEditing = false;
+                return false;
+            }
+
+            bool success = await RenameNodeAsync(node, newName);
+
+            if (success)
+            {
+                node.NodeName = newName;
+                node.IsEditing = false;
+            }
+
+            return success;
+        }
+
+        /// <summary>
+        /// Annule le renommage et sort du mode édition.
+        /// </summary>
+        public void CancelRename(NodesDefinition node)
+        {
+            if (node is null) return;
+            node.IsEditing = false;
         }
 
         #endregion
 
-
-        private async Task DeleteNodePartAsync(NodesDefinition node)
-        {
-            await _treeService.DeleteNodeAsync(node);
-            await LoadTreeViewDataAsync();
-
-        }
-        private async Task DeleteNodeReqAsync(NodesDefinition node)
-        {
-            await _treeService.DeleteNodeAsync(node);
-            await LoadTreeViewDataAsync(); // Todo mettre suppresion precise si besoin
-
-        }
 
 
         private void RenameNode(NodesDefinition node)
@@ -482,8 +587,22 @@ namespace Toltech.App.Views.Controls.TreeView
 
         public async Task MoveNodes(List<NodesDefinition>? nodes, NodesDefinition? dropTarget, bool insertAbove)
         {
-            await _treeService.MoveNodesAsync(nodes, dropTarget, insertAbove);
-            await LoadTreeViewDataAsync();
+            bool canMove = await _treeService.MoveNodesAsync(nodes, dropTarget, insertAbove);
+
+            if (canMove)
+            {
+                await LoadTreeViewDataAsync();
+
+                await EventsManager.RaiseNodeChangedAsync(new NodeChangedEvent
+                {
+                    Type = dropTarget.Type,
+                    Operation = CrudOperation.Move,
+                    LinkedOriginalId = dropTarget.LinkedOriginalId,
+                    NewName = dropTarget.NodeName,
+                    Source = EventSource.Tree
+                });
+
+            }
         }
 
         #endregion
@@ -525,7 +644,6 @@ namespace Toltech.App.Views.Controls.TreeView
             }
         }
 
-
         #endregion
 
 
@@ -542,30 +660,20 @@ namespace Toltech.App.Views.Controls.TreeView
         // TreeViewAreaV3ViewModel.cs
         public async Task HandleNodeDoubleClickAsync(NodesDefinition node)
         {
-            if (node.Type == NodeType.PartNode)
-            {
-                Debug.WriteLine("EventsManager.RaisePartSelectedChanged");
-                await EventsManager.RaisePartSelectedChangedAsync(node.LinkedOriginalId);
-                return;
-            }
-            if (node.Type == NodeType.DataNode)
-            {
-                // todo mettre event 
-                _mainVM.DataVM.SelectDataByNodeId(node.LinkedOriginalId);
-                return;
-            }
-
-            if (node.Type == NodeType.RequirementNode)
-            {
-               var visibleRequirementIds = await _treeService.ListIDReqOfSelectFolderAsync();
-                var nameParentFolder = await _treeService.NameParentFolderAsync();
-
-                await EventsManager.RaiseRequirementSelectChangedAsync(
-                    visibleRequirementIds,
-                    nameParentFolder
-                );
-            }
+            SetSelectedNode(node);
+            SetDoubleClickedNode(node);
         }
+
+        /// <summary>
+        /// Dans TreeViewViewModel — wrappe l'appel service
+        /// </summary>
+        public async Task<FolderRequirementsResult> GetFolderRequirementsAsync(NodesDefinition node)
+            => await _treeService.GetFolderRequirementsAsync(node);
+        public async Task<FolderRequirementsResult> GetRequirementsOfFolderAsync(NodesDefinition node)
+            => await _treeService.GetRequirementsOfFolderAsync(node);
+
+
+
 
     }
 }

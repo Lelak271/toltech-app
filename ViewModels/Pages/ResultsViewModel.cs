@@ -1,4 +1,9 @@
-﻿using Toltech.App.Resources;
+﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Windows.Data;
+using Toltech.App.Models;
+using Toltech.App.Resources;
 
 namespace Toltech.App.ViewModels
 {
@@ -7,11 +12,18 @@ namespace Toltech.App.ViewModels
         #region Fields
         private readonly MainViewModel _mainVM;
         public MainViewModel MainVM => _mainVM;
+
+        private readonly RequirementsViewModel _requirementsVM;
         #endregion
 
-        public ResultsViewModel(MainViewModel mainVM)
+        #region Collections
+        public ListCollectionView AllRequirements => _requirementsVM.AllRequirements;
+        #endregion
+
+        public ResultsViewModel(MainViewModel mainVM, RequirementsViewModel requirementsVM)
         {
             _mainVM = mainVM;
+            _requirementsVM = requirementsVM;
         }
     }
 }

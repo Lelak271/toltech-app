@@ -17,9 +17,11 @@
              >
 
     <UserControl.Resources>
-        <conv:EyeStateToImageConverter x:Key="EyeStateToImageConverter"/>
         <conv:ZeroToVisibilityConverter x:Key="ZeroToVisibilityConverter"/>
         <conv:EnumEqualsToVisibilityConverter x:Key="EnumEqualsToVisibilityConverter"/>
+        <conv:BooleanToImageConverter x:Key="EyeConverter"
+                               TrueImage="pack://application:,,,/Asset/Graphe.png"
+                               FalseImage="pack://application:,,,/Asset/eyehide.png"/>
     </UserControl.Resources>
     
     <DockPanel LastChildFill="True" >
@@ -226,7 +228,7 @@
 
                                     <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
                                         <Border.OpacityMask>
-                                            <ImageBrush ImageSource="{Binding IsEyeVisible1, Converter={StaticResource EyeStateToImageConverter}}"
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible1, Converter={StaticResource EyeConverter}}"
                                                          Stretch="Uniform"/>
                                         </Border.OpacityMask>
                                     </Border>
@@ -238,7 +240,7 @@
                                     <TextBlock Text="{lang:Loc Part2}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                     <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
                                         <Border.OpacityMask>
-                                            <ImageBrush ImageSource="{Binding IsEyeVisible2, Converter={StaticResource EyeStateToImageConverter}}"
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible2, Converter={StaticResource EyeConverter}}"
                                                          Stretch="Uniform"/>
                                         </Border.OpacityMask>
                                     </Border>
@@ -250,7 +252,7 @@
                                     <TextBlock Text="{lang:Loc Coordinate}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                     <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
                                         <Border.OpacityMask>
-                                            <ImageBrush ImageSource="{Binding IsEyeVisible3, Converter={StaticResource EyeStateToImageConverter}}"
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible3, Converter={StaticResource EyeConverter}}"
                                                          Stretch="Uniform"/>
                                         </Border.OpacityMask>
                                     </Border>
@@ -262,7 +264,7 @@
                                     <TextBlock Text="{lang:Loc Comment}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                     <Border Width="20" Height="20" Background="{DynamicResource IconPrimaryBrush}">
                                         <Border.OpacityMask>
-                                            <ImageBrush ImageSource="{Binding IsEyeVisible4, Converter={StaticResource EyeStateToImageConverter}}"
+                                            <ImageBrush ImageSource="{Binding IsEyeVisible4, Converter={StaticResource EyeConverter}}"
                                                          Stretch="Uniform"/>
                                         </Border.OpacityMask>
                                     </Border>

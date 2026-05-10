@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.IO.Packaging;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -23,7 +24,6 @@ namespace Toltech.App.FrontEnd.Controls
     // mais présente des comportements non optimaux (sélection, déclenchement, cohérence UX).
     // Cette implémentation est volontairement temporaire et devra être revue et refactorisée
     // ultérieurement pour une prise en charge plus robuste et conforme aux usages standards.
-
     public partial class TreeViewAreaV3 : UserControl
     {
         public TreeViewAreaV3ViewModel ViewModel
@@ -39,20 +39,30 @@ namespace Toltech.App.FrontEnd.Controls
 
         private void TreeViewControlV3_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if(ViewModel== null) return; // TODO pourquoi la VM est null
-            ViewModel.SelectedNode = e.NewValue as NodesDefinition ?? ViewModel.SelectedNode;
+            if (ViewModel is null) return;
+            if (e.NewValue is not NodesDefinition node) return;
+
+            //ViewModel.SelectedNode = node;
+
+            // Sync la sélection simple avec la sélection multiple
+            // Si le nœud n'est pas déjà dans la sélection multiple (cas clic simple sans Ctrl)
+            if (!ViewModel.SelectedNodes.Contains(node))
+                ViewModel.UpdateSelectedNodes(new List<NodesDefinition> { node });
         }
 
-        private async void TreeViewItem_PreviewMouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private async void TreeViewItem_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+
             if (sender is not TreeViewItem item)
                 return;
 
             if (item.DataContext is not NodesDefinition node)
                 return;
-            item.IsSelected = true;
-            await ViewModel.HandleNodeDoubleClickAsync(node);
+
             e.Handled = true;
+
+            item.IsSelected = true;
+            ViewModel.HandleNodeDoubleClickAsync(node);
         }
 
         private async void TreeViewControlV3_Expanded(object sender, RoutedEventArgs e)
@@ -84,60 +94,56 @@ namespace Toltech.App.FrontEnd.Controls
         /// Selon le type du nœud (dossier, pièce ou exigence),
         /// la méthode de fin d’édition correspondante est appelée.
         /// </summary>
-        private void TextBox_KeyDown(object sender, KeyEventArgs e)
+        private async void TextBox_KeyDown(object sender, KeyEventArgs e)
         {
-            
             if (sender is not TextBox tb || tb.DataContext is not NodesDefinition node)
                 return;
 
-            if (e.Key == Key.Enter || e.Key == Key.Return)
+            if (e.Key is Key.Enter or Key.Return)
             {
-                tb.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
-                CommitRename(tb, node);
-                RestoreTreeViewItemFocus(tb);
+                await CommitAndRestoreFocusAsync(tb, node, tb.Text);
                 e.Handled = true;
             }
             else if (e.Key == Key.Escape)
             {
-                tb.Text = node.NodeName;
-                CommitRename(tb, node);
-                RestoreTreeViewItemFocus(tb);
+                //ViewModel.CancelRename(node);
+                await CommitAndRestoreFocusAsync(tb, node, node.NodeName);
                 e.Handled = true;
             }
         }
-        private void TextBox_LostFocus(object sender, RoutedEventArgs e)
+
+        private async void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {
             if (sender is not TextBox tb || tb.DataContext is not NodesDefinition node)
                 return;
 
-            CommitRename(tb, node);
+            await CommitAndRestoreFocusAsync(tb, node, tb.Text);
         }
 
-        private bool _renameCommitted;
-        private void CommitRename(TextBox tb, NodesDefinition node)
+        private bool _isCommitting;
+        // Seul helper UI restant dans le code-behind
+        private async Task CommitAndRestoreFocusAsync(TextBox tb, NodesDefinition node, string newName)
         {
-            if (_renameCommitted)
-                return;
+            if (_isCommitting) return;
+            _isCommitting = true;
 
-            _renameCommitted = true;
+            try
+            {
+                tb.IsReadOnly = true;
 
-            EndRenameFolder(node);
+                bool success = await ViewModel.CommitRenameAsync(node, newName);
 
-            // Sortie contrôlée du mode édition
-            tb.IsReadOnly = true;
-            tb.MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+                if (success)
+                    tb.GetBindingExpression(TextBox.TextProperty)?.UpdateSource(); // ← pousse NodeName
+                else
+                    tb.Text = node.NodeName; // ← restaure l'affichage
 
-            _renameCommitted = false;
-        }
-
-        private void EndRenameFolder(NodesDefinition node)
-        {
-            node.IsEditing = false;
-            string newname = node.NodeName;
-            if (!NameValidationHelper.TryValidateName(node.NodeName, out string errorMessage)) return;
-
-            if (DataContext is TreeViewAreaV3ViewModel vm)
-                vm.RenameNodeAsync(node, node.NodeName);
+                RestoreTreeViewItemFocus(tb);
+            }
+            finally
+            {
+                _isCommitting = false;
+            }
         }
 
         #region Focus on TextBox For Renaming
@@ -150,12 +156,11 @@ namespace Toltech.App.FrontEnd.Controls
         private void FocusTextBoxForNode(NodesDefinition node)
         {
             if (node == null) return;
-
             foreach (var item in GetTreeViewItems(TreeViewControlV3))
             {
                 if (item.DataContext == node)
                 {
-                    FocusFirstVisibleTextBox(item);
+                    ActivateRenameTextBox(item); // ← activation complète
                     break;
                 }
             }
@@ -179,32 +184,25 @@ namespace Toltech.App.FrontEnd.Controls
             }
         }
 
-        /// <summary>
-        /// Parcourt l'arbre visuel à partir d'un parent et focus sur le premier TextBox visible trouvé
-        /// </summary>
-        private bool FocusFirstVisibleTextBox(DependencyObject parent)
+        // Méthode dédiée à l'activation du mode édition
+        private void ActivateRenameTextBox(DependencyObject parent)
         {
-            if (parent == null) return false;
-
+            if (parent == null) return;
             int count = VisualTreeHelper.GetChildrenCount(parent);
             for (int i = 0; i < count; i++)
             {
                 var child = VisualTreeHelper.GetChild(parent, i);
-
                 if (child is TextBox tb && tb.Visibility == Visibility.Visible)
                 {
+                    tb.IsReadOnly = false; // ← uniquement à l'activation
                     tb.Focus();
-                    tb.CaretIndex = tb.Text.Length; // curseur à la fin
-                    tb.IsReadOnly = false;
-                    return true;
+                    tb.SelectAll();
+                    return;
                 }
-
-                if (FocusFirstVisibleTextBox(child))
-                    return true;
+                ActivateRenameTextBox(child);
             }
-
-            return false;
         }
+
 
         private static void RestoreTreeViewItemFocus(TextBox tb)
         {
@@ -379,246 +377,167 @@ namespace Toltech.App.FrontEnd.Controls
 
         #endregion
 
-        #region Drag & Drop UI 
+        #region Drag & Drop UI
 
-        private TreeViewItem? _draggedItem;
-        private AdornerLayer? _adornerLayer;
-        private InsertionLineAdorner? _insertionAdorner;
-        private NodesDefinition? _dropTargetNode;
-        private TreeViewItem? _lastSelectedItem;
-        private bool _insertAbove = true;
+        // ── état drag ──────────────────────────────────────────────
         private Point _dragStartPoint;
         private DateTime _dragStartTime;
-        private List<TreeViewItem> _selectedItems = new();
+        private bool _isDragging;
+
+        // ── état drop ──────────────────────────────────────────────
+        private NodesDefinition? _dropTargetNode;
+        private bool _insertAbove;
+
+        // ── adorner ────────────────────────────────────────────────
+        private AdornerLayer? _adornerLayer;
+        private InsertionLineAdorner? _insertionAdorner;
+
+        // ── sélection ──────────────────────────────────────────────
+        // Source de vérité unique : ViewModel.SelectedNodes (List<NodesDefinition>)
+        // _selectedItems ne sert qu'au rendu visuel WPF
+        private readonly List<TreeViewItem> _selectedItems = new();
+        private TreeViewItem? _lastSelectedItem;
+
+        #region --- Souris ---
 
         private void TreeView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            _dragStartPoint = e.GetPosition(null);
             var source = e.OriginalSource as DependencyObject;
-
-            // Ignore TextBox (édition de nom)
-            if (source == null)
+            if (source is null || IsClickOnTextBox(source) || IsIgnoredElement(source))
                 return;
 
-            if (IsClickOnTextBox(source))
-                return;
+            var item = VisualUpwardSearch<TreeViewItem>(source);
+            if (item is null) return;
 
-            // Ignore expand/collapse button, scrollbar, ou chevron
-            if (IsIgnoredElement(source))
-                return;
+            _dragStartPoint = e.GetPosition(null);
+            _dragStartTime = DateTime.Now;
+            _isDragging = false;
 
-            var item = VisualUpwardSearch<TreeViewItem>((DependencyObject)e.OriginalSource);
-            if (item == null) return;
-            _draggedItem = item;
-
-            bool isCtrlPressed = Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl);
-            bool isShiftPressed = Keyboard.IsKeyDown(Key.LeftShift);
-            if (isCtrlPressed)
-            {
-                bool newState = !_selectedItems.Contains(item);
-                UpdateItemSelection(item, newState);
-            }
-            else if (isShiftPressed && _lastSelectedItem != null)
-            {
-                // Tab + clic => sélectionne tous les items entre le dernier sélectionné et le courant
-                SelectRange(_lastSelectedItem, item);
-            }
-
+            HandleSelection(item, e);
             _lastSelectedItem = item;
-            //item.Focus();
+
             e.Handled = false;
         }
 
         private void TreeView_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            var item = VisualUpwardSearch<TreeViewItem>((DependencyObject)e.OriginalSource);
-            if (item == null) return;
-
-            bool isCtrlPressed = Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl);
-            bool isShiftPressed = Keyboard.IsKeyDown(Key.LeftShift);
-
-            // CTRL → toggle
-            if (isCtrlPressed)
-            {
-                bool newState = !_selectedItems.Contains(item);
-                UpdateItemSelection(item, newState);
-            }
-            // SHIFT → sélection en plage si possible
-            else if (isShiftPressed && _lastSelectedItem != null)
-            {
-                SelectRange(_lastSelectedItem, item);
-            }
-            // Clic simple → sélection unique
-            else
-            {
-                ClearSelection();
-                UpdateItemSelection(item, true);
-            }
-
-            _lastSelectedItem = item;
-
+            _isDragging = false;
         }
 
         private void TreeView_PreviewMouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton != MouseButtonState.Pressed || _draggedItem == null)
-                return;
+            if (e.LeftButton != MouseButtonState.Pressed || _isDragging) return;
 
-            // Ignorer si on clique sur un TextBox (édition de nom)
-            var depObj = e.OriginalSource as DependencyObject;
-            if (depObj != null && IsClickOnTextBox(depObj))
-                return;
+            var source = e.OriginalSource as DependencyObject;
+            if (source is not null && IsClickOnTextBox(source)) return;
 
+            var diff = _dragStartPoint - e.GetPosition(null);
+            if (Math.Abs(diff.X) < 6 && Math.Abs(diff.Y) < 6) return;
 
-            // Vérifier le seuil de déplacement minimal pour éviter le drag parasite
-            Point currentPos = e.GetPosition(null);
-            Vector diff = _dragStartPoint - currentPos;
+            // Récupère les nœuds sélectionnés comme données du drag
+            var nodesToDrag = GetSelectedNodes();
+            if (!nodesToDrag.Any()) return;
 
-            // Enregistrer le temps du dernier drag pour éviter les drops parasites
+            _isDragging = true;
             _dragStartTime = DateTime.Now;
-            //Debug.WriteLine($"Début drag : ({_dragStartTime} ms).");
-            if (Math.Abs(diff.X) > 6 || Math.Abs(diff.Y) > 6)
+
+            var dragData = new DataObject(typeof(List<NodesDefinition>), nodesToDrag);
+            DragDrop.DoDragDrop((DependencyObject)e.Source, dragData, DragDropEffects.Move);
+
+            _isDragging = false;
+        }
+
+        #endregion
+
+        #region --- Drop ---
+
+        private void TreeView_PreviewDragOver(object sender, DragEventArgs e)
+        {
+            var targetItem = VisualUpwardSearch<TreeViewItem>((DependencyObject)e.OriginalSource);
+            if (targetItem?.DataContext is not NodesDefinition dropTarget)
             {
-                //Debug.WriteLine($"Drag détecté : déplacement X={diff.X}, Y={diff.Y}, Node={(_draggedItem.Tag as NodesDefinition)?.NodeName}");
+                ClearInsertionLine();
+                return;
+            }
 
-                // Démarrer le drag
-                DragDrop.DoDragDrop(_draggedItem, _draggedItem.DataContext, DragDropEffects.Move);
+            var position = e.GetPosition(targetItem);
+            _insertAbove = position.Y < targetItem.ActualHeight / 2;
+            _dropTargetNode = dropTarget;
 
-                // Ne plus traiter cet item jusqu'au prochain clic
-                _draggedItem = null;
+            // Folder → surbrillance, sinon → ligne d'insertion
+            if (dropTarget.IsFolder)
+            {
+                ClearInsertionLine();        // enlève la ligne si on vient d'un non-folder
+                ShowFolderHighlight(targetItem);
             }
             else
             {
-                // Debug si seuil non atteint
-                //Debug.WriteLine($"Déplacement trop faible pour drag : X={diff.X}, Y={diff.Y}");
+                ClearFolderHighlight();      // enlève la surbrillance si on vient d'un folder
+                ShowInsertionLine(targetItem, _insertAbove);
             }
-        }
-
-        private async void TreeView_Drop(object sender, DragEventArgs e)
-        {
-            // Délai entre le début du drag et le drop
-            TimeSpan dragDuration = DateTime.Now - _dragStartTime;
-            if (dragDuration < TimeSpan.FromMilliseconds(200)) // seuil minimum
-            {
-                //Debug.WriteLine($"Drop annulé : drag trop court ({dragDuration.TotalMilliseconds} ms).");
-                e.Effects = DragDropEffects.None;
-                e.Handled = true;
-                return;
-            }
-            //Debug.WriteLine($"Drop ({dragDuration.TotalMilliseconds} ms).");
-
-            if (_draggedItem == null)
-                return;
-
-            if (!e.Data.GetDataPresent(typeof(NodesDefinition)))
-                return;
-
-            var dropTargetItem = VisualUpwardSearch<TreeViewItem>((DependencyObject)e.OriginalSource);
-            var dropTarget = dropTargetItem?.DataContext as NodesDefinition;
-
-            if (dropTarget == null)
-                return;
-
-            // Récupérer la liste des nœuds à déplacer
-            var nodesToMove = GetSelectedNodes(); // multi-sélection
-            var draggedNode = e.Data.GetData(typeof(NodesDefinition)) as NodesDefinition;
-
-            if (draggedNode != null && !nodesToMove.Contains(draggedNode))
-                nodesToMove.Add(draggedNode);
-
-            // Appel asynchrone à la VM pour déplacer tous les nœuds
-            await ViewModel.MoveNodes(nodesToMove, _dropTargetNode, _insertAbove);
-
-            // Optionnel : clear la sélection et la ligne d’insertion
-            ClearSelection();
-            ClearInsertionLine();
-        }
-
-        /// <summary>
-        /// Méthode utilitaire pour remonter l'arborescence
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="source"></param>
-        /// <returns></returns>
-        private static T? VisualUpwardSearch<T>(DependencyObject source) where T : DependencyObject
-        {
-            while (source != null && !(source is T))
-                source = VisualTreeHelper.GetParent(source);
-            return source as T;
-        }
-
-        #region --- Insertion line ---
-        private void TreeView_PreviewDragOver(object sender, DragEventArgs e)
-        {
-
-            var targetItem = VisualUpwardSearch<TreeViewItem>((DependencyObject)e.OriginalSource);
-            if (targetItem == null)
-            {
-                ClearInsertionLine();
-                return;
-            }
-
-            var dropTarget = targetItem.DataContext as NodesDefinition;
-            if (dropTarget == null)
-            {
-                ClearInsertionLine();
-                return;
-            }
-
-            // Déterminer si l’insertion est au-dessus ou en dessous du centre du TreeViewItem
-            var position = e.GetPosition(targetItem);
-            bool insertAbove = position.Y < targetItem.ActualHeight / 2;
-
-            ShowInsertionLine(targetItem, insertAbove);
-
-            // Stocker temporairement pour le Drop
-            _dropTargetNode = dropTarget;
-            _insertAbove = position.Y < targetItem.ActualHeight / 2;
-
-            //Debug.WriteLine($"_insertAbove = {insertAbove}, position.Y = {position.Y}, ActualHeight = {targetItem.ActualHeight}, {dropTarget.NodeName}");
-
 
             e.Effects = DragDropEffects.Move;
             e.Handled = true;
         }
 
-        private void ShowInsertionLine(TreeViewItem target, bool insertAbove)
+        private async void TreeView_Drop(object sender, DragEventArgs e)
         {
-            if (target == null) return;
+            ClearAllAdorners(); // ← remplace ClearInsertionLine()
 
-            ClearInsertionLine();
-
-            _adornerLayer = AdornerLayer.GetAdornerLayer(target);
-            if (_adornerLayer == null) return;
-
-            _insertionAdorner = new InsertionLineAdorner(target, insertAbove);
-            _adornerLayer.Add(_insertionAdorner);
-        }
-
-        private void ClearInsertionLine()
-        {
-            if (_adornerLayer != null && _insertionAdorner != null)
+            var dragDuration = DateTime.Now - _dragStartTime;
+            if (dragDuration < TimeSpan.FromMilliseconds(200))
             {
-                _adornerLayer.Remove(_insertionAdorner);
-                _insertionAdorner = null;
-                _adornerLayer = null;
+                e.Effects = DragDropEffects.None;
+                e.Handled = true;
+                return;
             }
+
+            if (!e.Data.GetDataPresent(typeof(List<NodesDefinition>))) return;
+            if (_dropTargetNode is null) return;
+
+            var nodesToMove = e.Data.GetData(typeof(List<NodesDefinition>)) as List<NodesDefinition>;
+            if (nodesToMove is null || !nodesToMove.Any()) return;
+
+            await ViewModel.MoveNodes(nodesToMove, _dropTargetNode, _insertAbove);
+
+            ClearSelection();
+            ViewModel.OnNodeDropped(nodesToMove, _dropTargetNode);
         }
+
         #endregion
 
-        #region Multi selection
+        #region --- Sélection ---
 
-        private void UpdateItemSelection(TreeViewItem item, bool isSelected)
+        private void HandleSelection(TreeViewItem item, MouseButtonEventArgs e)
         {
-            if (item == null)
-                return;
+            bool ctrl = Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl);
+            bool shift = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift);
 
-            // Mise à jour de l'état du nœud
-            if (item.Tag is NodesDefinition node)
-                node.IsSelected = isSelected;
+            if (ctrl)
+            {
+                ToggleItemSelection(item);
+            }
+            else if (shift && _lastSelectedItem is not null)
+            {
+                SelectRange(_lastSelectedItem, item);
+            }
+            else
+            {
+                ClearSelection();
+                SetItemSelected(item, true);
+            }
+        }
 
-            // Mise à jour collection des items sélectionnés
-            if (isSelected)
+        private void ToggleItemSelection(TreeViewItem item)
+            => SetItemSelected(item, !_selectedItems.Contains(item));
+
+        private void SetItemSelected(TreeViewItem item, bool selected)
+        {
+            if (item.DataContext is not NodesDefinition node) return;
+
+            node.IsSelected = selected;
+
+            if (selected)
             {
                 if (!_selectedItems.Contains(item))
                     _selectedItems.Add(item);
@@ -628,204 +547,254 @@ namespace Toltech.App.FrontEnd.Controls
                 _selectedItems.Remove(item);
             }
 
-            //DebugSelectedItems();
-
-            UpdateItemVisualState(item, isSelected);
-        }
-
-        private void RestoreOriginalBackground(TreeViewItem item, Border border)
-        {
-            Brush backgroundBrush = Brushes.Transparent;
-
-            var node = item.Tag as NodesDefinition;
-            if (node == null)
-            {
-                border.Background = backgroundBrush;
-                border.BorderBrush = backgroundBrush;
-                return;
-            }
-
-            border.Background = backgroundBrush;
-            //border.CornerRadius = new CornerRadius(5);
-            //border.BorderBrush = node.IsFixed ? Brushes.Beige : Brushes.Beige;
+            UpdateItemVisualState(item, selected);
+            ViewModel.UpdateSelectedNodes(GetSelectedNodes()); // sync VM
         }
 
         private void ClearSelection()
         {
             foreach (var item in _selectedItems.ToList())
-                UpdateItemSelection(item, false);
+            {
+                if (item.DataContext is NodesDefinition node)
+                    node.IsSelected = false;
+                UpdateItemVisualState(item, false);
+            }
             _selectedItems.Clear();
+            ViewModel.UpdateSelectedNodes(new List<NodesDefinition>());
+        }
+
+        private void SelectRange(TreeViewItem start, TreeViewItem end)
+        {
+            var all = GetAllVisibleTreeViewItems();
+            int startIdx = all.IndexOf(start);
+            int endIdx = all.IndexOf(end);
+            if (startIdx == -1 || endIdx == -1) return;
+
+            int min = Math.Min(startIdx, endIdx);
+            int max = Math.Max(startIdx, endIdx);
+
+            for (int i = min; i <= max; i++)
+                SetItemSelected(all[i], true);
         }
 
         #endregion
 
+        #region --- Insertion line ---
+
+        private FolderHighlightAdorner? _folderHighlightAdorner;
+
+        private void ShowFolderHighlight(TreeViewItem target)
+        {
+            ClearAllAdorners();
+
+            if (_folderHighlightAdorner?.AdornedElement == target)
+                return; // déjà sur ce folder — pas de recréation inutile
+
+            ClearFolderHighlight();
+
+            _adornerLayer = AdornerLayer.GetAdornerLayer(target);
+            if (_adornerLayer is null) return;
+
+            _folderHighlightAdorner = new FolderHighlightAdorner(target);
+            _adornerLayer.Add(_folderHighlightAdorner);
+        }
+
+        // Nettoie les deux en même temps
+        private void ClearAllAdorners()
+        {
+            ClearInsertionLine();
+            ClearFolderHighlight();
+            _adornerLayer = null;
+        }
+
+        private void ClearFolderHighlight()
+        {
+            if (_folderHighlightAdorner is null) return;
+
+            // Récupère le layer depuis l'élément décoré existant
+            // et non depuis _adornerLayer qui peut pointer ailleurs
+            var layer = AdornerLayer.GetAdornerLayer(_folderHighlightAdorner.AdornedElement);
+            layer?.Remove(_folderHighlightAdorner);
+            _folderHighlightAdorner = null;
+        }
+
+
+
+        private void ShowInsertionLine(TreeViewItem target, bool insertAbove)
+        {
+            ClearInsertionLine();
+            _adornerLayer = AdornerLayer.GetAdornerLayer(target);
+            if (_adornerLayer is null) return;
+
+            _insertionAdorner = new InsertionLineAdorner(target, insertAbove);
+            _adornerLayer.Add(_insertionAdorner);
+        }
+
+        private void ClearInsertionLine()
+        {
+            if (_insertionAdorner is null) return;
+
+            var layer = AdornerLayer.GetAdornerLayer(_insertionAdorner.AdornedElement);
+            layer?.Remove(_insertionAdorner);
+            _insertionAdorner = null;
+        }
+
         #endregion
 
-        #region Helpers
+        #region --- Helpers visuels ---
 
-        // Helper pour remonter l'arborescence visuelle et vérifier si on clique sur un TextBox
-        //Utiliser pour le Rename car incompatible avec les PreviewMouseMove
-        private static bool IsClickOnTextBox(DependencyObject source)
-        {
-            while (source != null)
-            {
-                if (source is TextBox)
-                    return true;
-                source = VisualTreeHelper.GetParent(source);
-            }
-            return false;
-        }
-        private static bool IsIgnoredElement(DependencyObject source)
-        {
-            int i = 0;
-            // Ignore les parties "non cliquables" pour le drag (ex: expander, scrollbar)
-            while (source != null)
-            {
+        private List<NodesDefinition> GetSelectedNodes()
+            => _selectedItems
+                .Where(i => i.DataContext is NodesDefinition)
+                .Select(i => (NodesDefinition)i.DataContext)
+                .ToList();
 
-                //Debug.WriteLine($"{i}");
-                i++;
-                if (source is ToggleButton || source is ScrollBar)
-                    return true;
-                source = VisualTreeHelper.GetParent(source);
+        /// <summary>
+        /// Récupère tous les TreeViewItem visibles (expandés uniquement).
+        /// </summary>
+        private List<TreeViewItem> GetAllVisibleTreeViewItems()
+        {
+            var items = new List<TreeViewItem>();
+            foreach (var root in TreeViewControlV3.Items)
+            {
+                if (TreeViewControlV3.ItemContainerGenerator
+                        .ContainerFromItem(root) is TreeViewItem rootItem)
+                    CollectVisibleItems(rootItem, items);
             }
-            return false;
+            return items;
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
-        private void DebugSelectedItems()
+        private static void CollectVisibleItems(TreeViewItem item, List<TreeViewItem> list)
         {
-            Debug.WriteLine("------ Sélection actuelle ------");
+            list.Add(item);
+            if (!item.IsExpanded) return; // ne descend pas dans les nœuds fermés
 
-            foreach (var tvi in _selectedItems)
+            foreach (var child in item.Items)
             {
-
-                if (tvi.Tag is NodesDefinition node)
-                    Debug.WriteLine($"• {node.NodeName} ({node.Type})");
-                else
-                    Debug.WriteLine($"• TreeViewItem sans node (Tag null?)");
+                if (item.ItemContainerGenerator.ContainerFromItem(child) is TreeViewItem childItem)
+                    CollectVisibleItems(childItem, list);
             }
-
-        }
-
-        private Border? GetBorder(TreeViewItem item)
-        {
-            return FindChildByName<Border>(item, "PART_SelectionBorder");
-        }
-
-        private T? FindChildByName<T>(DependencyObject? parent, string name) where T : FrameworkElement
-        {
-            if (parent == null) return null;
-
-            int count = VisualTreeHelper.GetChildrenCount(parent);
-            for (int i = 0; i < count; i++)
-            {
-                var child = VisualTreeHelper.GetChild(parent, i);
-
-                if (child is T typed && child is FrameworkElement fe && fe.Name == name)
-                    return typed;
-
-                var result = FindChildByName<T>(child, name);
-                if (result != null)
-                    return result;
-            }
-
-            return null;
         }
 
         private void UpdateItemVisualState(TreeViewItem item, bool isSelected)
         {
             var border = GetBorder(item);
-            if (border == null)
-                return;
+            if (border is null) return;
 
             if (isSelected)
             {
-                // Couleur bleutée
-                border.Background = new SolidColorBrush(Color.FromArgb(40, 0, 120, 215));
+                border.Background = new SolidColorBrush(Color.FromArgb(40, 0, 220, 215));
                 border.BorderBrush = new SolidColorBrush(Color.FromArgb(40, 0, 120, 215));
                 border.BorderThickness = new Thickness(0);
                 border.CornerRadius = new CornerRadius(5);
             }
             else
             {
-                RestoreOriginalBackground(item, border);
-                border.BorderThickness = new Thickness(0); // important pour éviter des artefacts
+                border.Background = Brushes.Transparent;
+                border.BorderBrush = Brushes.Transparent;
+                border.BorderThickness = new Thickness(0);
             }
         }
 
-        private List<NodesDefinition> GetSelectedNodes()
-        {  
-            return _selectedItems
-                .Where(i => i.Tag is NodesDefinition)
-                .Select(i => (NodesDefinition)i.Tag)
-                .ToList();
-        }
+        private Border? GetBorder(TreeViewItem item)
+            => FindChildByName<Border>(item, "PART_SelectionBorder");
 
-        /// <summary>
-        /// Sélectionne tous les TreeViewItem entre start et end
-        /// </summary>
-        /// <param name="start">Le TreeViewItem de début de la sélection</param>
-        /// <param name="end">Le TreeViewItem de fin de la sélection</param>
-        private void SelectRange(TreeViewItem start, TreeViewItem end)
+        private static T? FindChildByName<T>(DependencyObject? parent, string name)
+            where T : FrameworkElement
         {
-            var allItems = GetAllTreeViewItems(); // méthode à implémenter pour récupérer tous les items visibles
-            int startIndex = allItems.IndexOf(start);
-            int endIndex = allItems.IndexOf(end);
-
-            if (startIndex == -1 || endIndex == -1) return;
-
-            int min = Math.Min(startIndex, endIndex);
-            int max = Math.Max(startIndex, endIndex);
-
-            for (int i = min; i <= max; i++)
+            if (parent is null) return null;
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
             {
-                UpdateItemSelection(allItems[i], true);
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T typed && typed.Name == name) return typed;
+                var result = FindChildByName<T>(child, name);
+                if (result is not null) return result;
             }
+            return null;
         }
 
-        /// <summary>
-        /// Récupère tous les TreeViewItem visibles dans le TreeView, dans l’ordre d’affichage.
-        /// </summary>
-        private List<TreeViewItem> GetAllTreeViewItems()
+        private static bool IsClickOnTextBox(DependencyObject source)
         {
-            var items = new List<TreeViewItem>();
-
-            foreach (var root in TreeViewControlV3.Items)
+            while (source is not null)
             {
-                if (TreeViewControlV3.ItemContainerGenerator.ContainerFromItem(root) is TreeViewItem rootItem)
-                {
-                    AddTreeViewItemAndChildren(rootItem, items);
-                }
+                if (source is TextBox) return true;
+                source = VisualTreeHelper.GetParent(source);
             }
-
-            return items;
+            return false;
         }
 
-        /// <summary>
-        /// Ajoute récursivement le TreeViewItem et tous ses enfants dans la liste.
-        /// </summary>
-        private void AddTreeViewItemAndChildren(TreeViewItem item, List<TreeViewItem> list)
+        private static bool IsIgnoredElement(DependencyObject source)
         {
-            list.Add(item);
-
-            // S'assurer que les enfants sont générés
-            if (!item.IsExpanded)
+            while (source is not null)
             {
-                item.ApplyTemplate();
-                item.UpdateLayout();
+                if (source is ToggleButton || source is ScrollBar) return true;
+                source = VisualTreeHelper.GetParent(source);
             }
+            return false;
+        }
 
-            foreach (var child in item.Items)
+        private static T? VisualUpwardSearch<T>(DependencyObject source)
+            where T : DependencyObject
+        {
+            while (source is not null && source is not T)
+                source = VisualTreeHelper.GetParent(source);
+            return source as T;
+        }
+
+        [Conditional("DEBUG")]
+        private void DebugSelectedItems()
+        {
+            Debug.WriteLine("── Sélection ──");
+            foreach (var item in _selectedItems)
             {
-                if (item.ItemContainerGenerator.ContainerFromItem(child) is TreeViewItem childItem)
-                {
-                    AddTreeViewItemAndChildren(childItem, list);
-                }
+                var label = item.DataContext is NodesDefinition n
+                    ? $"{n.NodeName} ({n.Type})"
+                    : "DataContext inconnu";
+                Debug.WriteLine($"• {label}");
             }
         }
 
         #endregion
-
-
+        #endregion
     }
+
+    /// <summary>
+    /// Renders a visual highlight around a UI element to indicate selection or focus.
+    /// </summary>
+    public class FolderHighlightAdorner : Adorner
+    {
+        private static readonly Brush FillBrush =
+            new SolidColorBrush(Color.FromArgb(40, 0, 200, 180));
+
+        private static readonly Pen BorderPen =
+            new Pen(new SolidColorBrush(Color.FromArgb(160, 0, 180, 160)), 1.5)
+            {
+                DashStyle = DashStyles.Dash
+            };
+
+        static FolderHighlightAdorner()
+        {
+            FillBrush.Freeze();
+            BorderPen.Freeze();
+        }
+
+        public FolderHighlightAdorner(UIElement adornedElement)
+            : base(adornedElement)
+        {
+            IsHitTestVisible = false;
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            var rect = new Rect(
+                new Point(2, 2),
+                new Size(
+                    AdornedElement.RenderSize.Width - 4,
+                    AdornedElement.RenderSize.Height - 4));
+
+            dc.DrawRoundedRectangle(FillBrush, BorderPen, rect, 5, 5);
+        }
+    }
+
 }

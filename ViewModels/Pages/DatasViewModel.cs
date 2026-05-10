@@ -15,8 +15,6 @@ using static Toltech.App.Models.NodesDefinition;
 using static Toltech.App.Services.EventsManager;
 using TtCore = Toltech.App.ViewModels;
 
-// TODO 
-// Rajouter refresh lors de suppresion via la fentre DB part si cela supprimme la piece en cours UI
 namespace Toltech.App.ViewModels
 {
     public class DatasViewModel : BaseViewModel
@@ -60,14 +58,14 @@ namespace Toltech.App.ViewModels
         #region Eyes 
         private bool GetEye(string key) => _uiSettings.IsPanelExpanded(key);
 
-        private void SetEye(string key, bool value, string rowHeightProperty = null)
+        private void SetEye(string key, bool value, string rowHeightProperty = null, string eyeProperty = null)
         {
             if (_uiSettings.IsPanelExpanded(key) == value)
                 return;
 
             _uiSettings.SetPanelExpanded(key, value);
 
-            OnPropertyChanged();
+            OnPropertyChanged(eyeProperty);
 
             if (rowHeightProperty != null)
                 OnPropertyChanged(rowHeightProperty);
@@ -78,25 +76,25 @@ namespace Toltech.App.ViewModels
         public bool IsEyeVisible1
         {
             get => GetEye("Data_Eye1");
-            set => SetEye("Data_Eye1", value, nameof(Row1Height));
+            set => SetEye("Data_Eye1", value, nameof(Row1Height), nameof(IsEyeVisible1));
         }
 
         public bool IsEyeVisible2
         {
             get => GetEye("Data_Eye2");
-            set => SetEye("Data_Eye2", value, nameof(Row2Height));
+            set => SetEye("Data_Eye2", value, nameof(Row2Height), nameof(IsEyeVisible2));
         }
 
         public bool IsEyeVisible3
         {
             get => GetEye("Data_Eye3");
-            set => SetEye("Data_Eye3", value, nameof(Row3Height));
+            set => SetEye("Data_Eye3", value, nameof(Row3Height), nameof(IsEyeVisible3));
         }
 
         public bool IsEyeVisible4
         {
             get => GetEye("Data_Eye4");
-            set => SetEye("Data_Eye4", value, nameof(Row4Height));
+            set => SetEye("Data_Eye4", value, nameof(Row4Height), nameof(IsEyeVisible4));
         }
 
         public bool IsEyeVisible5
@@ -265,7 +263,10 @@ namespace Toltech.App.ViewModels
             DeletePartCommand = new TtCore.RelayCommand(async _ => await DeletePartActive());
             ShowWindowDeletePartCommand = new TtCore.RelayCommand(async _ => await ShowWindowDeletePart());
             CheckIsoPartCommand = new TtCore.RelayCommand(async _ => await CheckIsoPart());
-            SaveAllCommand = new TtCore.RelayCommand(async _ => await SaveAllActiveModelDataAsync());
+            SaveAllCommand = new TtCore.RelayCommand(
+                async _ => await SaveAllActiveModelDataAsync(),
+                _ => Datas.Any(r => r.IsDirty && !r.IsSaving)
+                );
 
             DeletePanelCommand = new TtCore.RelayCommand(async param =>
             {
@@ -295,13 +296,13 @@ namespace Toltech.App.ViewModels
             #region Event Manager
 
             //EventsManager.TreeViewDataNodeDrag += OnTreeChanged;
-            EventsManager.PartSelectedChanged += OnPartSelectedChanged;
-            EventsManager.ModelOpen += OnModelOpenWrapper;
+            EventsManager.PartCrud += OnPartCrudAsync;
+            EventsManager.ModelOpened += OnModelOpenWrapper;
             EventsManager.NodeChanged += async e =>
             {
-                OnNodeChangedAsync(e);
+                await OnNodeChangedAsync(e);
             };
-
+            TreeVM.PropertyChanged += OnTreePropertyChanged;
 
             #endregion
         }
@@ -319,41 +320,73 @@ namespace Toltech.App.ViewModels
 
         #region Main Event Function
 
-        private Task OnNodeChangedAsync(NodeChangedEvent e)
+        /// <summary>
+        /// Handles changes to the tree selection and applies filtering based on the selected requirement node. 
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">Event data containing information about the property change.</param>
+        private async void OnTreePropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            try
+            {
+                switch (e.PropertyName)
+                {
+                    case nameof(TreeVM.DoubleClickedNode):
+                        if (TreeVM.DoubleClickedNode?.Type == NodeType.PartNode)
+                        {
+                            if (TreeVM.DoubleClickedNode.Id != null)
+                                SelectedPartId = TreeVM.DoubleClickedNode.LinkedOriginalId;
+                        }
+                        if (TreeVM.DoubleClickedNode?.Type == NodeType.DataNode)
+                        {
+                            var data = Datas.FirstOrDefault(d => d.Id == TreeVM.DoubleClickedNode.LinkedOriginalId);
+                            if (data != null)
+                            {
+                                SelectedData = data;
+                                RequestFocusItem?.Invoke(data); // événement pour la vue
+                            }
+                        }
+                        break;
+
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[ReqVM] OnTreePropertyChanged : {ex.Message}");
+            }
+        }
+        private async Task OnNodeChangedAsync(NodeChangedEvent e)
         {
             switch (e.Type)
             {
                 case NodeType.PartNode:
-                    return OnPartCrudAsync(new PartCrudEvent
+                    await OnPartCrudAsync(new PartCrudEvent
                     {
                         Operation = e.Operation,
                         Source = EventSource.Tree,
                         EntityId = e.LinkedOriginalId,
                         Entity = e.Operation == CrudOperation.Updated
-                                    ? new Part { Id = e.LinkedOriginalId, NamePart = e.NewName }
-                                    : null
+                            ? new Part
+                            {
+                                Id = e.LinkedOriginalId,
+                                NamePart = e.NewName
+                            }
+                            : null
                     });
+                    break;
 
-                //case NodeType.DataNode:
-                //    return OnModelDataCrudAsync(new ModelDataCrudEvent
-                //    {
-                //        Operation = e.Operation,
-                //        Source = EventSource.Tree,
-                //        EntityId = e.LinkedOriginalId,
-                //        Entity = e.Operation == CrudOperation.Updated
-                //                    ? new ModelData { Id = e.LinkedOriginalId, Model = e.NewName }
-                //                    : null
-                //    });
+                case NodeType.DataNode:
+                    await ReorderFromDb(SelectedPartId.Value);
+                    break;
 
                 default:
-                    return Task.CompletedTask;
+                    break;
             }
         }
 
         private async Task OnPartCrudAsync(PartCrudEvent e)
         {
-            //DefinedCBFixedPart();
-
             switch (e.Operation)
             {
                 case CrudOperation.Added:
@@ -361,7 +394,15 @@ namespace Toltech.App.ViewModels
                     break;
 
                 case CrudOperation.Deleted:
-                    await ReloadSafe();
+                    var idsToInvalidate = e.EntityIds?.Any() == true
+                        ? e.EntityIds
+                        : e.EntityId > 0
+                            ? new List<int> { e.EntityId }
+                            : null;
+
+                    if (idsToInvalidate is not null)
+                        InvalidateCache(idsToInvalidate);
+                    ReloadSafe();
                     break;
 
                 case CrudOperation.Updated:
@@ -373,18 +414,6 @@ namespace Toltech.App.ViewModels
                         UpdateSelectedPartName();
                     break;
             }
-
-            //// Uniquement pour rafraîchir le nom affiché si la part sélectionnée a changé
-            //if (e.Operation != CrudOperation.Updated) return Task.CompletedTask;
-
-            //var updatedParts = e.Entities?.Any() == true
-            //    ? e.Entities
-            //    : e.Entity != null ? new List<Part> { e.Entity } : null;
-
-            //if (updatedParts?.Any(p => p.Id == SelectedPartId) == true)
-            //    UpdateSelectedPartName();
-
-            //return Task.CompletedTask;
         }
 
         ///Summary  
@@ -404,18 +433,11 @@ namespace Toltech.App.ViewModels
                 FixedPart = partInCollection;
         }
 
-        private async Task OnModelOpenWrapper()
+        private async Task OnModelOpenWrapper(ModelOpenedEvent e)
         {
             RestoreCache();
             await ReloadSafe();
             await DefinedCBFixedPart();
-        }
-
-        private async Task OnPartSelectedChanged(int? idPart)
-        {
-            //await DefinedCBFixedPart();
-            if (idPart != null)
-                SelectedPartId = idPart;
         }
 
         private void UpdateIsFixedFlags(Part? fixedPart)
@@ -444,12 +466,10 @@ namespace Toltech.App.ViewModels
             previousCts?.Cancel();
             previousCts?.Dispose();
 
-            try
-            {
+
                 await Task.Delay(100, _reloadCts.Token);
                 await LoadAsync(_reloadCts.Token, idPart);
-            }
-            catch (TaskCanceledException) { }
+  
         }
 
         // Cache mémoire : PartId → liste des ModelData
@@ -458,7 +478,7 @@ namespace Toltech.App.ViewModels
         private const int MaxCachedParts = 10; // limite
 
         // ─── Chargement d'une Part (DB uniquement si pas déjà en cache) ───────
-        public async Task LoadAsync(CancellationToken token, int? idPart = 0)
+        private async Task LoadAsync(CancellationToken token, int? idPart = 0)
         {
             token.ThrowIfCancellationRequested();
 
@@ -495,7 +515,7 @@ namespace Toltech.App.ViewModels
 
             if (!dataList.Value.Any())
             {
-                SelectedPartId = null;
+                //SelectedPartId = null;
                 _cache[partId] = new List<ModelData>(); // cache vide pour éviter re-query
                 Datas.Clear();
                 return;
@@ -530,7 +550,7 @@ namespace Toltech.App.ViewModels
         }
 
         // ─── Réordonnancement en mémoire pour une Part ────────────────────────
-        public async Task ReorderFromDb(int partId)
+        private async Task ReorderFromDb(int partId)
         {
             if (!_cache.ContainsKey(partId))
                 return;
@@ -571,11 +591,22 @@ namespace Toltech.App.ViewModels
         }
 
         // ─── Invalider le cache d'une Part (force reload DB au prochain Load) ─
-        public void InvalidateCache(int partId)
+        private void InvalidateCache(IEnumerable<int> partIds)
         {
-            _cache.Remove(partId);
-            _lruOrder.Remove(partId);
+            var idSet = partIds.ToHashSet();
+
+            foreach (var id in idSet)
+                _cache.Remove(id);
+
+            if (SelectedPartId.HasValue && partIds.Contains(SelectedPartId.Value))
+            {
+                SelectedPartId = null;
+            }
         }
+
+        // Surcharge unitaire pour les appels existants
+        private void InvalidateCache(int partId)
+            => InvalidateCache(new[] { partId });
         public void RestoreCache()
         {
             _cache.Clear();
@@ -622,9 +653,15 @@ namespace Toltech.App.ViewModels
         }
 
         /// <summary>
-        /// TODO
+        /// Met à jour l’ordre d’utilisation récent (LRU - Least Recently Used) d’une pièce dans le cache.
+        /// 
+        /// La pièce accédée est déplacée en tête de liste comme élément le plus récent.
+        /// Si la taille maximale du cache est dépassée, les éléments les plus anciens
+        /// sont évincés automatiquement, sauf s’ils contiennent des modifications non sauvegardées.
         /// </summary>
-        /// <param name="partId"></param>
+        /// <param name="partId">
+        /// Identifiant de la pièce à marquer comme récemment utilisée.
+        /// </param>
         private void TouchLru(int partId)
         {
             _lruOrder.Remove(partId);
@@ -740,7 +777,7 @@ namespace Toltech.App.ViewModels
         // Méthode privée commune
         private async Task SaveModelDataInternalAsync(List<ModelData> toSave)
         {
-            var saveResult = await _domainService.SaveModelDataAsync(toSave);
+            var saveResult = await _domainService.UpdateModelDataAsync(toSave);
             if (saveResult.IsFailure)
             {
                 HandleError(saveResult.Error); return;

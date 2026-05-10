@@ -41,7 +41,7 @@ namespace Toltech.App.Utilities
                     Type = NodeType.RequirementNode,
                     IsFolder = false,
                     IsActive = req.IsActive,
-                    LinkedRequirementId = req.Id_req,
+                    LinkedOriginalId = req.Id_req,
                     ParentId = await GetDefaultFolderIdForReqAsync(allNodes)
                 },
 
@@ -155,7 +155,7 @@ namespace Toltech.App.Utilities
 
         // ── Helper lookup nœud existant ──────────────────────────────────
 
-        private async Task<NodesDefinition> GetExistingNodeAsync<T>(T entity)
+        private async Task<NodesDefinition?> GetExistingNodeAsync<T>(T entity)
         {
             var allNodes = await _databaseService.GetAllNodesAsync();
 
@@ -171,7 +171,7 @@ namespace Toltech.App.Utilities
 
                 Requirements req => allNodes.FirstOrDefault(n =>
                                          n.Type == NodeType.RequirementNode &&
-                                         n.LinkedRequirementId == req.Id_req),
+                                         n.LinkedOriginalId == req.Id_req),
 
                 _ => null
             };
@@ -193,14 +193,13 @@ namespace Toltech.App.Utilities
             if (allNodes == null)
                 return null;
 
-            //TODO refactor le  LinkedRequirementId => garder que le LinkedOriginalId
             return allNodes.FirstOrDefault(n =>
             {
                 if (n.Type != targetType)
                     return false;
 
                 return targetType == NodeType.RequirementNode
-                    ? n.LinkedRequirementId == entityId
+                    ? n.LinkedOriginalId == entityId
                     : n.LinkedOriginalId == entityId;
             });
         }
@@ -310,8 +309,8 @@ namespace Toltech.App.Utilities
             var defaultFolder = GetDefaultFolderIdForReqAsync(allNodes);
 
             var existingNodes = allNodes
-                .Where(n => n.Type == NodeType.RequirementNode && n.LinkedRequirementId.HasValue)
-                .ToDictionary(n => n.LinkedRequirementId!.Value);
+                .Where(n => n.Type == NodeType.RequirementNode)
+                .ToDictionary(n => n.LinkedOriginalId!);
 
             var requirementsById = allRequirements.ToDictionary(r => r.Id_req);
 
@@ -342,7 +341,7 @@ namespace Toltech.App.Utilities
                 {
                     NodeName = req.NameReq.Trim(),
                     Type = NodeType.RequirementNode,
-                    LinkedRequirementId = req.Id_req,
+                    LinkedOriginalId = req.Id_req,
                     ParentId = defaultFolder.Result
                 });
             }

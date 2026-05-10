@@ -14,9 +14,9 @@ namespace Toltech.App.ToltechCalculation.Helpers
 {
     public class ComputeValidationService
     {
-        private IComputeEngine _computeEngine;
-        private static ILoggerService _logger;
-        private static DatabaseService _databaseService;
+        private readonly IComputeEngine _computeEngine;
+        private readonly ILoggerService _logger;
+        private readonly DatabaseService _databaseService;
 
         public ComputeValidationService(IComputeEngine computeEngine, DatabaseService databaseService)
         {

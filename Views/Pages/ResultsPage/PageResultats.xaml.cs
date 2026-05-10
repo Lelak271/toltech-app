@@ -30,7 +30,6 @@ namespace Toltech.App.Views
         public PageResultats()
         {
             InitializeComponent();
-            AfficherExigencesDansListBox();
 
             // On attend que DataContext soit défini
             // Dès que le DataContext est assigné par le DataTemplate
@@ -64,7 +63,6 @@ namespace Toltech.App.Views
         #region Méthodes d'initialisation
         private async void PageResultas_Load(object sender, RoutedEventArgs e)
         {
-            AfficherExigencesDansListBox();
             CbAllReqs.IsChecked = false;
         }
 
@@ -72,33 +70,7 @@ namespace Toltech.App.Views
 
         #region Zone de calculs - Méthode Cascade Matricielle
         // Récuperation des req ID et Name
-        private async Task AfficherExigencesDansListBox()
-        {
-            if (ModelManager.ModelActif == null) return;
-            try
-            {
-                var exigences = await DatabaseService.ActiveInstance.GetAllRequirementsAsync();
-                RequirementsList.SelectedItems.Clear();
-
-                if (exigences != null && exigences.Any())
-                {
-                    RequirementsList.ItemsSource = exigences;
-                    RequirementsList.DisplayMemberPath = "NameReq"; // Affiche le champ "Model" dans la ListBox
-                    RequirementsList.SelectedItems.Clear();
-                }
-                else
-                {
-                    RequirementsList.ItemsSource = null;
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Erreur lors du chargement des exigences : {ex.Message}",
-                                "Erreur",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Error);
-            }
-        }
+      
 
         #endregion
 
@@ -128,7 +100,7 @@ namespace Toltech.App.Views
 
             int total = exigencesSelectionnees.Count;
             int index = 0;
-            ComputeResult AllResults = new ComputeResult();
+            ComputeResult AllResults;
 
             try
             {
