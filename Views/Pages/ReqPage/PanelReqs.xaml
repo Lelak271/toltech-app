@@ -180,12 +180,13 @@
                                   Grid.Column="1"   
                                   VerticalAlignment="Top"   
                                   Grid.Row="1"
-                                  Text="{Binding PartReq1Id, Converter={StaticResource IdToNameConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                   ItemsSource="{Binding ParentViewModel.Parts,RelativeSource={RelativeSource AncestorType=localControls:PanelReqs}}"
                                   DisplayMemberPath="NamePart"
                                   SelectedValuePath="Id"
-                                  SelectedValue="{Binding PartReq1Id, Mode=TwoWay}"
+                                  SelectedValue="{Binding PartReq1Id, Mode=TwoWay,UpdateSourceTrigger=LostFocus}"
                                   />
+                        <!--Text="{Binding PartReq1Id, Converter={StaticResource IdToNameConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"-->
+
                     </Grid>
                 </Border>
 
@@ -293,11 +294,10 @@
                                   StaysOpenOnEdit="True"
                                   Grid.Column="1" 
                                   Grid.Row="1"
-                                  Text="{Binding PartReq2Id, Converter={StaticResource IdToNameConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                   ItemsSource="{Binding ParentViewModel.Parts,RelativeSource={RelativeSource AncestorType=localControls:PanelReqs}}"
                                   DisplayMemberPath="NamePart"
                                   SelectedValuePath="Id"
-                                  SelectedValue="{Binding PartReq2Id, Mode=TwoWay}"
+                                  SelectedValue="{Binding PartReq2Id, Mode=TwoWay,UpdateSourceTrigger=LostFocus}"
                                   
                                   />
                     </Grid>

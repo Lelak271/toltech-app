@@ -131,7 +131,7 @@
 
                      <TextBlock.Visibility>
                         <MultiBinding Converter="{StaticResource ActiveModelToVisibilityConverter}">
-                            <Binding Source="{x:Static core:ModelManager.ModelActif}" />
+                            <Binding Path="DataContext.PathModel" RelativeSource="{RelativeSource AncestorType=ItemsControl}" />
                             <Binding Path="FilePathModel" />
                         </MultiBinding>
                     </TextBlock.Visibility>

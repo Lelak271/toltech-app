@@ -82,7 +82,7 @@ namespace Toltech.App.Services
 
             bool isExist = await _databaseService.PartExistsByIdAsync(idPartActif);
 
-                if(isExist)
+                if(!isExist)
                   return Result<ModelData>.Failure("Pas de pièce valide à la création.", ErrorCode.InvalidInput);
             try
             {
@@ -276,7 +276,7 @@ namespace Toltech.App.Services
 
             try
             {
-                var renamed = await ResolveUniqueNamesAsync(toSave, _databaseService.NameDataExisteAsync);
+                var renamed = await ResolveUniqueNamesAsync(toSave, _databaseService.NumberOfNameDataAsync);
 
                 foreach (var (original, resolved) in renamed)
                     _logger.LogInfo($"Contact renommé : \"{original}\" → \"{resolved}\"");
@@ -324,7 +324,7 @@ namespace Toltech.App.Services
                 // Mise à jour
                 data.Model = newName.Trim();
 
-                var renamed = await ResolveUniqueNamesAsync(data, _databaseService.NameDataExisteAsync);
+                var renamed = await ResolveUniqueNamesAsync(data, _databaseService.NumberOfNameDataAsync);
 
                 foreach (var (original, resolved) in renamed)
                     _logger.LogInfo($"Contact renommé : \"{original}\" → \"{resolved}\"");
@@ -617,7 +617,7 @@ namespace Toltech.App.Services
 
             try
             {
-                var renamed = await ResolveUniqueNamesAsync(toSave, _databaseService.NameReqExisteAsync);
+                var renamed = await ResolveUniqueNamesAsync(toSave, _databaseService.NumberOfReqAsync);
 
                 foreach (var (original, resolved) in renamed)
                     _logger.LogInfo($"Requirement renommé : \"{original}\" → \"{resolved}\"");
@@ -659,7 +659,7 @@ namespace Toltech.App.Services
 
                 requirement.NameReq = newName.Trim();
 
-                var renamed = await ResolveUniqueNamesAsync(requirement, _databaseService.NameReqExisteAsync);
+                var renamed = await ResolveUniqueNamesAsync(requirement, _databaseService.NumberOfReqAsync);
 
                 foreach (var (original, resolved) in renamed)
                     _logger.LogInfo($"Requirement renommé : \"{original}\" → \"{resolved}\"");
@@ -1125,7 +1125,7 @@ namespace Toltech.App.Services
         {
             if (newPart == null) newPart = CreateDefaultPart("");
 
-            var renamed = await ResolveUniqueNamesAsync(newPart, _databaseService.NamePartExisteAsync);
+            var renamed = await ResolveUniqueNamesAsync(newPart, _databaseService.NumberOfNamePartAsync);
 
             await _databaseService.InsertAsync(newPart);
             
@@ -1203,7 +1203,7 @@ namespace Toltech.App.Services
             try
             {
                 // --- Validation métier (exemple : unicité des noms) ---
-                var renamed = await ResolveUniqueNamesAsync(list, _databaseService.NamePartExisteAsync);
+                var renamed = await ResolveUniqueNamesAsync(list, _databaseService.NumberOfNamePartAsync);
 
                 foreach (var (original, resolved) in renamed)
                     _logger.LogInfo($"Part renommée : \"{original}\" → \"{resolved}\"");
@@ -1360,7 +1360,6 @@ namespace Toltech.App.Services
 
         #endregion
 
-
         #region Helper
 
         /// <summary>
@@ -1373,7 +1372,7 @@ namespace Toltech.App.Services
         /// <returns>Noms modifiés — vide si aucun changement.</returns>
         private async Task<Dictionary<string, string>> ResolveUniqueNamesAsync<T>(
             List<T> toSave,
-            Func<string, Task<bool>> nameExistsAsync)
+            Func<T, Task<bool>> nameExistsAsync)
             where T : INameResolvable
         {
             var resolvedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1385,17 +1384,14 @@ namespace Toltech.App.Services
                 var candidate = baseName;
                 int increment = 1;
 
-                while (resolvedNames.Contains(candidate)
-                       || await nameExistsAsync(candidate))
+                while (resolvedNames.Contains(candidate) || await nameExistsAsync(entity))
                 {
                     candidate = $"{baseName} ({increment++})";
+                    entity.Name = candidate; // ← mettre à jour avant le prochain check
                 }
 
                 if (candidate != baseName)
-                {
-                    entity.Name = candidate;
                     renamedMap[baseName] = candidate;
-                }
 
                 resolvedNames.Add(candidate);
             }
@@ -1406,7 +1402,7 @@ namespace Toltech.App.Services
         // Surcharge unitaire
         private async Task<Dictionary<string, string>> ResolveUniqueNamesAsync<T>(
             T toSave,
-            Func<string, Task<bool>> nameExistsAsync)
+            Func<T, Task<bool>> nameExistsAsync)
             where T : INameResolvable
             => await ResolveUniqueNamesAsync(new List<T> { toSave }, nameExistsAsync);
 

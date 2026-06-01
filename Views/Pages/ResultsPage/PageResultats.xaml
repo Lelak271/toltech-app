@@ -111,7 +111,7 @@
                     <Border Grid.Row="1" BorderBrush="Black" BorderThickness="1" CornerRadius="2" Padding="4">
                         <ListBox x:Name="RequirementsList" 
                                  DisplayMemberPath="NameReq" 
-                                 ItemsSource="{Binding AllRequirements}"
+                                 ItemsSource="{Binding Requirements}"
                                  SelectionMode="Extended"
                                  HorizontalContentAlignment="Stretch" 
                                  VerticalAlignment="Stretch" 
@@ -120,7 +120,7 @@
                                  SelectionChanged="RequirementsList_SelectionChanged"
                                  Background="{DynamicResource SecondaryBackgroundBrush}" >
                             <ListBox.ItemContainerStyle>
-                                <Style TargetType="ListBoxItem"   BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource {x:Type ListBoxItem}}">
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsActive}" Value="False">
                                             <Setter Property="IsEnabled" Value="False"/>

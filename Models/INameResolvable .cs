@@ -11,6 +11,7 @@ namespace Toltech.App.Models
     public interface INameResolvable
     {
         string Name { get; set; }
+        int Id { get; }
     }
 
     public partial class Requirements : INameResolvable
@@ -20,6 +21,7 @@ namespace Toltech.App.Models
             get => NameReq;
             set => NameReq = value;
         }
+        int INameResolvable.Id => Id_req;
     }
 
     public partial class Part : INameResolvable
@@ -29,6 +31,7 @@ namespace Toltech.App.Models
             get => NamePart;
             set => NamePart = value;
         }
+        int INameResolvable.Id => Id;
     }
 
     public partial class ModelData : INameResolvable
@@ -38,5 +41,6 @@ namespace Toltech.App.Models
             get => Model;
             set => Model = value;
         }
+        int INameResolvable.Id => Id;
     }
 }

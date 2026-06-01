@@ -402,7 +402,7 @@ namespace Toltech.App.ViewModels
 
                     if (idsToInvalidate is not null)
                         InvalidateCache(idsToInvalidate);
-                    ReloadSafe();
+                    await ReloadSafe();
                     break;
 
                 case CrudOperation.Updated:
@@ -456,20 +456,20 @@ namespace Toltech.App.ViewModels
         private CancellationTokenSource _reloadCts;
         private async Task ReloadSafe(int? idPart = 0)
         {
-            // Capture de l'ancienne instance
-            var previousCts = _reloadCts;
-
-            // Création de la nouvelle instance
-            _reloadCts = new CancellationTokenSource();
-
-            // Annulation + libération de l'ancienne
-            previousCts?.Cancel();
-            previousCts?.Dispose();
-
-
-                await Task.Delay(100, _reloadCts.Token);
-                await LoadAsync(_reloadCts.Token, idPart);
-  
+            var newCts = new CancellationTokenSource();
+            var previous = Interlocked.Exchange(ref _reloadCts, newCts);
+            previous?.Cancel();
+            previous?.Dispose();
+            var token = newCts.Token;
+            try
+            {
+                await Task.Delay(100, token);
+                await LoadAsync(token, idPart);
+            }
+            catch (OperationCanceledException)
+            {
+                // Annulation attendue : rien à faire
+            }
         }
 
         // Cache mémoire : PartId → liste des ModelData
@@ -564,7 +564,7 @@ namespace Toltech.App.ViewModels
                 .ToList();
 
             if (partId == SelectedPartId)
-                await ApplySortAndFilter(partId);
+                await ApplySortAndFilter(partId); 
         }
 
         // ─── Ajout d'un item dans une Part ────────────────────────────────────
@@ -859,6 +859,10 @@ namespace Toltech.App.ViewModels
                 HandleError(createResult);
                 return;
             }
+
+            // Réaffiche la part créée
+            SelectedPartId = createResult.Value.Part.Id; 
+
 
             await EventsManager.RaisePartCrudAsync(new PartCrudEvent
             {

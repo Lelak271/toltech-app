@@ -236,6 +236,13 @@ namespace Toltech.App.Services
 
         #region Queries - Lecture des données
 
+        public async Task<bool> NumberOfNamePartAsync(Part part)
+        {
+            return await _asyncDb.Table<Part>()
+                .Where(r => r.NamePart == part.NamePart && r.Id != part.Id)
+                .CountAsync() > 0;
+        }
+
         public async Task<bool> PartExistsByIdAsync(int id)
         {
             if (id <= 0) return false;
@@ -421,8 +428,16 @@ namespace Toltech.App.Services
         {
             return await _asyncDb.Table<ModelData>()
                            .Where(r => r.Model == nameModelData)
-                           .CountAsync() > 0;
+                           .CountAsync() >= 1; 
         }
+
+        public async Task<bool> NumberOfNameDataAsync(ModelData data)
+        {
+            return await _asyncDb.Table<ModelData>()
+                .Where(r => r.Model == data.Model && r.Id != data.Id)
+                .CountAsync() > 0;
+        }
+
         /// <summary>
         /// Fonction pour récupérer toutes les données de modèle de la base de données
         /// </summary>
@@ -529,7 +544,15 @@ namespace Toltech.App.Services
         #endregion
 
         #region Operation
-       
+
+        public async Task<bool> NumberOfReqAsync(Requirements req)
+        {
+            return await _asyncDb.Table<Requirements>()
+                .Where(r => r.NameReq == req.NameReq && r.Id_req != req.Id_req)
+                .CountAsync() > 0;
+        }
+
+        
         // Check si une exigence du meme nom est deja dans la DB
         public async Task<bool> NameReqExisteAsync(string nomRequirement)
         {

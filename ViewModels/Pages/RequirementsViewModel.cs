@@ -181,7 +181,7 @@ namespace Toltech.App.ViewModels
             _notificationService = App.NotificationService;
 
             _uiSettings = App.UiSettings;
-            FilteredRequirements = (ListCollectionView)CollectionViewSource.GetDefaultView(Requirements);
+            FilteredRequirements = new ListCollectionView(Requirements);
             FilteredRequirements.Filter = FilterRequirement;
 
             AllRequirements = new ListCollectionView(Requirements);
@@ -517,25 +517,50 @@ namespace Toltech.App.ViewModels
 
         private async Task SyncCollectionAsync(List<Requirements> source)
         {
+            var dupes = Requirements.GroupBy(r => r.Id_req).Where(g => g.Count() > 1);
+            if (dupes.Any()) Debug.WriteLine($"[DUPE] {string.Join(", ", dupes.Select(g => g.Key))}");
+
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
+                // Mise à jour ou insertion
                 for (int i = 0; i < source.Count; i++)
                 {
-                    var item = source[i];
-                    int current = Requirements.IndexOf(item);
+                    var incoming = source[i];
+
+                    // Chercher par Id, pas par référence
+                    int current = -1;
+                    for (int j = 0; j < Requirements.Count; j++)
+                    {
+                        if (Requirements[j].Id_req == incoming.Id_req)
+                        {
+                            current = j;
+                            break;
+                        }
+                    }
 
                     if (current == -1)
-                        Requirements.Insert(i, item);
-                    else if (current != i)
-                        Requirements.Move(current, i);
+                    {
+                        // Nouvel élément → insérer
+                        Requirements.Insert(i, incoming);
+                    }
+                    else
+                    {
+                        // Élément existant → mettre à jour ses propriétés
+                        // pour garder le même objet (et donc les bindings)
+                        Requirements[current].LoadFromDb(incoming);
+
+                        if (current != i)
+                            Requirements.Move(current, i);
+                    }
                 }
 
-                var sourceSet = new HashSet<Requirements>(source);
-
+                // Supprimer les éléments absents de source
+                var sourceIds = new HashSet<int>(source.Select(r => r.Id_req));
                 for (int i = Requirements.Count - 1; i >= 0; i--)
-                    if (!sourceSet.Contains(Requirements[i]))
+                    if (!sourceIds.Contains(Requirements[i].Id_req))
                         Requirements.RemoveAt(i);
             });
+
         }
 
         public void RestoreCache()
@@ -566,6 +591,8 @@ namespace Toltech.App.ViewModels
                 HandleError(saveResResult);
                 return;
             }
+            await SyncCollectionAsync(_cache);
+
             _ = _notificationService.ShowNotifAsync("Données sauvegardées pour les exigences.");
 
             await EventsManager.RaiseRequirementCrudAsync(new RequirementCrudEvent

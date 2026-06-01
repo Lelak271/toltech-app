@@ -17,6 +17,9 @@ namespace Toltech.App.ViewModels
         #endregion
 
         #region Collections
+
+        public ObservableCollection<Requirements> Requirements => _requirementsVM.Requirements;
+
         public ListCollectionView AllRequirements => _requirementsVM.AllRequirements;
         #endregion
 

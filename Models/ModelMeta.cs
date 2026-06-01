@@ -25,7 +25,7 @@ namespace Toltech.App.Models
         private string _descriptionModel;
         private byte[] _imageData;
         private string _modelStatus;
-        private int _partCount;
+        private int _partCount; 
         private int _requirementCount;
         private string _responsibleEngineer;
         private string _softwareVersion;

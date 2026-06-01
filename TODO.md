@@ -1,38 +1,46 @@
-# Next Steps
+ï»¿# Next Steps
 ## Court terme
+
 
 	1. XXX pas forcement --- Migrer les loggers de `DatabaseService` vers `DomainService`
 2. Revoir le comportement du scroll sur le header Eyes
-	3.	 XXX Revoir la gestion du `IsDirty` sur la Combobox du `DataVm`
-4. Pièce similaire sur un contact — ne pas afficher la part dans la CB, ou déclencher une alerte
-5. Contact similaire — afficher une indication visuelle
-	6. XXX Contrainte d'unicité sur le nom d'un requirement --- fait aussi ur part et modeldata
-7. **[Engine]** Intégrer les tolérances de requirement dans le moteur de résultats
-	8. XXX Afficher les requirements désactivés (`IsActive = false`) en grisé sur la `ResultPage`
-9. Trier les modèles par date de modification, le plus récent sélectionné par défaut
-	10. XXX Rafraîchir les compteurs parts / requirements à l'ouverture et à la suppression d'un modèle
-	11. Interdire les noms vides pour une part créée via le TreeView
-12. Évaluer l'ajout de VM pour les panels (coût/bénéfice probablement défavorable)
-13. Safeguard pour la création de data si Part id nexiste pas 
+	3. XXX Revoir la gestion du `IsDirty` sur la Combobox du `DataVm`
+4. A FAIRE !!!!!! PiÃ¨ce similaire sur un contact â€” ne pas afficher la part dans la CB, ou dÃ©clencher une alerte
+5. Contact similaire â€” afficher une indication visuelle
+	6. XXX Contrainte d'unicitÃ© sur le nom d'un requirement --- fait aussi sur part et modeldata
+7. **[Engine]** IntÃ©grer les tolÃ©rances de requirement dans le moteur de rÃ©sultats
+	8. XXX Afficher les requirements dÃ©sactivÃ©s (`IsActive = false`) en grisÃ© sur la `ResultPage`
+9. Trier les modÃ¨les par date de modification, le plus rÃ©cent sÃ©lectionnÃ© par dÃ©faut
+	10. XXX RafraÃ®chir les compteurs parts / requirements Ã  l'ouverture et Ã  la suppression d'un modÃ¨le
+	11. Interdire les noms vides pour une part crÃ©Ã©e via le TreeView
+12. Ã‰valuer l'ajout de VM pour les panels (coÃ»t/bÃ©nÃ©fice probablement dÃ©favorable)
+	13. Safeguard pour la crÃ©ation de data si `PartId` n'existe pas
+	14. Binding `PageModel` sur le modÃ¨le actif
+	15. ComboBox de requirement qui ne garde pas le binding
+	16. Erreur lors du calcul car le binding `PartId` 1/2 des exigences n'est pas mis Ã  jour directement
+	17. Sauvegarde qui incrÃ©mente le naming Ã  chaque fois â†’ ne pas prendre en compte son propre nom DB
+	18. Erreur lors du close `PartDBPage` ?? Laquelle
+19. Voir la regle : Utiliser le constructeur principal (IDE0290) et les regle Messages d'erreur de compilation
+	
 
 ## Moyen terme
 
-	- Introduire un service d'instanciation centralisé pour les services et VM, afin de décharger le `MainVM` (DI) pas forcement neccesaire surachitecture
-- Refonte de la page d'accueil (modèles récents, version, utilisateur, tâches utilisateur, about, documentation, etc.)
-- Logo animé
-- Gestion des erreurs de base de données (fallback)
-- Mise en place du Ctrl+Z (session complète — chantier majeur)
+	- Introduire un service d'instanciation centralisÃ© pour les services et VM, afin de dÃ©charger le `MainVM` (DI) pas forcement neccesaire surachitecture
+- Refonte de la page d'accueil (modÃ¨les rÃ©cents, version, utilisateur, tÃ¢ches utilisateur, about, documentation, etc.)
+- Logo animÃ©
+- Gestion des erreurs de base de donnÃ©es (fallback)
+- Mise en place du Ctrl+Z (session complÃ¨te â€” chantier majeur)
 - Mettre en place le pattern de validation name, error etc... (behaviors trigger)
 
 ## Long terme
 
-- Intégration des éléments métiers
-- Liaisons cinématiques
-- Tolérances de réglages
-- Multi-tolérances
-- Indicateur visuel de valeur incohérente
+- IntÃ©gration des Ã©lÃ©ments mÃ©tiers
+- Liaisons cinÃ©matiques
+- TolÃ©rances de rÃ©glages
+- Multi-tolÃ©rances
+- Indicateur visuel de valeur incohÃ©rente
 
 # Ideas
 
-- Pop-up personnalisé pour l'état pré-calcul, en remplacement des MessageBox standards
-- Suppression via le ruban : ouvrir le TreeView flottant pour permettre la multi-sélection et la suppression groupée — à étudier si un panneau dédié est déjà affiché (data ou req)
+- Pop-up personnalisÃ© pour l'Ã©tat prÃ©-calcul, en remplacement des MessageBox standards
+- Suppression via le ruban : ouvrir le TreeView flottant pour permettre la multi-sÃ©lection et la suppression groupÃ©e â€” Ã  Ã©tudier si un panneau dÃ©diÃ© est dÃ©jÃ  affichÃ© (data ou req)
