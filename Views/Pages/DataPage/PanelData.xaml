@@ -8,6 +8,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:localControls="clr-namespace:Toltech.App.FrontEnd.Controls" 
+             xmlns:localTol="clr-namespace:Toltech.App.Views.Pages.DataPage" 
              xmlns:conv="clr-namespace:Toltech.App.Converters"
              xmlns:lang="clr-namespace:Toltech.App.Resources.Lang"
              mc:Ignorable="d"
@@ -16,6 +17,7 @@
              VerticalAlignment="Stretch"
              Focusable="True"
              Unloaded="UserControl_Unloaded"
+             x:Name="PanelDataName"
              >
 
    
@@ -23,7 +25,13 @@
         
         <conv:IdToNameConverter  x:Key="IdToNameConverter"/>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        
+        <conv:LinkageVisibilityConverter x:Key="LinkageVisibilityConverter"/>
+        <conv:LinkageToImageConverter x:Key="LinkageToImageConverter"/>
+        <conv:LinkageToDescriptionConverter x:Key="LinkageToDescriptionConverter"/>
+        <conv:LinkageAllowedConverter x:Key="LinkageAllowedConverter"/>
+        <conv:SelectedGroupToBoolConverter x:Key="SelectedGroupToBoolConverter"/>
+        <conv:SelectedGroupToVisibilityConverter x:Key="SelectedGroupToVisibilityConverter"/>
+
         <Style x:Key="ActiveAwareContainer" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource PanelDataPrimaryBrush}" />
             <Setter Property="IsHitTestVisible" Value="True" />
@@ -115,6 +123,8 @@
             <Setter Property="CornerRadius" Value="5"/>
         </Style>
 
+  
+        
     </UserControl.Resources>
     
     <Grid  Margin="0" ShowGridLines="False" Width="auto" >
@@ -131,7 +141,7 @@
             BorderBrush="{DynamicResource PrimaryBorderBrush}" 
             Width="auto"
             >
-        <Grid x:Name="MainGridPanelData" ShowGridLines="False" Margin="-2,0,2,0">
+            <Grid x:Name="MainGridPanelData" ShowGridLines="False" Margin="-2,0,2,0">
             <Grid.RowDefinitions>
                     <RowDefinition Height="*" x:Name="Row0"/>
                     <RowDefinition Height="{Binding ParentViewModel.Row1Height,RelativeSource={RelativeSource AncestorType=localControls:PanelData}}" x:Name="Row1"/>
@@ -164,7 +174,7 @@
                     </Grid.ColumnDefinitions>
 
                     <!--<TextBox x:Name="NamePoText"    Tag="{DynamicResource Placeholder_NamePo}" Style="{StaticResource CustomHintTextBox}"  Grid.Column="1" HorizontalAlignment="Stretch"  MinWidth="100" TextWrapping="NoWrap"/>-->
-                    <TextBox x:Name="NamePoText"  
+                    <TextBox x:Name="NamePoText"  Visibility="Visible"
                              Grid.Column="1" 
                              HorizontalAlignment="Stretch"  
                              MinWidth="500" 
@@ -176,13 +186,89 @@
             </Border>
 
             <!--  PARTIE 1 DU PANEL -->
-                <Border x:Name="ForTest" Visibility="Collapsed"
-                    Grid.Row="2"
-                    Grid.Column="0" >
+                <Border x:Name="Linkage" Visibility="Visible"
+                        Grid.Row="2"
+                        Grid.Column="0">
+                    <Grid ShowGridLines="False" Grid.Column="1" Grid.ColumnSpan="3" Grid.Row="1" Grid.RowSpan="3">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="20"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
 
-                    <TextBlock Text="{Binding Active}" />
+                        <ComboBox Margin="0"
+                                  Grid.Row="1"
+                                  Grid.ColumnSpan="2"
+                                  ItemsSource="{x:Static localControls:LiaisonTypeProvider.All}"
+                                  SelectedValue="{Binding Linkage, Mode=TwoWay}"
+                                  SelectedValuePath="Value"
+                                  DisplayMemberPath="Label"/>
+
+                        <!-- Barre de sélection du type de tolérance -->
+                        <StackPanel Orientation="Horizontal"  Grid.Column="0" Grid.Row="2" HorizontalAlignment="Center" Grid.ColumnSpan="2" >
+                            <RadioButton GroupName="{Binding Id, StringFormat=ToleranceGroupSelector_{0}}" Content="N"
+                                         Style="{StaticResource ToleranceGroupRadioButtonStyle}"
+                                         IsEnabled="{Binding Linkage, Converter={StaticResource LinkageAllowedConverter}, ConverterParameter=1}"
+                                         IsChecked="{Binding SelectedToleranceGroup, Converter={StaticResource SelectedGroupToBoolConverter}, ConverterParameter=1, Mode=TwoWay}"/>
+                            <RadioButton GroupName="{Binding Id, StringFormat=ToleranceGroupSelector_{0}}" Content="T1" Margin="4,0,0,0"
+                                         Style="{StaticResource ToleranceGroupRadioButtonStyle}"
+                                         IsEnabled="{Binding Linkage, Converter={StaticResource LinkageAllowedConverter}, ConverterParameter=2}"
+                                         IsChecked="{Binding SelectedToleranceGroup, Converter={StaticResource SelectedGroupToBoolConverter}, ConverterParameter=2, Mode=TwoWay}"/>
+                            <RadioButton GroupName="{Binding Id, StringFormat=ToleranceGroupSelector_{0}}" Content="T2" Margin="4,0,0,0"
+                                         Style="{StaticResource ToleranceGroupRadioButtonStyle}"
+                                         IsEnabled="{Binding Linkage, Converter={StaticResource LinkageAllowedConverter}, ConverterParameter=3}"
+                                         IsChecked="{Binding SelectedToleranceGroup, Converter={StaticResource SelectedGroupToBoolConverter}, ConverterParameter=3, Mode=TwoWay}"/>
+                            <RadioButton GroupName="{Binding Id, StringFormat=ToleranceGroupSelector_{0}}" Content="Rn" Margin="4,0,0,0"
+                                         Style="{StaticResource ToleranceGroupRadioButtonStyle}" 
+                                         IsEnabled="{Binding Linkage, Converter={StaticResource LinkageAllowedConverter}, ConverterParameter=4}"
+                                         IsChecked="{Binding SelectedToleranceGroup, Converter={StaticResource SelectedGroupToBoolConverter}, ConverterParameter=4, Mode=TwoWay}"/>
+                            <RadioButton GroupName="{Binding Id, StringFormat=ToleranceGroupSelector_{0}}" Content="Rt1" Margin="4,0,0,0"
+                                         Style="{StaticResource ToleranceGroupRadioButtonStyle}" 
+                                         IsEnabled="{Binding Linkage, Converter={StaticResource LinkageAllowedConverter}, ConverterParameter=5}"
+                                         IsChecked="{Binding SelectedToleranceGroup, Converter={StaticResource SelectedGroupToBoolConverter}, ConverterParameter=5, Mode=TwoWay}"/>
+                            <RadioButton GroupName="{Binding Id, StringFormat=ToleranceGroupSelector_{0}}" Content="Rt2" Margin="4,0,0,0"
+                                         Style="{StaticResource ToleranceGroupRadioButtonStyle}"
+                                         IsEnabled="{Binding Linkage, Converter={StaticResource LinkageAllowedConverter}, ConverterParameter=6}"
+                                         IsChecked="{Binding SelectedToleranceGroup, Converter={StaticResource SelectedGroupToBoolConverter}, ConverterParameter=6, Mode=TwoWay}"/>
+                        </StackPanel>
+                        
+                        <Button x:Name="LinkageInfoButton"
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                Width="22" Height="22"
+                                Margin="4,0,0,0"
+                                Padding="0"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Cursor="Help"
+                                VerticalAlignment="Center">
+                            <Button.Content>
+                                <TextBlock Text="?" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/>
+                            </Button.Content>
+                            <Button.ToolTip>
+                                <ToolTip>
+                                    <StackPanel Orientation="Horizontal" MaxWidth="820">
+                                        <Image Width="200" Height="200" Margin="0,0,8,0" VerticalAlignment="Top"
+                               Source="{Binding PlacementTarget.DataContext.Linkage,
+                                                 RelativeSource={RelativeSource AncestorType=ToolTip},
+                                                 Converter={StaticResource LinkageToImageConverter}}"/>
+                                        <TextBlock TextWrapping="Wrap" VerticalAlignment="Center"
+                                   Text="{Binding PlacementTarget.DataContext.Linkage,
+                                                   RelativeSource={RelativeSource AncestorType=ToolTip},
+                                                   Converter={StaticResource LinkageToDescriptionConverter}}"/>
+                                    </StackPanel>
+                                </ToolTip>
+                            </Button.ToolTip>
+                        </Button>
+                   
+                    </Grid>
                 </Border>
-            <Border Grid.Row="1"
+
+                <Border Grid.Row="1"
                     Grid.Column="0" 
                     Grid.ColumnSpan="1"  
                     Margin="4" 
@@ -211,167 +297,209 @@
             </Border>
 
 
-            <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Margin="4" Padding="6">
-                <Grid ShowGridLines="False" >
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="40"/>
-                        <RowDefinition Height="40"/>
-                    </Grid.RowDefinitions>
+                <!-- ==================================================== -->
+                <!-- GROUPE N                                              -->
+                <!-- ==================================================== -->
+                <!--<TextBlock Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="3"
+                           Text="Tolérance Normal"
+                           Visibility="{Binding SelectedToleranceGroup, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=1}"/>-->     
 
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBox x:Name="NameTol1Part1"
-                             Grid.Column="0" 
-                             IsReadOnly="False" 
-                             IsReadOnlyCaretVisible="False"   
-                             TextWrapping="NoWrap" 
-                             HorizontalAlignment="Stretch"
-                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Tol1Name}"
-                             Text="{Binding NameTolExtre, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                    
-                    <TextBox x:Name="IdTol1" 
-                             Grid.Row="0" 
-                             Grid.Column="1"
-                             IsReadOnly="true" 
-                             IsReadOnlyCaretVisible="False"
-                              
-                             Width="50" 
-                             HorizontalAlignment="Left"
-                             Cursor="No"
-                             Text="{Binding IdTolExtre, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <CheckBox x:Name="CheckBoxPart1"
-                              Grid.Column="1" 
-                              VerticalAlignment="Top"
-                              HorizontalAlignment="Right"
-                              IsThreeState="False" 
-                              Padding="2,0,0,0" 
-                              HorizontalContentAlignment="Center"  
-                              VerticalContentAlignment="Center"  
-                              FlowDirection="RightToLeft" 
-                              Checked="ToggleCheckBox1_Checked"
-                              Unchecked="ToggleCheckBox1_Unchecked"
-                              
-                               IsChecked="{Binding CheckBoxExtre, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                        <CheckBox.Content>
-                            <Image Source="/Asset/Logo_DB_tol.png" Height="22"/>
-                        </CheckBox.Content>
-                    </CheckBox>
+                <!--<TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding SelectedToleranceGroup}" />-->
+            
+                <localTol:ToleranceEditor Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3"
+                           Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=1}"
+                           DataContext="{Binding N.Extremity}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_Tol1Name}"
+                           PlaceholderDescription="{lang:Loc Placeholder_Tol1Desc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_Tol1}" />
 
-                    <TextBox x:Name="descriptionPart1"
-                             Grid.Row="1"
-                             Grid.Column="0" 
-                             Grid.ColumnSpan="2"
-                             IsReadOnly="False" 
-                             IsReadOnlyCaretVisible="False"  
-                             TextWrapping="Wrap" 
-                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Tol1Desc}"
-                             Text="{Binding DescriptionTolExtre, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                </Grid>
-            </Border>
+                <localTol:ToleranceEditor Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3"
+                           Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter},ConverterParameter=1}"
+                           DataContext="{Binding N.Intermediate}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_TolIntName}"
+                           PlaceholderDescription="{lang:Loc Placeholder_TolIntDesc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_TolInt}" />
 
-            <Border Grid.Row="1" Grid.Column="3"  Margin="4" Padding="6" >
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                <localTol:ToleranceEditor Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=1}"
+                           DataContext="{Binding N.Origin}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_Tol2Name}"
+                           PlaceholderDescription="{lang:Loc Placeholder_Tol2Desc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_Tol2}" />
 
-                    <TextBlock Text="{lang:Loc Tolerance1}"
-                               Height="19" 
-                               Grid.Row="0" 
-                               />
-                    <TextBox x:Name="Tol1Text" 
-                             IsReadOnly="False" 
-                             IsReadOnlyCaretVisible="False"  
-                             MinWidth="50" 
-                             Grid.Row="1" 
-                             TextWrapping="NoWrap" 
-                             Style="{StaticResource TolTextBoxStyle}" 
-                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Tol1}"
-                             Text="{Binding TolExtr, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                </Grid>
-            </Border>
+                <!-- ==================================================== -->
+                <!-- GROUPE T1                                             -->
+                <!-- ==================================================== -->
+                <TextBlock Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="3"
+           Text="Tolérance T1"
+           Visibility="{Binding SelectedToleranceGroup, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=2}"/>
 
-            <Border Grid.Row="2" Grid.Column="2" Margin="4" Padding="6" >
-                    <Grid ShowGridLines="False">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="40"/>
-                        <RowDefinition Height="40"/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                <localTol:ToleranceEditor Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=2}"
+                           DataContext="{Binding T1.Extremity}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_Tol1Name}"
+                           PlaceholderDescription="{lang:Loc Placeholder_Tol1Desc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_Tol1}" />
 
-                    <TextBox x:Name="NameTolInt" 
-                             Grid.Row="0" 
-                             Grid.Column="0" 
-                             IsReadOnly="False" 
-                             IsReadOnlyCaretVisible="False"
-                             TextWrapping="NoWrap" 
-                             MinWidth="100" 
-                             MaxHeight="36"
-                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_TolIntName}"
-                             Text="{Binding NameTolInt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <localTol:ToleranceEditor Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=2}"
+                           DataContext="{Binding T1.Intermediate}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_TolIntName}"
+                           PlaceholderDescription="{lang:Loc Placeholder_TolIntDesc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_TolInt}" />
 
-                    <TextBox x:Name="IdTolInt"
-                             Grid.Row="0" 
-                             Grid.Column="1" 
-                             IsReadOnly="True" 
-                             IsReadOnlyCaretVisible="False"
-                              
-                             Width="50"
-                             HorizontalAlignment="Left" 
-                             Cursor="No"
-                             Text="{Binding IdTolInt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                <localTol:ToleranceEditor Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=2}"
+                           DataContext="{Binding T1.Origin}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_Tol2Name}"
+                           PlaceholderDescription="{lang:Loc Placeholder_Tol2Desc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_Tol2}" />
 
-                    <CheckBox x:Name="CheckBoxTolInt" 
-                              Grid.Row="0" 
-                              Grid.Column="1" 
-                              HorizontalAlignment="Right"
-                              IsChecked="False"
-                              IsThreeState="False" 
-                              Padding="2,0,0,0" 
-                              HorizontalContentAlignment="Center" 
-                              VerticalContentAlignment="Center"
-                              FlowDirection="RightToLeft" 
-                              Checked="ToggleCheckBoxInt_Checked" 
-                              Unchecked="ToggleCheckBoxInt_Unchecked">
-                        <CheckBox.Content>
-                            <Image Source="/Asset/Logo_DB_tol.png" Height="22"/>
-                        </CheckBox.Content>
-                    </CheckBox>
+                <!-- ==================================================== -->
+                <!-- GROUPE T2                                             -->
+                <!-- ==================================================== -->
+                <TextBlock Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="3"
+           Text="Tolérance T2"
+           Visibility="{Binding SelectedToleranceGroup, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=3}"/>
 
-                    <TextBox x:Name="descriptionPartInt" 
-                             Grid.Row="1" Grid.Column="0"
-                             Grid.ColumnSpan="2"
-                             IsReadOnly="False"
-                             IsReadOnlyCaretVisible="False"
-                             VerticalContentAlignment="Center"
-                             MinWidth="50" 
-                             TextWrapping="Wrap"
-                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_TolIntDesc}" 
-                             Text="{Binding DescriptionTolInt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                </Grid>
-            </Border>
+                <localTol:ToleranceEditor Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=3}"
+                           DataContext="{Binding T2.Extremity}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_Tol1Name}"
+                           PlaceholderDescription="{lang:Loc Placeholder_Tol1Desc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_Tol1}" />
 
-                
-            <!--  PARTIE 2 DU PANELMODELER  -->
+                <localTol:ToleranceEditor Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=3}"
+                           DataContext="{Binding T2.Intermediate}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_TolIntName}"
+                           PlaceholderDescription="{lang:Loc Placeholder_TolIntDesc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_TolInt}" />
+
+                <localTol:ToleranceEditor Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=3}"
+                           DataContext="{Binding T2.Origin}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_Tol2Name}"
+                           PlaceholderDescription="{lang:Loc Placeholder_Tol2Desc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_Tol2}" />
+
+                <!-- ==================================================== -->
+                <!-- GROUPE Rn                                             -->
+                <!-- ==================================================== -->
+                <TextBlock Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="3"
+           Text="Tolérance Rn"
+           Visibility="{Binding SelectedToleranceGroup, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=4}"/>
+
+                <localTol:ToleranceEditor Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=4}"
+                           DataContext="{Binding Rn.Extremity}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_Tol1Name}"
+                           PlaceholderDescription="{lang:Loc Placeholder_Tol1Desc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_Tol1}" />
+
+                <localTol:ToleranceEditor Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=4}"
+                           DataContext="{Binding Rn.Intermediate}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_TolIntName}"
+                           PlaceholderDescription="{lang:Loc Placeholder_TolIntDesc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_TolInt}" />
+
+                <localTol:ToleranceEditor Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=4}"
+                           DataContext="{Binding Rn.Origin}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_Tol2Name}"
+                           PlaceholderDescription="{lang:Loc Placeholder_Tol2Desc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_Tol2}" />
+
+                <!-- ==================================================== -->
+                <!-- GROUPE RT1                                            -->
+                <!-- ==================================================== -->
+                <TextBlock Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="3"
+           Text="Tolérance Rt1"
+           Visibility="{Binding SelectedToleranceGroup, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=5}"/>
+
+                <localTol:ToleranceEditor Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=5}"
+                           DataContext="{Binding RT1.Extremity}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_Tol1Name}"
+                           PlaceholderDescription="{lang:Loc Placeholder_Tol1Desc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_Tol1}" />
+
+                <localTol:ToleranceEditor Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=5}"
+                           DataContext="{Binding RT1.Intermediate}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_TolIntName}"
+                           PlaceholderDescription="{lang:Loc Placeholder_TolIntDesc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_TolInt}" />
+
+                <localTol:ToleranceEditor Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=5}"
+                           DataContext="{Binding RT1.Origin}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_Tol2Name}"
+                           PlaceholderDescription="{lang:Loc Placeholder_Tol2Desc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_Tol2}" />
+
+                <!-- ==================================================== -->
+                <!-- GROUPE RT2                                            -->
+                <!-- ==================================================== -->
+                <TextBlock Grid.Row="0" Grid.Column="2" Grid.ColumnSpan="3"
+           Text="Tolérance Rt2"
+           Visibility="{Binding SelectedToleranceGroup, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=6}"/>
+
+                <localTol:ToleranceEditor Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=6}"
+                           DataContext="{Binding RT2.Extremity}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_Tol1Name}"
+                           PlaceholderDescription="{lang:Loc Placeholder_Tol1Desc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_Tol1}" />
+
+                <localTol:ToleranceEditor Grid.Row="2" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=6}"
+                           DataContext="{Binding RT2.Intermediate}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_TolIntName}"
+                           PlaceholderDescription="{lang:Loc Placeholder_TolIntDesc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_TolInt}" />
+
+                <localTol:ToleranceEditor Grid.Row="3" Grid.Column="2" Grid.ColumnSpan="3"
+                            Visibility="{Binding DataContext.SelectedToleranceGroup, ElementName=MainGridPanelData, Converter={StaticResource SelectedGroupToVisibilityConverter}, ConverterParameter=6}"
+                           DataContext="{Binding RT2.Origin}"
+                           Active="{Binding DataContext.Active, ElementName=PanelDataName}"
+                           PlaceholderName="{lang:Loc Placeholder_Tol2Name}"
+                           PlaceholderDescription="{lang:Loc Placeholder_Tol2Desc}"
+                           PlaceholderTolerance="{lang:Loc Placeholder_Tol2}" />
+
+
+                <!--  PARTIE 2 DU PANELMODELER  -->
             <Border Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="1"  Margin="4" Padding="0" >
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                    <TextBlock Text="{lang:Loc Part2}" 
+                        <TextBlock Text="{lang:Loc Part2}" 
                                Height="19" 
                                Grid.Row="0" 
                                />
-                    <ComboBox x:Name="Part2Text" 
+                        <ComboBox x:Name="Part2Text" 
                               Grid.Row="1"
                               IsReadOnly="False" 
                               IsEditable="False"  
@@ -385,103 +513,10 @@
                               SelectedValuePath="Id" 
                               SelectedValue="{Binding OriginePartId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               />
-                </Grid>
-            </Border>
-
-
-            <Border Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="4" Padding="6"  >
-                <Grid ShowGridLines="False">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="40"/>
-                        <RowDefinition Height="40"/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <TextBox x:Name="NameTol2Part2" 
-                             Grid.Row="0" 
-                             Grid.Column="0" 
-                             IsReadOnly="False"
-                             IsReadOnlyCaretVisible="False"  
-                             HorizontalAlignment="Stretch"
-                             TextWrapping="NoWrap" 
-                             MinWidth="100"
-                             MaxHeight="36"
-                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Tol2Name}"
-                             Text="{Binding NameTolOri, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-
-                    <TextBox x:Name="IdTol2" 
-                             Grid.Row="0" 
-                             Grid.Column="1" 
-                             IsReadOnly="True"
-                             IsReadOnlyCaretVisible="False"
-                             Cursor="No"
-                             
-                             HorizontalAlignment="Left"
-                             Width="50" 
-                             Text="{Binding IdTolOri, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>         
-
-                    <CheckBox x:Name="CheckBoxPart2" 
-                              Grid.Row="0" 
-                              Grid.Column="1" 
-                              HorizontalAlignment="Right" 
-                              IsThreeState="False" 
-                              HorizontalContentAlignment="Center" 
-                              VerticalContentAlignment="Center"
-                              Width="Auto" 
-                              Padding="2,0,0,0" 
-                              FlowDirection="RightToLeft"
-                              Checked="ToggleCheckBox2_Checked" 
-                              Unchecked="ToggleCheckBox2_Unchecked"
-                              IsChecked="{Binding CheckBoxOri, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                        <CheckBox.Content>
-                            <Image Source="/Asset/Logo_DB_tol.png" Height="22"/>
-                        </CheckBox.Content>
-                    </CheckBox>
-
-                    <TextBox x:Name="descriptionPart2" 
-                             Grid.Row="1" 
-                             Grid.Column="0"
-                             Grid.ColumnSpan="2"
-                             IsReadOnly="False" 
-                             IsReadOnlyCaretVisible="False" 
-                             HorizontalAlignment="Stretch" 
-                             Height="36" 
-                             MinWidth="100" 
-                             MaxHeight="36"
-                             TextWrapping="Wrap" 
-                             ScrollViewer.VerticalScrollBarVisibility="Visible"
-                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Tol2Desc}" 
-                             Text="{Binding DescriptionTolOri, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                </Grid>
-            </Border>
-
-
-
-            <Border Grid.Row="3" Grid.Column="3"  Margin="4" Padding="6" >
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Text="{lang:Loc Tolerance2}"
-                               Height="19"
-                               Grid.Row="0"/>
-                    <TextBox x:Name="Tol2Text"  
-                             IsReadOnly="False" 
-                             IsReadOnlyCaretVisible="False"
-                             MinWidth="50" Grid.Row="1" 
-                             Style="{StaticResource TolTextBoxStyle}" 
-                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_Tol2}" 
-                             Text="{Binding TolOri, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                </Grid>
-            </Border>
-
-
-            <!--  PARTIE POINTS DU PANELMODELER  -->
+                    </Grid>
+                </Border>
+            
+                <!--  PARTIE POINTS DU PANELMODELER  -->
             <Border Grid.Row="4" 
                     Grid.Column="0" 
                     Grid.ColumnSpan="4" 
@@ -601,32 +636,7 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Row="2" 
-                    Grid.Column="3" 
-                    Margin="4" 
-                    Padding="6"
-                    >
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-
-                    <TextBlock Text="{lang:Loc ToleranceInt}" 
-                               Height="19" 
-                               Grid.Row="0" 
-                               />
-                    <TextBox x:Name="TolIntText"
-                             IsReadOnly="False"
-                             IsReadOnlyCaretVisible="False" 
-                             MinWidth="50"
-                             Grid.Row="1"
-                             Style="{StaticResource  TolTextBoxStyle}"
-                             behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_TolInt}" 
-                             Text="{Binding TolInt, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                </Grid>
-
-            </Border>
+          
 
             <Border Grid.Row="0" Grid.Column="3" Margin="4" Padding="6" BorderBrush="Transparent" >
                 <Grid ShowGridLines="False">
@@ -689,6 +699,7 @@
                 </Grid>
             </Border>
         </Grid>
+ 
     </Border>
 
     <Grid Grid.Column="1" 

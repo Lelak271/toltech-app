@@ -123,7 +123,7 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
 
             // Étape 4 : déterminer tous les contacts uniques par IdData
             var allDataEntries = allResults
-                .SelectMany(r => r.Result.Data)
+                .SelectMany(r => r.Result.Linkages)
                 .GroupBy(d => d.IdData) // clé unique : IdData
                 .Select(g => g.First())
                 .OrderBy(d => d.IdData)
@@ -144,7 +144,7 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
                 {
                     var entryForReq = allResults
                         .First(r => r.IdReq == req.IdReq)
-                        .Result.Data
+                        .Result.Linkages
                         .FirstOrDefault(d => d.IdData == entry.IdData);
 
                     if (entryForReq != null)
@@ -225,91 +225,92 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
 
 
         /// <summary>
-        /// Génère un tableau croisé des contributions entre tolérances et exigences.
-        /// - En mode condensé : les tolérances sont regroupées par nom.
-        /// - En mode détaillé : chaque tolérance est distinguée par son contexte (DataName + Type).
+        /// Génère un tableau croisé des contributions entre liaisons/axes et exigences.
+        /// - Lignes : une par (IdData × axe) — masquée si influence nulle sur toutes les exigences.
+        /// - Colonnes : une par exigence (IdReq).
+        /// - Valeur : somme des contributions WC des 3 positions (Origin + Intermediate + Extremity).
         /// </summary>
-        /// <param name="resuxFilePath">Chemin du fichier .resux à lire.</param>
-        /// <param name="detailedView">Si vrai, ajoute le contexte (NameData + Type).</param>
-        /// <returns>DataTable prête pour affichage.</returns>
-        public DataTable GetTableTolVsReq(string resuxFilePath, bool detailedView = false)
+        public DataTable GetTableTolVsReq(string resuxFilePath)
         {
-            // --- Étape 1 : Extraction des exigences ---
+            // --- Étape 1 : Chargement de toutes les exigences ---
             var reqHeaders = _resuxSerializer.ExtractReqHeaders(resuxFilePath);
-
             var allResults = reqHeaders
                 .Select(r => (r.IdReq, Result: _resuxSerializer.LoadInfluencedWCFromFile(r.IdReq, resuxFilePath)))
                 .ToList();
 
-            // --- Étape 2 : Collecte de toutes les tolérances et leur contexte ---
-            var allTolContexts = allResults
-                .SelectMany(t => t.Result.Data.SelectMany(entry => new[]
-                {
-                    (TolInfo: entry.TolExtrInfo, Type: "P1", entry.NameData, entry.ContribWCExtr , IdReq: t.IdReq),
-                    (TolInfo: entry.TolIntInfo, Type: "Int", entry.NameData, entry.ContribWCInt, IdReq: t.IdReq),
-                    (TolInfo: entry.TolOriInfo , Type: "P2", entry.NameData, entry.ContribWCOri, IdReq: t.IdReq)
-                }))
-                .Where(x => x.TolInfo != null && !string.IsNullOrWhiteSpace(x.TolInfo.Name))
-                .ToList();
-
-            // --- Étape 3 : Détermination des clés d’identification des tolérances ---
-            var allTolKeys = allTolContexts
-                .Select(x =>
-                    detailedView
-                        ? (Key: $"{x.TolInfo.Name.Trim()} | {x.NameData} - {x.Type}",
-                           Name: x.TolInfo.Name.Trim(),
-                           Context: $"{x.NameData} - {x.Type}")
-                        : (Key: x.TolInfo.Name.Trim(),
-                           Name: x.TolInfo.Name.Trim(),
-                           Context: string.Empty))
-                .Distinct()
-                .OrderBy(k => k.Key)
-                .ToList();
-
-            // --- Étape 4 : Construction de la DataTable ---
-            DataTable table = new();
-            table.Columns.Add("Nom Tolérance", typeof(string));
-            if (detailedView)
-                table.Columns.Add("Contexte", typeof(string));
-
+            // --- Étape 2 : Construction de la DataTable ---
+            var table = new DataTable();
+            table.Columns.Add("Liaison", typeof(string));
+            table.Columns.Add("Axe", typeof(string));
             foreach (var req in reqHeaders)
                 table.Columns.Add(req.Name, typeof(string));
 
-            // --- Étape 5 : Remplissage des lignes ---
-            foreach (var tolKey in allTolKeys)
+            // --- Étape 3 : Collecte de toutes les lignes (IdData × axe) non nulles ---
+
+            // Contribution WC d'un triplet = somme |Value × InflWC| sur les 3 positions
+            double TripletContrib(ResuxSerializer.ToleranceTriplet triplet, Func<ResuxSerializer.ToleranceDefinition, double> inflWC) =>
+                  Math.Abs(triplet.Origin?.Value ?? 0) * Math.Abs(inflWC(triplet.Origin))
+                + Math.Abs(triplet.Intermediate?.Value ?? 0) * Math.Abs(inflWC(triplet.Intermediate))
+                + Math.Abs(triplet.Extremity?.Value ?? 0) * Math.Abs(inflWC(triplet.Extremity));
+
+            double InflWC(ResuxSerializer.ToleranceDefinition def, double dirU, double dirV, double dirW) =>
+                def == null ? 0 : ResuxSerializer.ComputeInfluenceWC(def.InflX, def.InflY, def.InflZ, dirU, dirV, dirW);
+
+            // Axes exposés et leur sélecteur sur ResultEachData
+            var axes = new (string Label, Func<ResuxSerializer.ResultEachData, ResuxSerializer.ToleranceTriplet> Select)[]
             {
-                var row = table.NewRow();
-                row["Nom Tolérance"] = tolKey.Name;
-                if (detailedView)
-                    row["Contexte"] = tolKey.Context;
+        ("N",   d => d.N),
+        ("T1",  d => d.T1),
+        ("T2",  d => d.T2),
+        ("Rn",  d => d.Rn),
+        ("RT1", d => d.RT1),
+        ("RT2", d => d.RT2),
+            };
 
-                foreach (var req in reqHeaders)
+            // Collecte de toutes les clés (NameData, axeLabel) uniques présentes dans au moins un résultat
+            var allKeys = allResults
+                .SelectMany(r => r.Result.Linkages.Select(d => (d.IdData, d.NameData)))
+                .Distinct()
+                .OrderBy(k => k.NameData)
+                .ToList();
+
+            // --- Étape 4 : Remplissage des lignes ---
+            foreach (var (idData, nameData) in allKeys)
+            {
+                foreach (var (axeLabel, selectTriplet) in axes)
                 {
-                    var reqId = req.IdReq;
-
-                    // Sélection des entrées correspondant à la tolérance courante et à l’exigence
-                    var matches = allTolContexts.Where(x =>
-                        x.IdReq == reqId &&
-                        (
-                            (!detailedView && x.TolInfo.Name.Trim() == tolKey.Name)
-                            || (detailedView && $"{x.TolInfo.Name.Trim()} | {x.NameData} - {x.Type}" == tolKey.Key)
-                        )
-                    ).ToList();
-
-                    if (matches.Count > 0)
+                    // Calcul de la contribution pour chaque exigence
+                    var contribs = reqHeaders.Select(req =>
                     {
-                        // Somme des contributions pour cette tolérance et exigence
-                        double total = matches.Sum(m => m.Item4);
-                        row[req.Name] = total.ToString("0.000", CultureInfo.InvariantCulture);
-                    }
-                    else
-                    {
-                        row[req.Name] = "-";
-                    }
+                        var reqResult = allResults.FirstOrDefault(r => r.IdReq == req.IdReq).Result;
+                        var entry = reqResult?.Linkages.FirstOrDefault(d => d.IdData == idData);
+                        if (entry == null) return (req.Name, Value: 0.0);
+
+                        var triplet = selectTriplet(entry);
+                        double dirU = reqResult.CoordU;
+                        double dirV = reqResult.CoordV;
+                        double dirW = reqResult.CoordW;
+
+                        double contrib = TripletContrib(triplet, def => InflWC(def, dirU, dirV, dirW));
+                        return (req.Name, Value: contrib);
+                    }).ToList();
+
+                    // Masquer la ligne si toutes les contributions sont nulles
+                    if (contribs.All(c => c.Value == 0.0)) continue;
+
+                    var row = table.NewRow();
+                    row["Liaison"] = nameData;
+                    row["Axe"] = axeLabel;
+
+                    foreach (var (colName, value) in contribs)
+                        row[colName] = value > 0
+                            ? value.ToString("0.000", CultureInfo.InvariantCulture)
+                            : "-";
+
+                    table.Rows.Add(row);
                 }
-
-                table.Rows.Add(row);
             }
+
             return table;
         }
 
@@ -321,15 +322,17 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
             try
             {
                 DataTable table1 = GetTableCrossTable_InfluenceSimple(ModelManager.FilePathResx);
-                DataTable table2 = GetTableTolVsReq(ModelManager.FilePathResx, true);
-                DataTable table3 = GetTableTolVsReq(ModelManager.FilePathResx, false);
+                //DataTable table2 = GetTableTolVsReq(ModelManager.FilePathResx, true);
+                //DataTable table3 = GetTableTolVsReq(ModelManager.FilePathResx, false);
                 DataTable table4 = GetTableCrossTable_ContribByContact(ModelManager.FilePathResx);
 
                 // Vérification qu’au moins une table contient des données
                 bool hasData =
-                    (table1 != null && table1.Rows.Count > 0) ||
-                    (table2 != null && table2.Rows.Count > 0) ||
-                    (table3 != null && table3.Rows.Count > 0);
+                    (table1 != null && table1.Rows.Count > 0) ;
+                //bool hasData =
+                //    (table1 != null && table1.Rows.Count > 0) ||
+                //    (table2 != null && table2.Rows.Count > 0) ||
+                //    (table3 != null && table3.Rows.Count > 0);
 
                 if (!hasData)
                 {
@@ -346,8 +349,8 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
                 if (directoryPath != null && fileName != null)
                 {
                     ExportCrossTableToExcel(table1, directoryPath, fileName, "InflByContact");
-                    ExportCrossTableToExcel(table2, directoryPath, fileName, "TolCond");
-                    ExportCrossTableToExcel(table3, directoryPath, fileName, "TolDetail");
+                    //ExportCrossTableToExcel(table2, directoryPath, fileName, "TolCond");
+                    //ExportCrossTableToExcel(table3, directoryPath, fileName, "TolDetail");
                     ExportCrossTableToExcel(table4, directoryPath, fileName, "ContribByContact");
                 }
 
@@ -525,8 +528,8 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
             {
                 CrossTableVariant.InfluenceByContact => GetTableCrossTable_InfluenceSimple(resuxFilePath),
                 CrossTableVariant.ContribByContact => GetTableCrossTable_ContribByContact(resuxFilePath),
-                CrossTableVariant.ContribByTolDetailed => GetTableTolVsReq(resuxFilePath, detailedView: true),
-                CrossTableVariant.ContribByTolCondensed => GetTableTolVsReq(resuxFilePath, detailedView: false),
+                //CrossTableVariant.ContribByTolDetailed => GetTableTolVsReq(resuxFilePath, detailedView: true),
+                //CrossTableVariant.ContribByTolCondensed => GetTableTolVsReq(resuxFilePath, detailedView: false),
                 _ => GetTableCrossTable_InfluenceSimple(resuxFilePath)
             };
         }

@@ -1645,6 +1645,24 @@ namespace Toltech.App.Resources.Lang {
         }
         
         /// <summary>
+        ///   Recherche une chaîne localisée semblable à Error.
+        /// </summary>
+        public static string Title_ValidationError {
+            get {
+                return ResourceManager.GetString("Title_ValidationError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Success.
+        /// </summary>
+        public static string Title_ValidationSuccess {
+            get {
+                return ResourceManager.GetString("Title_ValidationSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Recherche une chaîne localisée semblable à Tolerance 1.
         /// </summary>
         public static string Tolerance1 {

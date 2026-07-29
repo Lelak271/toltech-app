@@ -10,7 +10,7 @@ using HelixToolkit.Wpf;
 using Microsoft.Win32;
 using Toltech.App.Services;
 
-namespace Toltech.App.Visualisateur
+namespace Toltech.App.Views
 {
     public partial class VSTWindow : UserControl
     {

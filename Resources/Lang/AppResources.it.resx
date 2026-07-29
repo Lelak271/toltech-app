@@ -675,4 +675,10 @@
   <data name="Choose_an_image" xml:space="preserve">
     <value>Scegli un'immagine</value>
   </data>
+  <data name="Title_ValidationError" xml:space="preserve">
+    <value>Errore</value>
+  </data>
+  <data name="Title_ValidationSuccess" xml:space="preserve">
+    <value>Successo</value>
+  </data>
 </root>

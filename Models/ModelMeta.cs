@@ -70,13 +70,13 @@ namespace Toltech.App.Models
         public int PartCount
         {
             get => _partCount;
-            set => SetAndDirty(ref _partCount, value);
+            set => SetProperty(ref _partCount, value);
         }
 
         public int RequirementCount
         {
             get => _requirementCount;
-            set => SetAndDirty(ref _requirementCount, value);
+            set => SetProperty(ref _requirementCount, value);
         }
 
         public string ResponsibleEngineer

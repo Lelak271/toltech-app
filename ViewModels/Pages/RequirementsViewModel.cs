@@ -121,6 +121,17 @@ namespace Toltech.App.ViewModels
             }
         }
 
+        private bool _isCreating;
+        public bool IsCreating
+        {
+            get => _isCreating;
+            set
+            {
+                _isCreating = value;
+                OnPropertyChanged();
+            }
+        }
+
         #region Eyes 
         private bool GetEye(string key) => _uiSettings.IsPanelExpanded(key);
 
@@ -215,7 +226,7 @@ namespace Toltech.App.ViewModels
 
             // Commandes sans paramètre
             //CreateRequirementCommand = new TtCore.RelayCommand(async _ => await CreateRequirementAsync());
-            CreateRequirementCommand = new TtCore.RelayCommand(async _ => await CreateRequirementAsync());
+            CreateRequirementCommand = new TtCore.RelayCommand(async _ => await CreateRequirementAsync(), _ => !IsCreating);
             DeleteRequirementCommand = new TtCore.RelayCommand(async _ => await DeleteRequirementAsync());
             #endregion
 
@@ -636,34 +647,49 @@ namespace Toltech.App.ViewModels
         public async Task CreateRequirementAsync()
         {
             Debug.WriteLine("[RequirementsViewModel] - CreateRequirementAsync()");
-            // 1. UI optimistic
-            var placeholder = new Requirements
-            {
-                NameReq = "Req_temp",
-                IsActive = true
-            };
-            await AddItemAsync(placeholder);
 
-            var uiModel = await _domainService.CreateRequirementAsync();
-            if (uiModel.IsFailure)
-            {
-                HandleError(uiModel);
+            if (IsCreating)
                 return;
-            }
-            //placeholder.LoadFromDb(uiModel.Value);
-            //await AddItemAsync(uiModel.Value);
 
-            _treeFilterIds.Remove(0);
-            placeholder.LoadFromDb(uiModel.Value);
-            _treeFilterIds.Add(placeholder.Id_req);
-            ApplyFilterAndSort();
-
-            await EventsManager.RaiseRequirementCrudAsync(new RequirementCrudEvent
+            try
             {
-                Operation = CrudOperation.Added,
-                Entity = uiModel.Value,
-            });
+                IsCreating = true;
 
+                var placeholder = new Requirements
+                {
+                    NameReq = "Req_temp",
+                    IsActive = true
+                };
+
+                await AddItemAsync(placeholder);
+
+                var uiModel = await _domainService.CreateRequirementAsync();
+
+                if (uiModel.IsFailure)
+                {
+                    HandleError(uiModel);
+                    return;
+                }
+
+                _treeFilterIds.Remove(0);
+
+                placeholder.LoadFromDb(uiModel.Value);
+
+                _treeFilterIds.Add(placeholder.Id_req);
+
+                ApplyFilterAndSort();
+
+                await EventsManager.RaiseRequirementCrudAsync(
+                    new RequirementCrudEvent
+                    {
+                        Operation = CrudOperation.Added,
+                        Entity = uiModel.Value,
+                    });
+            }
+            finally
+            {
+                IsCreating = false;
+            }
         }
 
         #region Panel Button Function

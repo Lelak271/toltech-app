@@ -11,7 +11,6 @@ using Toltech.App.ToltechCalculation.Helpers;
 using Toltech.App.ToltechCalculation.Resux;
 using Toltech.App.Utilities;
 using Toltech.App.Views.Controls.TreeView;
-using Toltech.App.Visualisateur;
 using Toltech.ComputeEngine.Contracts;
 using static Toltech.App.Services.EventsManager;
 
@@ -47,6 +46,7 @@ namespace Toltech.App.ViewModels
         public PartDBViewModel PartVM { get; private set; }
         public ModelsViewModel ModelsVM { get; private set; }
         public ResultsViewModel ResultsVM { get; private set; }
+        public V3DViewModel V3DVM { get; private set; }
         public TreeViewAreaV3ViewModel TreeViewViewModel { get; private set; }
         public LogViewerViewModel StatusBarVM { get; private set; }
         public TreeNodeService TreeNodeService { get; private set; }
@@ -65,7 +65,6 @@ namespace Toltech.App.ViewModels
 
         #region Pages Instances & Navigation
 
-        public VSTWindow PageVST { get; private set; }
 
         /// <summary>
         /// Page séléctionné des TabItems
@@ -88,7 +87,7 @@ namespace Toltech.App.ViewModels
                     case 4:
                         return ResultsVM;
                     case 5:
-                        return ResultsVM;
+                        return V3DVM;
                     case 6:
                         return ResultsVM;
 
@@ -171,11 +170,12 @@ namespace Toltech.App.ViewModels
             HomeVM = new HomePageViewModel();
             ModelsVM = new ModelsViewModel(this);
             ResultsVM = new ResultsViewModel(this, RequirementVM);
+            V3DVM = new V3DViewModel(this);
 
         }
         private void LoadPages()
         {
-            PageVST = new VSTWindow();
+            //PageVST = new VSTWindow();
         }
 
 

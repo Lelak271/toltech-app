@@ -389,6 +389,11 @@ namespace Toltech.App.ViewModels
             if (model == null)
                 return;
 
+            bool confirm = _dialog.Confirm("Voulez-vous vraiment supprimer le modèle ?");
+
+            if (!confirm)
+                return;
+
             var deleteResult = await _domainService.DeleteModelAsync(model.FilePathModel);
 
             if (deleteResult.IsFailure)

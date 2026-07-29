@@ -1,19 +1,16 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using SkiaSharp;
-using Toltech.App.Views;
 using Toltech.App.Properties;
 using Toltech.App.Services;
 using Toltech.App.ToltechCalculation.Resux;
-using CST = Toltech.App.Services;
 using Toltech.App.Utilities;
+using Toltech.App.Views;
 
 namespace Toltech.App.FrontEnd.Controls.Dashboard
 {
@@ -82,7 +79,7 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
             var data = await Task.Run(() =>
             {
                 // Préparer les données
-                IEnumerable<ResuxSerializer.ResultEachData> d = resultsForReq.Data;
+                IEnumerable<ResuxSerializer.ResultEachData> d = resultsForReq.Linkages;
 
                 // Appliquer filtre Null/0
                 if (excludeNullZero)
@@ -90,27 +87,39 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
                     double minValue = 0.01;
 
                     d = showContributions
-                        ? d.Where(d =>
-                            Math.Abs(d.ContribWCOri) >= minValue ||
-                            Math.Abs(d.ContribWCInt) >= minValue ||
-                            Math.Abs(d.ContribWCExtr) >= minValue)
-                        : d.Where(d => Math.Abs(d.InfluencWC) >= minValue);
+                                   ? d.Where(x =>
+                                       Math.Abs(x.GlobalContribWCOri) >= minValue ||
+                                       Math.Abs(x.GlobalContribWCInt) >= minValue ||
+                                       Math.Abs(x.GlobalContribWCExtr) >= minValue)
+                                   : d.Where(x =>
+                                       Math.Abs(x.InfluencWCN) >= minValue ||
+                                       Math.Abs(x.InfluencWCT1) >= minValue ||
+                                       Math.Abs(x.InfluencWCT2) >= minValue ||
+                                       Math.Abs(x.RotationInfluencWCN) >= minValue ||
+                                       Math.Abs(x.RotationInfluencWCRT1) >= minValue ||
+                                       Math.Abs(x.RotationInfluencWCRT2) >= minValue);
                 }
 
                 // Appliquer valeur absolue si nécessaire
                 if (useAbsoluteValues)
                 {
-                    d = d.Select(d => new ResuxSerializer.ResultEachData
+                    d = d.Select(x => new ResuxSerializer.ResultEachData
                     {
-                        NameData = d.NameData,
-                        NameExtre = d.NameExtre,
-                        NameOri = d.NameOri,
-                        IdData = d.IdData,
-                        InfluencWC = Math.Abs(d.InfluencWC),
-                        ContribWCOri = Math.Abs(d.ContribWCOri),
-                        ContribWCInt = Math.Abs(d.ContribWCInt),
-                        ContribWCExtr = Math.Abs(d.ContribWCExtr)
+                        NameData = x.NameData,
+                        NameExtre = x.NameExtre,
+                        NameOri = x.NameOri,
+                        IdData = x.IdData,
+                        InfluencWCN = Math.Abs(x.InfluencWCN),
+                        InfluencWCT1 = Math.Abs(x.InfluencWCT1),
+                        InfluencWCT2 = Math.Abs(x.InfluencWCT2),
+                        RotationInfluencWCN = Math.Abs(x.RotationInfluencWCN) / 1000,
+                        RotationInfluencWCRT1 = Math.Abs(x.RotationInfluencWCRT1) / 1000,
+                        RotationInfluencWCRT2 = Math.Abs(x.RotationInfluencWCRT2) / 1000,
+                        GlobalContribWCOri = Math.Abs(x.GlobalContribWCOri),
+                        GlobalContribWCInt = Math.Abs(x.GlobalContribWCInt),
+                        GlobalContribWCExtr = Math.Abs(x.GlobalContribWCExtr)
                     });
+                    // GlobalRotationInfluencWC /mRad =>  permet d'afficher ensuite le mm/mRad
                 }
 
                 // Limite à 150 par valeur absolue la plus élevée
@@ -119,15 +128,23 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
                 {
                     d = d
                         .OrderByDescending(x => Math.Max(
-                            Math.Max(Math.Abs(x.ContribWCOri), Math.Abs(x.ContribWCInt)),
-                            Math.Abs(x.ContribWCExtr)))
+                            Math.Max(Math.Abs(x.GlobalContribWCOri), Math.Abs(x.GlobalContribWCInt)),
+                            Math.Abs(x.GlobalContribWCExtr)))
                         .Take(MAX_POINTS)
                         .ToList();
                 }
                 else
                 {
                     d = d
-                        .OrderByDescending(x => Math.Abs(x.InfluencWC))
+                        .OrderByDescending(x => new[]
+                        {
+                    Math.Abs(x.InfluencWCN),
+                    Math.Abs(x.InfluencWCT1),
+                    Math.Abs(x.InfluencWCT2),
+                    Math.Abs(x.RotationInfluencWCN),
+                    Math.Abs(x.RotationInfluencWCRT1),
+                    Math.Abs(x.RotationInfluencWCRT2)
+                        }.Max())
                         .Take(MAX_POINTS)
                         .ToList();
                 }
@@ -137,16 +154,16 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
                 {
                     true => _barChartSortOption switch
                     {
-                        BarChartSortOption.ByContribOri => d.OrderByDescending(d => d.ContribWCOri),
-                        BarChartSortOption.ByContribInt => d.OrderByDescending(d => d.ContribWCInt),
-                        BarChartSortOption.ByContribExtr => d.OrderByDescending(d => d.ContribWCExtr),
-                        BarChartSortOption.ByContrib => d.OrderByDescending(d => d.ContribWCOri + d.ContribWCInt + d.ContribWCExtr),
+                        BarChartSortOption.ByContribOri => d.OrderByDescending(x => x.GlobalContribWCOri),
+                        BarChartSortOption.ByContribInt => d.OrderByDescending(x => x.GlobalContribWCInt),
+                        BarChartSortOption.ByContribExtr => d.OrderByDescending(x => x.GlobalContribWCExtr),
+                        BarChartSortOption.ByContrib => d.OrderByDescending(x => x.GlobalContribWCOri + x.GlobalContribWCInt + x.GlobalContribWCExtr),
                         _ => d
                     },
                     false => _barChartSortOption switch
                     {
-                        BarChartSortOption.ByMaxInfl => d.OrderByDescending(d => d.InfluencWC),
-                        BarChartSortOption.ByMinInfl => d.OrderBy(d => d.InfluencWC),
+                        BarChartSortOption.ByMaxInfl => d.OrderByDescending(x => x.InfluencWCN),
+                        BarChartSortOption.ByMinInfl => d.OrderBy(x => x.InfluencWCN),
                         _ => d
                     }
                 };
@@ -178,9 +195,9 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
 
                 foreach (var item in data)
                 {
-                    contribOri.Add(item.ContribWCOri);
-                    contribInt.Add(item.ContribWCInt);
-                    contribExtr.Add(item.ContribWCExtr);
+                    contribOri.Add(item.GlobalContribWCOri);
+                    contribInt.Add(item.GlobalContribWCInt);
+                    contribExtr.Add(item.GlobalContribWCExtr);
                     labels.Add(item.NameData);
                 }
 
@@ -221,7 +238,7 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
                     IsHoverable = false
                 };
 
-                var valuesLine = data.Select(d => d.ContribWCOri + d.ContribWCInt + d.ContribWCExtr).ToList();
+                var valuesLine = data.Select(d => d.GlobalContribWCOri + d.GlobalContribWCInt + d.GlobalContribWCExtr).ToList();
                 var lineSerie = new LineSeries<double>
                 {
                     Name = "Outcome",
@@ -239,40 +256,116 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
             }
             else
             {
-                // Cas sans contributions : un simple histogramme (un seul ColumnSeries)
-                var values = data.Select(d => d.InfluencWC).ToList();
                 labels.AddRange(data.Select(d => d.NameData));
-                var valuesLine = data.Select(d => d.InfluencWC).ToList();
-                var serie = new ColumnSeries<double>
+
+                // --- Séries de translation (mm) => axe Y principal ---
+                var serieN = new StackedColumnSeries<double>
                 {
-                    Name = $"Influence (IdReq : {idReq})",
-                    Stroke = new SolidColorPaint(style.ColumnOutline) { StrokeThickness = style.ColumnStrokeThickness },
-                    Fill = new SolidColorPaint(style.ColumnFill1),
+                    Name = "N",
+                    Values = data.Select(d => d.InfluencWCN).ToArray(),
                     MaxBarWidth = style.BarWidthThickness,
-                    //GroupPadding = 0,
-                    Values = values
+                    Fill = new SolidColorPaint(style.ColumnFill1),
+                    YToolTipLabelFormatter = p => $"{p.Coordinate.PrimaryValue:F2}"
                 };
 
-                LineSeries<double>? lineSerie = null;
+                var serieT1 = new StackedColumnSeries<double>
+                {
+                    Name = "T1",
+                    Values = data.Select(d => d.InfluencWCT1).ToArray(),
+                    MaxBarWidth = style.BarWidthThickness,
+                    Fill = new SolidColorPaint(style.ColumnFill1),
+                    YToolTipLabelFormatter = p => $"{p.Coordinate.PrimaryValue:F2}"
+                };
+
+                var serieT2 = new StackedColumnSeries<double>
+                {
+                    Name = "T2",
+                    Values = data.Select(d => d.InfluencWCT2).ToArray(),
+                    MaxBarWidth = style.BarWidthThickness,
+                    Fill = new SolidColorPaint(style.ColumnFill1),
+                    YToolTipLabelFormatter = p => $"{p.Coordinate.PrimaryValue:F2}"
+                };
+
+                // --- Séries de rotation (mm/mrad) => axe Y secondaire + couleurs distinctes ---
+                var serieRn = new StackedColumnSeries<double>
+                {
+                    Name = "Rn",
+                    Values = data.Select(d => d.RotationInfluencWCN).ToArray(),
+                    MaxBarWidth = style.BarWidthThickness,
+                    Fill = new SolidColorPaint(SKColors.Orange), // couleur propre
+                    YToolTipLabelFormatter = p => $"Rn : {p.Coordinate.PrimaryValue:F2} mm/mrad"
+                };
+
+                var serieRT1 = new StackedColumnSeries<double>
+                {
+                    Name = "RT1",
+                    Values = data.Select(d => d.RotationInfluencWCRT1).ToArray(),
+                    MaxBarWidth = style.BarWidthThickness,
+                    Fill = new SolidColorPaint(SKColors.OrangeRed),
+                    YToolTipLabelFormatter = p => $"RT1 : {p.Coordinate.PrimaryValue:F2} mm/mrad"
+                };
+
+                var serieRT2 = new StackedColumnSeries<double>
+                {
+                    Name = "RT2",
+                    Values = data.Select(d => d.RotationInfluencWCRT2).ToArray(),
+                    MaxBarWidth = style.BarWidthThickness,
+                    Fill = new SolidColorPaint(SKColors.DarkRed),
+                    YToolTipLabelFormatter = p => $"RT2 : {p.Coordinate.PrimaryValue:F2} mm/mrad"
+                };
+
+                // --- Somme des 6 contributions : mélange volontaire d'unités (mm + mm/mrad) ---
+                // Attention : cette valeur "Total" n'a pas d'unité physique cohérente
+                // puisqu'elle additionne des mm et des mm/mrad. Elle sert uniquement
+                // de repère visuel de hauteur cumulée, pas de valeur physique exploitable.
+                var total = data.Select(d =>
+                    d.InfluencWCN + d.InfluencWCT1 + d.InfluencWCT2 +
+                    d.RotationInfluencWCN + d.RotationInfluencWCRT1 + d.RotationInfluencWCRT2
+                ).ToArray();
+
+                var outlineSeries = new ColumnSeries<double>
+                {
+                    Name = "Total",
+                    Values = total,
+                    MaxBarWidth = style.BarWidthThickness,
+                    Fill = null,
+                    Stroke = new SolidColorPaint(SKColors.Black) { StrokeThickness = 3 },
+                    IsHoverable = false, // pas de tooltip : valeur composite, pas de sens physique isolé
+                    ScalesYAt = 0
+                };
+
+                var series = new List<ISeries>
+                            {
+                                serieN, serieT1, serieT2,
+                                serieRn, serieRT1, serieRT2,
+                                outlineSeries
+                            };
+
                 if (!style.HideLineSerie)
                 {
-                    lineSerie = new LineSeries<double>
+                    series.Add(new LineSeries<double>
                     {
-                        Name = "Outcome",
-                        Values = valuesLine,
-                        Stroke = new SolidColorPaint(style.LineStroke) { StrokeThickness = style.LineStrokeThickness },
+                        Name = "Total (ligne)",
+                        Values = total,
                         Fill = null,
-                        GeometryFill = new SolidColorPaint(style.LineGeometryFill) { StrokeThickness = 0.5f * style.LineGeometrySize },
+                        Stroke = new SolidColorPaint(style.LineStroke) { StrokeThickness = style.LineStrokeThickness },
+                        GeometryFill = new SolidColorPaint(style.LineGeometryFill),
                         GeometryStroke = new SolidColorPaint(style.LineGeometryStroke),
                         GeometrySize = style.LineGeometrySize,
-                        IsHoverable = false
-                    };
-                    BarChart.Series = new ISeries[] { serie, lineSerie };
+                        IsHoverable = false, // idem : évite d'afficher une "valeur totale" trompeuse au survol
+                        ScalesYAt = 0
+                    });
                 }
-                else
+
+                BarChart.Series = series;
+
+                // 2 axes Y : un pour les translations (mm), un pour les rotations (mm/mrad)
+                BarChart.YAxes = new[]
                 {
-                    BarChart.Series = new ISeries[] { serie };
-                }
+        new Axis { Name = "Influence (mm)" },
+        new Axis { Name = "Influence rotation (mm/mrad)", Position = LiveChartsCore.Measure.AxisPosition.End }
+    };
+
                 ConfigureAxes(labels, "Influence");
             }
 
@@ -287,7 +380,7 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
             {
         new LiveChartsCore.SkiaSharpView.Axis
         {
-            Name = "Ponctuelles",
+            Name = "Linkages",
             Labels = labels,
             LabelsRotation = 45,
             LabelsPaint = new SolidColorPaint(SKColors.Black, 8)
@@ -301,7 +394,8 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
         {
             Name = yTitle,
             Labeler = value => value.ToString("F2", CultureInfo.InvariantCulture),
-            LabelsPaint = new SolidColorPaint(SKColors.Black, 14) // 14 = taille du texte
+            LabelsPaint = new SolidColorPaint(SKColors.Black, 14), // 14 = taille du texte
+            MinLimit = 0
         }
             };
         }
@@ -384,7 +478,7 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
             await GlobalDisplayBarChart(projections, viewMode, calcMode);
 
         }
-       
+
         private void ApplicationDirectionRequirementInCB(int idReq)
         {
             String filePath = ModelManager.FilePathResx;
@@ -401,7 +495,7 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
 
         }
 
-              
+
         private async Task ReloadUI_Function()
         {
             Debug.WriteLine("➡️ Enter ReloadUI_Function");

@@ -6,6 +6,10 @@ namespace Toltech.App.Models
 {
     public partial class ModelData : BaseViewModel
     {
+        public ModelData()
+        {
+            CreateToleranceGroups();
+        }
 
         #region Backing fields
 
@@ -19,23 +23,15 @@ namespace Toltech.App.Models
         private double _coordV;
         private double _coordW;
 
+        private double _coordU2;
+        private double _coordV2;
+        private double _coordW2;
+
         private string _origine;
         private string _extremite;
         private string _model;
 
         private bool _active;
-
-        private double _tolOri;
-        private double _tolInt;
-        private double _tolExtr;
-
-        private string _descriptionTolOri;
-        private string _descriptionTolInt;
-        private string _descriptionTolExtre;
-
-        private string _nameTolOri;
-        private string _nameTolInt;
-        private string _nameTolExtre;
 
         private string _commentaire;
 
@@ -47,7 +43,7 @@ namespace Toltech.App.Models
         private int _idTolInt;
         private int _idTolExtre;
 
-        private LiaisonType _type = LiaisonType.Ponctuelle;
+        private LiaisonType _linkage = LiaisonType.PointContact;
 
         #endregion
 
@@ -56,12 +52,73 @@ namespace Toltech.App.Models
         /// </summary>
         public enum LiaisonType
         {
-            Ponctuelle = 0,
-            LineaireAnnulaire = 1,
-            Rotule = 2,
-            Fixe = 3
+            PointContact = 0,       // Liaison ponctuelle
+            LinearContact = 1,      // Liaison linéaire rectiligne
+            AnnularContact = 2,     // Liaison linéaire annulaire
+            PlanarContact = 3,      // Appui plan
+
+            RevoluteContact = 4,    // Liaison pivot
+            PrismaticContact = 5,   // Liaison glissière
+            CylindricalContact = 6, // Liaison pivot glissant
+
+            //HelicalContact = 7,   // Liaison hélicoïdale
+
+            SphericalContact = 8,   // Liaison rotule
+
+            //PinSlotContact = 9,   // Rotule à doigt
+
+            FixedContact = 10       // Liaison encastrement
         }
 
+        private int _selectedToleranceGroup;
+        private bool _toleranceGroupLoaded;
+
+        [Ignore] // pur état d'affichage, jamais persisté en base
+        public int SelectedToleranceGroup
+        {
+            get
+            {
+                if (!_toleranceGroupLoaded)
+                {
+                    _toleranceGroupLoaded = true;
+                    if (ToleranceGroupSelectionCache.TryGet(Id, out int cached))
+                    {
+                        _selectedToleranceGroup = cached;
+                    }
+                }
+                return _selectedToleranceGroup;
+            }
+            set
+            {
+                _toleranceGroupLoaded = true; // évite un re-load qui écraserait la valeur choisie par l'utilisateur
+                if (SetProperty(ref _selectedToleranceGroup, value))
+                {
+                    ToleranceGroupSelectionCache.Save(Id, value);
+                }
+            }
+        }
+
+        public static class LinkagePanelMap
+        {
+            public static readonly Dictionary<ModelData.LiaisonType, int[]> Map = new()
+            {
+                [ModelData.LiaisonType.PointContact] = new[] { 1 },
+                [ModelData.LiaisonType.LinearContact] = new[] { 1, 4 },
+                [ModelData.LiaisonType.AnnularContact] = new[] { 2, 3 },
+                [ModelData.LiaisonType.PlanarContact] = new[] { 1, 5, 6 },
+                [ModelData.LiaisonType.RevoluteContact] = new[] { 1, 2, 3, 5, 6 },
+                [ModelData.LiaisonType.PrismaticContact] = new[] { 2, 3, 4, 5, 6 },
+                [ModelData.LiaisonType.CylindricalContact] = new[] { 2, 3, 5, 6 },
+                [ModelData.LiaisonType.SphericalContact] = new[] { 1, 2, 3 },
+                [ModelData.LiaisonType.FixedContact] = new[] { 1, 2, 3, 4, 5, 6 },
+            };
+
+            public static bool IsPanelAllowed(ModelData.LiaisonType linkage, int panelIndex) =>
+                Map.TryGetValue(linkage, out var panels) && panels.Contains(panelIndex);
+
+            public static int FirstAllowedPanel(ModelData.LiaisonType linkage) =>
+                Map.TryGetValue(linkage, out var panels) && panels.Length > 0 ? panels[0] : 0;
+        }
 
         #region Propriétés éditables (dirty-aware)
 
@@ -108,6 +165,23 @@ namespace Toltech.App.Models
         {
             get => _coordW;
             set => SetAndDirty(ref _coordW, value);
+        } // Coordonnée W
+        public double CoordU2
+        {
+            get => _coordU2;
+            set => SetAndDirty(ref _coordU2, value);
+        } // Coordonnée U
+
+        public double CoordV2
+        {
+            get => _coordV2;
+            set => SetAndDirty(ref _coordV2, value);
+        } // Coordonnée V
+
+        public double CoordW2   
+        {
+            get => _coordW2;
+            set => SetAndDirty(ref _coordW2, value);
         } // Coordonnée W
 
 
@@ -181,63 +255,6 @@ namespace Toltech.App.Models
         } // Contact actif ou non 
 
 
-        public double TolOri
-        {
-            get => _tolOri;
-            set => SetAndDirty(ref _tolOri, value);
-        } // Tolérance de l'origine
-
-        public double TolInt
-        {
-            get => _tolInt;
-            set => SetAndDirty(ref _tolInt, value);
-        } // Tolérance intermédiaire
-
-        public double TolExtr
-        {
-            get => _tolExtr;
-            set => SetAndDirty(ref _tolExtr, value);
-        } // Tolérance de l'extrémité
-
-
-        public string DescriptionTolOri
-        {
-            get => _descriptionTolOri;
-            set => SetAndDirty(ref _descriptionTolOri, value);
-        } // Description 1
-
-        public string DescriptionTolInt
-        {
-            get => _descriptionTolInt;
-            set => SetAndDirty(ref _descriptionTolInt, value);
-        } // Description 2
-
-        public string DescriptionTolExtre
-        {
-            get => _descriptionTolExtre;
-            set => SetAndDirty(ref _descriptionTolExtre, value);
-        } // Description 3
-
-
-        public string NameTolOri
-        {
-            get => _nameTolOri;
-            set => SetAndDirty(ref _nameTolOri, value);
-        } // Nom de la tolérance Origine
-
-        public string NameTolInt
-        {
-            get => _nameTolInt;
-            set => SetAndDirty(ref _nameTolInt, value);
-        } // Nom de la tolérance intermédiaire
-
-        public string NameTolExtre
-        {
-            get => _nameTolExtre;
-            set => SetAndDirty(ref _nameTolExtre, value);
-        } // Nom de la tolérance extrémité
-
-
         public string Commentaire
         {
             get => _commentaire;
@@ -264,29 +281,18 @@ namespace Toltech.App.Models
         } // DB ou non de la tol EXTREMITE
 
 
-        public int IdTolOri
-        {
-            get => _idTolOri;
-            set => SetAndDirty(ref _idTolOri, value);
-        } // DB ou non de la tol ORIGINE
 
-        public int IdTolInt
+        public LiaisonType Linkage
         {
-            get => _idTolInt;
-            set => SetAndDirty(ref _idTolInt, value);
-        } // DB ou non de la tol INT
-
-        public int IdTolExtre
-        {
-            get => _idTolExtre;
-            set => SetAndDirty(ref _idTolExtre, value);
-        } // DB ou non de la tol EXTREMITE
-
-
-        public LiaisonType Type
-        {
-            get => _type;
-            set => SetAndDirty(ref _type, value);
+            get => _linkage;
+            set
+            {
+                if (SetAndDirty(ref _linkage, value))
+                {
+                    // Sélectionne automatiquement le premier groupe valide pour cette liaison
+                    SelectedToleranceGroup = LinkagePanelMap.FirstAllowedPanel(value);
+                }
+            }
         } // Type de liaison mécanique (Ponctuelle, Linéaire, Rotule, Fixe)
 
         #endregion
@@ -383,29 +389,103 @@ namespace Toltech.App.Models
 
             Model = db.Model;
             Active = db.Active;
-            Type = db.Type;
+            Linkage = db.Linkage;
 
-            TolOri = db.TolOri;
-            TolInt = db.TolInt;
-            TolExtr = db.TolExtr;
+            #region Proprietes de tolérances
+            #region N
 
-            DescriptionTolOri = db.DescriptionTolOri;
-            DescriptionTolInt = db.DescriptionTolInt;
-            DescriptionTolExtre = db.DescriptionTolExtre;
+            NOriginValue = db.NOriginValue;
+            NIntermediateValue = db.NIntermediateValue;
+            NExtremityValue = db.NExtremityValue;
 
+            NOriginDescription = db.NOriginDescription;
+            NIntermediateDescription = db.NIntermediateDescription;
+            NExtremityDescription = db.NExtremityDescription;
 
-            NameTolOri = db.NameTolOri;
-            NameTolInt = db.NameTolInt;
-            NameTolExtre = db.NameTolExtre;
+            NOriginName = db.NOriginName;
+            NIntermediateName = db.NIntermediateName;
+            NExtremityName = db.NExtremityName;
+            #endregion
 
+            #region T1
+
+            T1OriginValue = db.T1OriginValue;
+            T1IntermediateValue = db.T1IntermediateValue;
+            T1ExtremityValue = db.T1ExtremityValue;
+
+            T1OriginDescription = db.T1OriginDescription;
+            T1IntermediateDescription = db.T1IntermediateDescription;
+            T1ExtremityDescription = db.T1ExtremityDescription;
+            T1OriginName = db.T1OriginName;
+            T1IntermediateName = db.T1IntermediateName;
+            T1ExtremityName = db.T1ExtremityName;
+
+            #endregion
+
+            #region T2
+
+            T2OriginValue = db.T2OriginValue;
+            T2IntermediateValue = db.T2IntermediateValue;
+            T2ExtremityValue = db.T2ExtremityValue;
+
+            T2OriginDescription = db.T2OriginDescription;
+            T2IntermediateDescription = db.T2IntermediateDescription;
+            T2ExtremityDescription = db.T2ExtremityDescription;
+            T2OriginName = db.T2OriginName;
+            T2IntermediateName = db.T2IntermediateName;
+            T2ExtremityName = db.T2ExtremityName;
+
+            #endregion
+
+            #region Rn
+
+            RnOriginValue = db.RnOriginValue;
+            RnIntermediateValue = db.RnIntermediateValue;
+            RnExtremityValue = db.RnExtremityValue;
+
+            RnOriginDescription = db.RnOriginDescription;
+            RnIntermediateDescription = db.RnIntermediateDescription;
+            RnExtremityDescription = db.RnExtremityDescription;
+            RnOriginName = db.RnOriginName;
+            RnIntermediateName = db.RnIntermediateName;
+            RnExtremityName = db.RnExtremityName;
+
+            #endregion
+
+            #region RT1
+
+            RT1OriginValue = db.RT1OriginValue;
+            RT1IntermediateValue = db.RT1IntermediateValue;
+            RT1ExtremityValue = db.RT1ExtremityValue;
+
+            RT1OriginDescription = db.RT1OriginDescription;
+            RT1IntermediateDescription = db.RT1IntermediateDescription;
+            RT1ExtremityDescription = db.RT1ExtremityDescription;   
+            RT1OriginName = db.RT1OriginName;
+            RT1IntermediateName = db.RT1IntermediateName;
+            RT1ExtremityName = db.RT1ExtremityName;
+
+            #endregion
+
+            #region RT2
+
+            RT2OriginValue = db.RT2OriginValue;
+            RT2IntermediateValue = db.RT2IntermediateValue;
+            RT2ExtremityValue = db.RT2ExtremityValue;
+
+            RT2OriginDescription = db.RT2OriginDescription;
+            RT2IntermediateDescription = db.RT2IntermediateDescription;
+            RT2ExtremityDescription = db.RT2ExtremityDescription;
+            RT2OriginName = db.RT2OriginName;
+            RT2IntermediateName = db.RT2IntermediateName;
+            RT2ExtremityName = db.RT2ExtremityName;
+
+            #endregion
+            #endregion
 
             CheckBoxOri = db.CheckBoxOri;
             CheckBoxInt = db.CheckBoxInt;
             CheckBoxExtre = db.CheckBoxExtre;
-
-            IdTolOri = db.IdTolOri;
-            IdTolInt = db.IdTolInt;
-            IdTolExtre = db.IdTolExtre;
 
             Commentaire = db.Commentaire;
 
@@ -423,9 +503,28 @@ namespace Toltech.App.Models
             _isLoading = false;
             IsDirty = false;
             IsOutOfSync = false;
+
+
+            // Priorité 1 : le choix précédent de l'utilisateur, s'il est toujours valide
+            // pour le type de liaison actuel.
+            if (ToleranceGroupSelectionCache.TryGet(Id, out int cachedGroup)
+                && LinkagePanelMap.IsPanelAllowed(Linkage, cachedGroup))
+            {
+                _selectedToleranceGroup = cachedGroup; // affectation directe : pas de re-sauvegarde inutile
+                OnPropertyChanged(nameof(SelectedToleranceGroup));
+            }
+            else
+            {
+                // Priorité 2 : repli sur le premier groupe valide (première visite, ou choix
+                // devenu incompatible suite à un changement de Linkage entretemps en base)
+                SelectedToleranceGroup = LinkagePanelMap.FirstAllowedPanel(Linkage);
+            }
+
         }
 
         #endregion
+
+
 
     }
 

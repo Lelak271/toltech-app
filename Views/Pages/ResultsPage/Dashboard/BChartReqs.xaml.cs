@@ -96,15 +96,15 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
 
             // Calcul contributions absolues pour chaque exigence
             var reqContribs = allResults
-                .Where(req => req.Data != null && req.Data.Count > 0)
+                .Where(req => req.Linkages != null && req.Linkages.Count > 0)
                 .Select(req => new
                 {
                     req.IdReq,
                     reqName = req.NameReq,
-                    TotalContrib = req.Data.Sum(d =>
-                        Math.Abs(d.ContribWCOri) +
-                        Math.Abs(d.ContribWCInt) +
-                        Math.Abs(d.ContribWCExtr)),
+                    TotalContrib = req.Linkages.Sum(d =>
+                        Math.Abs(d.GlobalContribWCOri) +
+                        Math.Abs(d.GlobalContribWCInt) +
+                        Math.Abs(d.GlobalContribWCExtr)),
                      req.TargetWC,
                      req.TargetSTAT
                 });

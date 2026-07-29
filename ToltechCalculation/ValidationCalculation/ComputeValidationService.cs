@@ -1,14 +1,13 @@
 using System.Diagnostics;
 using System.Windows;
 using Toltech.App.Models;
+using Toltech.App.Models.Mapping;
 using Toltech.App.Services;
 using Toltech.App.Services.Logging;
-using Toltech.App.ToltechCalculation;
 using Toltech.App.ToltechCalculation.Validation;
 using Toltech.App.Utilities;
-using Toltech.ComputeEngine.Contracts;
-using Toltech.ComputeEngine;
 using Toltech.App.Utilities.Result;
+using Toltech.ComputeEngine.Contracts;
 
 namespace Toltech.App.ToltechCalculation.Helpers
 {
@@ -62,8 +61,10 @@ namespace Toltech.App.ToltechCalculation.Helpers
             }
 
             // Isostatisme
-            var computeModelData = ComputeMapper.ToComputeModelData(allModelData);
-            var computePart = ComputeMapper.ToComputePart(part);
+            var computeModelData = allModelData
+                        .Select(m => m.ToCompute())
+                        .ToList();
+            var computePart = part.ToCompute();
 
             if (computePart.IsFixed != true && !await _computeEngine.IsPartIsostaticAsync(computeModelData, computePart))
             {
@@ -89,9 +90,21 @@ namespace Toltech.App.ToltechCalculation.Helpers
             if (!ModelValidationHelper.CheckModelActif(true)) return false;
 
             var errors = new List<string>();
-            var modelData = await _databaseService.GetAllModelDataAsync();
+            var activePartIds = (await DatabaseService.ActiveInstance.GetAllPartsAsync())
+            .Where(p => p.IsActive)
+            .Select(p => p.Id)
+            .ToHashSet();
+
+            var modelData = (await DatabaseService.ActiveInstance.GetAllModelDataAsync())
+                .Where(m =>
+                    m.Active &&
+                    activePartIds.Contains(m.OriginePartId))
+                .ToList();
+
             var requirementsUI = await _databaseService.GetAllRequirementsAsync();
-            requirements = ComputeMapper.ToComputeRequirements(requirementsUI);
+            requirements = requirementsUI
+               .Select(r => r.ToCompute())
+               .ToList();
 
             // Pièces absentes du graphe
             var graphPartIds = new HashSet<int>(
@@ -241,11 +254,16 @@ namespace Toltech.App.ToltechCalculation.Helpers
             try
             {
                 var allParts = await _databaseService.GetAllPartsAsync();
-                if (allParts is not { Count: > 0 }) return results;
 
-                foreach (var part in allParts)
+                var activeParts = allParts
+                    .Where(p => p.IsActive)
+                    .ToList();
+
+                if (activeParts is not { Count: > 0 }) return results;
+
+                foreach (var part in activeParts)
                 {
-                    var computePart = ComputeMapper.ToComputePart(part);
+                    var computePart = part.ToCompute();
                     if (computePart.IsFixed == true) continue;
                     try { results[computePart.Id] = await _computeEngine.IsPartIsostaticAsync(modelData, computePart); }
                     catch (Exception ex)
@@ -267,7 +285,7 @@ namespace Toltech.App.ToltechCalculation.Helpers
         public async Task CheckIsoForAllPartAsync()
         {
             var modelData = await _databaseService.GetAllModelDataAsync();
-            var computeModelData = ComputeMapper.ToComputeModelData(modelData);
+            var computeModelData = modelData.Select(m => m.ToCompute()).ToList();
 
             var results = await ComputeIsoForAllPartAsync(computeModelData);
 
@@ -308,8 +326,19 @@ namespace Toltech.App.ToltechCalculation.Helpers
             var (partId1, partId2) = await GetTwoRandomPartIdsAsync();
             if (partId1 == 0 || partId2 == 0) return false;
 
-            var modelData = await _databaseService.GetAllModelDataAsync();
-            var computeModelData = ComputeMapper.ToComputeModelData(modelData);
+            var activePartIds = (await DatabaseService.ActiveInstance.GetAllPartsAsync())
+        .Where(p => p.IsActive)
+        .Select(p => p.Id)
+        .ToHashSet();
+
+            var modelData = (await DatabaseService.ActiveInstance.GetAllModelDataAsync())
+                .Where(m =>
+                    m.Active &&
+                    activePartIds.Contains(m.OriginePartId) &&
+                    activePartIds.Contains(m.ExtremitePartId.Value))
+                .ToList();
+
+            var computeModelData = modelData.Select(m => m.ToCompute()).ToList();
             var fixPart = await _databaseService.GetFixedPartAsync();
 
             return await _computeEngine.IsModelIsostaticAsync(computeModelData, partId1, partId2, fixPart.Id);
@@ -329,7 +358,10 @@ namespace Toltech.App.ToltechCalculation.Helpers
             var rng = new Random();
             int partID1 = activeParts[rng.Next(activeParts.Count)].Id;
             int partID2;
-            do { partID2 = parts[rng.Next(parts.Count)].Id; }
+            do
+            {
+                partID2 = activeParts[rng.Next(activeParts.Count)].Id;
+            }
             while (partID2 == partID1);
 
             return (partID1, partID2);

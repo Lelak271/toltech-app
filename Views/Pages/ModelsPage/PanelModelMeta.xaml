@@ -235,10 +235,16 @@
                               Margin="5,8"
                               SelectedValue="{Binding ResponsibleEngineer, Mode=TwoWay}"
                               SelectedValuePath="Content">
-                        <ComboBoxItem Content="PERIER Louis"/>
+                        <ComboBoxItem Content="User 1"/>
+                        <ComboBoxItem Content="User 2"/>
+                        <ComboBoxItem Content="User 3"/>
+                        <ComboBoxItem Content="User 4"/>
+                        <ComboBoxItem Content="User 5"/>
+                        <ComboBoxItem Content="User 6"/>
+                        <!--<ComboBoxItem Content="PERIER Louis"/>
                         <ComboBoxItem Content="BABAUD-DULAC Salomé"/>
                         <ComboBoxItem Content="POTTER Hary"/>
-                        <ComboBoxItem Content="ZIDANE Zinédine"/>
+                        <ComboBoxItem Content="ZIDANE Zinédine"/>-->
                     </ComboBox>
                 </Grid>
 

@@ -655,6 +655,68 @@
         </Setter>
     </Style>
 
+    <Style x:Key="ToleranceGroupRadioButtonStyle" TargetType="RadioButton">
+        <!-- Taille -->
+        <Setter Property="Width" Value="23"/>
+        <Setter Property="Height" Value="23"/>
+        <Setter Property="Margin" Value="2,0"/>
+        <Setter Property="Padding" Value="0"/>
+
+        <!-- Typographie -->
+        <Setter Property="FontSize" Value="10"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+
+        <!-- Couleurs de base (état non coché) -->
+        <Setter Property="Background" Value="{DynamicResource PanelDataOffSecondaryBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource SecondaryBorderBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource SecondaryBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Cursor" Value="Hand"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <Border x:Name="Bd"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="4"
+                        SnapsToDevicePixels="True">
+                        <ContentPresenter x:Name="Content"
+                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                      TextElement.FontSize="{TemplateBinding FontSize}"
+                                      TextElement.FontWeight="{TemplateBinding FontWeight}"
+                                      TextElement.FontFamily="{TemplateBinding FontFamily}"
+                                      TextElement.Foreground="{TemplateBinding Foreground}"/>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <!-- État coché : mise en avant du groupe actif -->
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                            <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryBorderBrush}"/>
+                        </Trigger>
+
+                        <!-- Survol souris (état non coché uniquement, pour ne pas gêner la lecture du coché) -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PanelDataSecondaryBrush}"/>
+                        </Trigger>
+
+                        <!-- Désactivé (type de tolérance non applicable à la liaison en cours) -->
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource PanelDataOffPrimaryBrush}"/>
+                            <Setter TargetName="Bd" Property="Opacity" Value="0.4"/>
+                            <Setter Property="Cursor" Value="No"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
 
     <!-- ===================== -->

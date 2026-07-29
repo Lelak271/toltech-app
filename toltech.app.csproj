@@ -67,6 +67,15 @@
 	<None Remove="Asset\ImageEmptyReqs.png" />
 	<None Remove="Asset\IsFixedPartImg.png" />
 	<None Remove="Asset\LightMode.png" />
+	<None Remove="Asset\Linkages\Appui_Plan.png" />
+	<None Remove="Asset\Linkages\encastrement.png" />
+	<None Remove="Asset\Linkages\Glissiere.png" />
+	<None Remove="Asset\Linkages\Lineaire_Annulaire.png" />
+	<None Remove="Asset\Linkages\Lineaire_Rectiligne.png" />
+	<None Remove="Asset\Linkages\Pivot.png" />
+	<None Remove="Asset\Linkages\Pivot_Glissant.png" />
+	<None Remove="Asset\Linkages\Ponctuelle.png" />
+	<None Remove="Asset\Linkages\Rotule.png" />
 	<None Remove="Asset\Logo_DB_EXI.png" />
 	<None Remove="Asset\Logo_DB_MODEL.png" />
 	<None Remove="Asset\Logo_DB_tol.png" />
@@ -198,6 +207,15 @@
 	<Resource Include="Asset\LightMode.png">
 	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	</Resource>
+	<Resource Include="Asset\Linkages\Appui_Plan.png" />
+	<Resource Include="Asset\Linkages\encastrement.png" />
+	<Resource Include="Asset\Linkages\Glissiere.png" />
+	<Resource Include="Asset\Linkages\Lineaire_Annulaire.png" />
+	<Resource Include="Asset\Linkages\Lineaire_Rectiligne.png" />
+	<Resource Include="Asset\Linkages\Pivot.png" />
+	<Resource Include="Asset\Linkages\Pivot_Glissant.png" />
+	<Resource Include="Asset\Linkages\Ponctuelle.png" />
+	<Resource Include="Asset\Linkages\Rotule.png" />
 	<Resource Include="Asset\Logo_DB_EXI.png">
 	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	</Resource>

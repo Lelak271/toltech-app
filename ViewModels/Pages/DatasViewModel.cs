@@ -704,13 +704,7 @@ namespace Toltech.App.ViewModels
             if (data == null) return;
 
             data.Model = string.Empty;
-            //data.Extremite = string.Empty;
-            /// test data.Origine = string.Empty;
             data.OriginePartId = 0;
-
-            data.TolExtr = 0;
-            data.TolInt = 0;
-            data.TolOri = 0;
 
             data.CoordX = 0;
             data.CoordY = 0;
@@ -719,23 +713,33 @@ namespace Toltech.App.ViewModels
             data.CoordV = 1;
             data.CoordW = 0;
 
-            data.DescriptionTolExtre = string.Empty;
-            data.DescriptionTolInt = string.Empty;
-            data.DescriptionTolOri = string.Empty;
-
-            data.Commentaire = string.Empty;
-
-            data.NameTolExtre = string.Empty;
-            data.NameTolInt = string.Empty;
-            data.NameTolOri = string.Empty;
-
-            data.IdTolExtre = 0;
-            data.IdTolInt = 0;
-            data.IdTolOri = 0;
-
             data.CheckBoxExtre = false;
             data.CheckBoxInt = false;
             data.CheckBoxOri = false;
+
+            ClearTolerance(data.N);
+            ClearTolerance(data.T1);
+            ClearTolerance(data.T2);
+            ClearTolerance(data.Rn);
+            ClearTolerance(data.RT1);
+            ClearTolerance(data.RT2);
+
+        }
+
+        private static void ClearTolerance(ToleranceGroupViewModel group)
+        {
+            ClearSlot(group.Origin);
+            ClearSlot(group.Intermediate);
+            ClearSlot(group.Extremity);
+        }
+
+        private static void ClearSlot(ToleranceSlotViewModel slot)
+        {
+            slot.Value = 0;
+            slot.Description = string.Empty;
+            slot.Name = string.Empty;
+            slot.Id = 0;
+            slot.UseDatabase = false;
         }
 
         private async Task DeletePanelAsync(ModelData data)

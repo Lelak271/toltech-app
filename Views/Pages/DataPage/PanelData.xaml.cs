@@ -9,6 +9,9 @@ using static Toltech.App.Services.EventsManager;
 
 namespace Toltech.App.FrontEnd.Controls
 {
+    /// <summary>
+    /// Contrôle affichant une ligne ModelData dans la liste. 
+    /// </summary>
     public sealed partial class PanelData : UserControl
     {
         private string currentContextTarget = string.Empty; // "Part1" ou "Part2"
@@ -33,67 +36,67 @@ namespace Toltech.App.FrontEnd.Controls
             lienDbContextMenu.Items.Add(lienDbMenuItem);
 
             // === Zone Pièce 1 ===
-            NameTol1Part1.ContextMenu = lienDbContextMenu;
-            descriptionPart1.ContextMenu = lienDbContextMenu;
-            Tol1Text.ContextMenu = lienDbContextMenu;
+            //NameTol1Part1.ContextMenu = lienDbContextMenu;
+            //descriptionPart1.ContextMenu = lienDbContextMenu;
+            //Tol1Text.ContextMenu = lienDbContextMenu;
 
-            NameTol1Part1.ContextMenuOpening += (s, e) =>
-            {
-                currentContextTarget = "Part1";
-                lienDbMenuItem.IsEnabled = CheckBoxPart1.IsChecked == true;
-            };
-            descriptionPart1.ContextMenuOpening += (s, e) =>
-            {
-                currentContextTarget = "Part1";
-                lienDbMenuItem.IsEnabled = CheckBoxPart1.IsChecked == true;
-            };
-            Tol1Text.ContextMenuOpening += (s, e) =>
-            {
-                currentContextTarget = "Part1";
-                lienDbMenuItem.IsEnabled = CheckBoxPart1.IsChecked == true;
-            };
+            //NameTol1Part1.ContextMenuOpening += (s, e) =>
+            //{
+            //    currentContextTarget = "Part1";
+            //    lienDbMenuItem.IsEnabled = CheckBoxPart1.IsChecked == true;
+            //};
+            //descriptionPart1.ContextMenuOpening += (s, e) =>
+            //{
+            //    currentContextTarget = "Part1";
+            //    lienDbMenuItem.IsEnabled = CheckBoxPart1.IsChecked == true;
+            //};
+            //Tol1Text.ContextMenuOpening += (s, e) =>
+            //{
+            //    currentContextTarget = "Part1";
+            //    lienDbMenuItem.IsEnabled = CheckBoxPart1.IsChecked == true;
+            //};
 
-            // === Zone Int ===
-            NameTolInt.ContextMenu = lienDbContextMenu;
-            descriptionPartInt.ContextMenu = lienDbContextMenu;
-            TolIntText.ContextMenu = lienDbContextMenu;
+            //// === Zone Int ===
+            //NameTolInt.ContextMenu = lienDbContextMenu;
+            //descriptionPartInt.ContextMenu = lienDbContextMenu;
+            //TolIntText.ContextMenu = lienDbContextMenu;
 
-            NameTolInt.ContextMenuOpening += (s, e) =>
-            {
-                currentContextTarget = "Int";
-                lienDbMenuItem.IsEnabled = CheckBoxTolInt.IsChecked == true;
-            };
-            descriptionPartInt.ContextMenuOpening += (s, e) =>
-            {
-                currentContextTarget = "Int";
-                lienDbMenuItem.IsEnabled = CheckBoxTolInt.IsChecked == true;
-            };
-            TolIntText.ContextMenuOpening += (s, e) =>
-            {
-                currentContextTarget = "Int";
-                lienDbMenuItem.IsEnabled = CheckBoxTolInt.IsChecked == true;
-            };
+            //NameTolInt.ContextMenuOpening += (s, e) =>
+            //{
+            //    currentContextTarget = "Int";
+            //    lienDbMenuItem.IsEnabled = CheckBoxTolInt.IsChecked == true;
+            //};
+            //descriptionPartInt.ContextMenuOpening += (s, e) =>
+            //{
+            //    currentContextTarget = "Int";
+            //    lienDbMenuItem.IsEnabled = CheckBoxTolInt.IsChecked == true;
+            //};
+            //TolIntText.ContextMenuOpening += (s, e) =>
+            //{
+            //    currentContextTarget = "Int";
+            //    lienDbMenuItem.IsEnabled = CheckBoxTolInt.IsChecked == true;
+            //};
 
-            // === Zone Pièce 2 ===
-            NameTol2Part2.ContextMenu = lienDbContextMenu;
-            descriptionPart2.ContextMenu = lienDbContextMenu;
-            Tol2Text.ContextMenu = lienDbContextMenu;
+            //// === Zone Pièce 2 ===
+            //NameTol2Part2.ContextMenu = lienDbContextMenu;
+            //descriptionPart2.ContextMenu = lienDbContextMenu;
+            //Tol2Text.ContextMenu = lienDbContextMenu;
 
-            NameTol2Part2.ContextMenuOpening += (s, e) =>
-            {
-                currentContextTarget = "Part2";
-                lienDbMenuItem.IsEnabled = CheckBoxPart2.IsChecked == true;
-            };
-            descriptionPart2.ContextMenuOpening += (s, e) =>
-            {
-                currentContextTarget = "Part2";
-                lienDbMenuItem.IsEnabled = CheckBoxPart2.IsChecked == true;
-            };
-            Tol2Text.ContextMenuOpening += (s, e) =>
-            {
-                currentContextTarget = "Part2";
-                lienDbMenuItem.IsEnabled = CheckBoxPart2.IsChecked == true;
-            };
+            //NameTol2Part2.ContextMenuOpening += (s, e) =>
+            //{
+            //    currentContextTarget = "Part2";
+            //    lienDbMenuItem.IsEnabled = CheckBoxPart2.IsChecked == true;
+            //};
+            //descriptionPart2.ContextMenuOpening += (s, e) =>
+            //{
+            //    currentContextTarget = "Part2";
+            //    lienDbMenuItem.IsEnabled = CheckBoxPart2.IsChecked == true;
+            //};
+            //Tol2Text.ContextMenuOpening += (s, e) =>
+            //{
+            //    currentContextTarget = "Part2";
+            //    lienDbMenuItem.IsEnabled = CheckBoxPart2.IsChecked == true;
+            //};
 
             #endregion
 
@@ -386,30 +389,128 @@ namespace Toltech.App.FrontEnd.Controls
         {
 
 
-            if (currentContextTarget == "Part1")
-            {
-                this.IdTol1.Text = e.ToleranceID.ToString();
-                this.NameTol1Part1.Text = e.ToleranceName;
-                this.descriptionPart1.Text = e.ToleranceDescription;
-                this.Tol1Text.Text = e.ToleranceValue;
-            }
-            else if (currentContextTarget == "Part2")
-            {
-                this.IdTol2.Text = e.ToleranceID.ToString();
-                this.NameTol2Part2.Text = e.ToleranceName;
-                this.descriptionPart2.Text = e.ToleranceDescription;
-                this.Tol2Text.Text = e.ToleranceValue;
-            }
-            else if (currentContextTarget == "Int")
-            {
-                this.IdTolInt.Text = e.ToleranceID.ToString();
-                this.NameTolInt.Text = e.ToleranceName;
-                this.descriptionPartInt.Text = e.ToleranceDescription;
-                this.TolIntText.Text = e.ToleranceValue;
-            }
+            //if (currentContextTarget == "Part1")
+            //{
+            //    this.IdTol1.Text = e.ToleranceID.ToString();
+            //    this.NameTol1Part1.Text = e.ToleranceName;
+            //    this.descriptionPart1.Text = e.ToleranceDescription;
+            //    this.Tol1Text.Text = e.ToleranceValue;
+            //}
+            //else if (currentContextTarget == "Part2")
+            //{
+            //    this.IdTol2.Text = e.ToleranceID.ToString();
+            //    this.NameTol2Part2.Text = e.ToleranceName;
+            //    this.descriptionPart2.Text = e.ToleranceDescription;
+            //    this.Tol2Text.Text = e.ToleranceValue;
+            //}
+            //else if (currentContextTarget == "Int")
+            //{
+            //    this.IdTolInt.Text = e.ToleranceID.ToString();
+            //    this.NameTolInt.Text = e.ToleranceName;
+            //    this.descriptionPartInt.Text = e.ToleranceDescription;
+            //    this.TolIntText.Text = e.ToleranceValue;
+            //}
         }
 
         #endregion
 
+        // Méthodes pour NExtr
+        public void ToggleCheckBoxNExtr_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxNExtr_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour NInt
+        public void ToggleCheckBoxNInt_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxNInt_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour NOri
+        public void ToggleCheckBoxNOri_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxNOri_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour T1Extr
+        public void ToggleCheckBoxT1Extr_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxT1Extr_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour T1Int
+        public void ToggleCheckBoxT1Int_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxT1Int_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour T1Ori
+        public void ToggleCheckBoxT1Ori_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxT1Ori_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour T2Extr
+        public void ToggleCheckBoxT2Extr_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxT2Extr_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour T2Int
+        public void ToggleCheckBoxT2Int_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxT2Int_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour T2Ori
+        public void ToggleCheckBoxT2Ori_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxT2Ori_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour RnExtr
+        public void ToggleCheckBoxRnExtr_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxRnExtr_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour RnInt
+        public void ToggleCheckBoxRnInt_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxRnInt_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour RnOri
+        public void ToggleCheckBoxRnOri_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxRnOri_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour RT1Extr
+        public void ToggleCheckBoxRT1Extr_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxRT1Extr_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour RT1Int
+        public void ToggleCheckBoxRT1Int_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxRT1Int_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour RT1Ori
+        public void ToggleCheckBoxRT1Ori_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxRT1Ori_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour RT2Extr
+        public void ToggleCheckBoxRT2Extr_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxRT2Extr_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour RT2Int
+        public void ToggleCheckBoxRT2Int_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxRT2Int_Unchecked(object sender, EventArgs e) { }
+
+        // Méthodes pour RT2Ori
+        public void ToggleCheckBoxRT2Ori_Checked(object sender, EventArgs e) { }
+        public void ToggleCheckBoxRT2Ori_Unchecked(object sender, EventArgs e) { }
+
     }
+
+        public class LiaisonTypeItem
+        {
+            public ModelData.LiaisonType Value { get; set; }
+            public string Label { get; set; }
+        }
+
+        public static class LiaisonTypeProvider
+        {
+           public static List<LiaisonTypeItem> All { get; } = new()
+            {
+                new LiaisonTypeItem { Value = ModelData.LiaisonType.PointContact, Label = "Ponctuelle" },
+                new LiaisonTypeItem { Value = ModelData.LiaisonType.PrismaticContact, Label = "Glissière" },
+                new LiaisonTypeItem { Value = ModelData.LiaisonType.SphericalContact, Label = "Rotule" },
+                new LiaisonTypeItem { Value = ModelData.LiaisonType.AnnularContact, Label = "AnnularContact" },
+                new LiaisonTypeItem { Value = ModelData.LiaisonType.PlanarContact, Label = "PlanarContact" },
+                new LiaisonTypeItem { Value = ModelData.LiaisonType.RevoluteContact, Label = "Pivot" },
+                new LiaisonTypeItem { Value = ModelData.LiaisonType.LinearContact, Label = "Linéaire" },
+                new LiaisonTypeItem { Value = ModelData.LiaisonType.CylindricalContact, Label = "Pivot Glissant" },
+                new LiaisonTypeItem { Value = ModelData.LiaisonType.FixedContact, Label = "FixedContact" },
+            };
+        }
+
+
+
+
 }

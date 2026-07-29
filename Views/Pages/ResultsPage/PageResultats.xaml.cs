@@ -1,18 +1,21 @@
-﻿using System.Data;
+﻿using System.Collections.Concurrent;
+using System.Data;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
-using Toltech.ComputeEngine.Contracts;
 using Toltech.App.FrontEnd.Controls;
-using Toltech.App.Services.Notification;
 using Toltech.App.Models;
+using Toltech.App.Models.Mapping;
 using Toltech.App.Services;
 using Toltech.App.Services.Dialog;
+using Toltech.App.Services.Notification;
 using Toltech.App.ToltechCalculation.Helpers;
 using Toltech.App.ToltechCalculation.Resux;
 using Toltech.App.ViewModels;
+using Toltech.ComputeEngine.Contracts;
 
 namespace Toltech.App.Views
 {
@@ -80,11 +83,26 @@ namespace Toltech.App.Views
         {
             var stopwatch = Stopwatch.StartNew();
 
-            var modelData = await DatabaseService.ActiveInstance.GetAllModelDataAsync();
-            var computeModelData = ComputeMapper.ToComputeModelData(modelData);
+            var activePartIds = (await DatabaseService.ActiveInstance.GetAllPartsAsync())
+            .Where(p => p.IsActive)
+            .Select(p => p.Id)
+            .ToHashSet();
+
+            var modelData = (await DatabaseService.ActiveInstance.GetAllModelDataAsync())
+           .Where(m =>
+               m.Active &&
+               activePartIds.Contains(m.OriginePartId) &&
+               m.ExtremitePartId.HasValue && activePartIds.Contains(m.ExtremitePartId.Value))
+           .ToList();
+
+            var computeModelData = modelData
+                        .Select(m => m.ToCompute())
+                        .ToList();
 
             var exigencesSelectionnees = RequirementsList.SelectedItems.Cast<Requirements>().ToList();
-            var computeRequirements = ComputeMapper.ToComputeRequirements(exigencesSelectionnees);
+            var computeRequirements = exigencesSelectionnees
+                        .Select(r => r.ToCompute())
+                        .ToList();
 
 
             if (!await _computeValidationService.ValidationCalculsAsync(computeModelData, computeRequirements))
@@ -107,50 +125,26 @@ namespace Toltech.App.Views
                 Debug.WriteLine("Initialisation de MainComputeService...");
 
                 var fixPart = await DatabaseService.ActiveInstance.GetFixedPartAsync();
+
                 var request = new ComputeRequest
                 {
-                    ModelData = modelData.Select(m => new ComputeModelData
-                    {
-                        Id = m.Id,
-                        OriginePartId = m.OriginePartId,
-                        ExtremitePartId = m.ExtremitePartId,
-                        Active = m.Active,
+                    ModelData = computeModelData,
 
-                        CoordX = m.CoordX,
-                        CoordY = m.CoordY,
-                        CoordZ = m.CoordZ,
-
-                        CoordU = m.CoordU,
-                        CoordV = m.CoordV,
-                        CoordW = m.CoordW,
-
-                        TolOri = m.TolOri,
-                        TolInt = m.TolInt,
-                        TolExtr = m.TolExtr,
-
-                        IdTolOri = m.IdTolOri,
-                        IdTolInt = m.IdTolInt,
-                        IdTolExtre = m.IdTolExtre,
-
-                        Model = m.Model
-                    }).ToList(),
-
-                    Requirements = exigencesSelectionnees.Select(r => new ComputeRequirement
-                    {
-                        Id_req = r.Id_req,
-                        PartReq1Id = r.PartReq1Id,
-                        PartReq2Id = r.PartReq2Id,
-                        CoordU = r.CoordU,
-                        CoordV = r.CoordV,
-                        CoordW = r.CoordW
-                    }).ToList(),
+                    Requirements = computeRequirements,
 
                     IdFixPart = fixPart.Id
                 };
 
                 AllResults = await _computeEngine.ComputeAsync(request);
 
-                await _resuxSerializer.WriteResultsToFileV2Async(AllResults.Results, exigencesSelectionnees);
+                var legacyResults = new ConcurrentDictionary<int, List<PrimaryResults>>();
+
+                foreach (var kvp in AllResults.ResultsNew)
+                {
+                    legacyResults.TryAdd(kvp.Key, kvp.Value.Summary); // FIX
+                }
+
+                await _resuxSerializer.WriteResultsToFileV3Async(AllResults, exigencesSelectionnees);
 
                 await Application.Current.Dispatcher.InvokeAsync(async () =>
                 {

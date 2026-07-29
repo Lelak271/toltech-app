@@ -112,7 +112,7 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
             var slices = await Task.Run(() =>
             {
                 var results = _resuxSerializer.LoadInfluencedWCFromFile(idReq, filePath);
-                IEnumerable<ResuxSerializer.ResultEachData> data = results.Data;
+                IEnumerable<ResuxSerializer.ResultEachData> data = results.Linkages;
 
                 var list = data.ToList();
 
@@ -125,9 +125,9 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
 
                     foreach (var d in list)
                     {
-                        double ori = Math.Abs(d.ContribWCOri) ;
-                        double intr =  Math.Abs(d.ContribWCInt);
-                        double extr = Math.Abs(d.ContribWCExtr);
+                        double ori = Math.Abs(d.GlobalContribWCOri) ;
+                        double intr =  Math.Abs(d.GlobalContribWCInt);
+                        double extr = Math.Abs(d.GlobalContribWCExtr);
 
                         // TolOri → pièce NameOri
                         if (!string.IsNullOrEmpty(d.NameOri) && Math.Abs(ori) > 1e-10)
@@ -171,16 +171,16 @@ namespace Toltech.App.FrontEnd.Controls.Dashboard
                 // ── Mode ALL REQS : contribution par pièce sur toutes les exigences ──
                 var allData = _resuxSerializer
                     .ExtractReqHeaders(filePath)
-                    .SelectMany(h => _resuxSerializer.LoadInfluencedWCFromFile(h.IdReq, filePath).Data)
+                    .SelectMany(h => _resuxSerializer.LoadInfluencedWCFromFile(h.IdReq, filePath).Linkages)
                     .ToList();
 
                 var byPart1 = new Dictionary<string, double>();
 
                 foreach (var d in allData)
                 {
-                    double ori = Math.Abs(d.ContribWCOri);
-                    double intr = Math.Abs(d.ContribWCInt);
-                    double extr = Math.Abs(d.ContribWCExtr);
+                    double ori = Math.Abs(d.GlobalContribWCOri);
+                    double intr = Math.Abs(d.GlobalContribWCInt);
+                    double extr = Math.Abs(d.GlobalContribWCExtr);
 
                     if (!string.IsNullOrEmpty(d.NameOri) && ori > 1e-10)
                     {

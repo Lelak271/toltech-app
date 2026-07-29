@@ -504,10 +504,6 @@ namespace Toltech.App.Services
                     OriginePartId = 0,
                     ExtremitePartId = partId,
 
-                    TolOri = useRandom ? Random.Shared.Next(0, 3) : 0,
-                    TolInt = useRandom ? Random.Shared.Next(0, 3) : 0,
-                    TolExtr = useRandom ? Random.Shared.Next(0, 3) : 0,
-
                     Active = true,
                     Model = randomName
                 });
