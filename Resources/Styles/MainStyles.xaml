@@ -5,6 +5,7 @@
                     xmlns:Fluent="clr-namespace:Fluent;assembly=Fluent"
                     xmlns:dragablz="clr-namespace:Dragablz;assembly=Dragablz"
                     xmlns:lang="clr-namespace:Toltech.App.Resources.Lang"
+                    xmlns:cad="clr-namespace:Toltech.App.Services.CAD"
                     >
     
     <!--
@@ -143,6 +144,280 @@
                 </ToolTip>
             </Setter.Value>
         </Setter>
+    </Style>
+    
+    <!-- TextBox personnalisé CAD POINT -->
+    <Style x:Key="NumericTextBoxCadPointStyle"
+       TargetType="TextBox"
+       BasedOn="{StaticResource NumericTextBoxStyle}">
+
+        <Setter Property="ContextMenu">
+            <Setter.Value>
+
+                <ContextMenu
+                Padding="4"
+                HasDropShadow="True">
+
+                    <!-- ===================================================== -->
+                    <!-- Sélection CAO                                        -->
+                    <!-- ===================================================== -->
+
+                    <MenuItem
+                    Header="Sélectionner un point dans la CAO"
+                    FontWeight="SemiBold">
+
+                        <!-- ============================= -->
+                        <!-- FreeCAD                         -->
+                        <!-- ============================= -->
+
+                        <MenuItem
+                        Header="FreeCAD"
+                        IsEnabled="True"
+                        Command="{x:Static cad:CadCommands.PickPoint}"
+                        CommandTarget="{Binding PlacementTarget,
+                            RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                        CommandParameter="{Binding PlacementTarget,
+                            RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+
+                            <MenuItem.Icon>
+                                <Image
+                                Source="/Asset/Logos/FreeCAD.png"
+                                Height="20" />
+                            </MenuItem.Icon>
+
+                        </MenuItem>
+
+
+                        <!-- ============================= -->
+                        <!-- CATIA V5                        -->
+                        <!-- ============================= -->
+
+                        <MenuItem
+                        Header="CATIA V5"
+                        IsEnabled="False">
+
+                            <MenuItem.Icon>
+                                <Image
+                                Source="/Asset/Logos/CATIAV5.png"
+                                Height="20" />
+                            </MenuItem.Icon>
+
+                        </MenuItem>
+
+
+                        <!-- ============================= -->
+                        <!-- SOLIDWORKS                      -->
+                        <!-- ============================= -->
+
+                        <MenuItem
+                        Header="SOLIDWORKS"
+                        IsEnabled="False">
+
+                            <MenuItem.Icon>
+                                <Image
+                                Source="/Asset/Logos/SOLIDWORKS.png"
+                                Height="20" />
+                            </MenuItem.Icon>
+
+                        </MenuItem>
+
+
+                        <!-- ============================= -->
+                        <!-- Siemens NX                      -->
+                        <!-- ============================= -->
+
+                        <MenuItem
+                        Header="Siemens NX"
+                        IsEnabled="False">
+
+                            <MenuItem.Icon>
+                                <Image
+                                Source="/Asset/Logos/Siemens_NX.png"
+                                Height="20" />
+                            </MenuItem.Icon>
+
+                        </MenuItem>
+
+
+                        <!-- ============================= -->
+                        <!-- Inventor                        -->
+                        <!-- ============================= -->
+
+                        <MenuItem
+                        Header="Inventor"
+                        IsEnabled="False">
+
+                            <MenuItem.Icon>
+                                <Image
+                                Source="/Asset/Logos/Inventor.png"
+                                Height="20" />
+                            </MenuItem.Icon>
+
+                        </MenuItem>
+
+                    </MenuItem>
+
+
+                    <!-- ===================================================== -->
+                    <!-- Actions classiques du TextBox                       -->
+                    <!-- ===================================================== -->
+
+                    <Separator />
+
+                    <MenuItem
+                    Header="Copier"
+                    Command="ApplicationCommands.Copy"
+                    CommandTarget="{Binding PlacementTarget,
+                        RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+
+                    <MenuItem
+                    Header="Coller"
+                    Command="ApplicationCommands.Paste"
+                    CommandTarget="{Binding PlacementTarget,
+                        RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+
+                </ContextMenu>
+
+            </Setter.Value>
+        </Setter>
+
+    </Style>
+    
+    <!-- TextBox personnalisé CAD EDGE -->
+    <Style x:Key="NumericTextBoxCadEdgetStyle"
+       TargetType="TextBox"
+       BasedOn="{StaticResource NumericTextBoxStyle}">
+
+        <Setter Property="ContextMenu">
+            <Setter.Value>
+
+                <ContextMenu
+                Padding="4"
+                HasDropShadow="True">
+
+                    <!-- ===================================================== -->
+                    <!-- Sélection CAO                                        -->
+                    <!-- ===================================================== -->
+
+                    <MenuItem
+                    Header="Sélectionner une arrête dans la CAO"
+                    FontWeight="SemiBold">
+
+                        <!-- ============================= -->
+                        <!-- FreeCAD                         -->
+                        <!-- ============================= -->
+
+                        <MenuItem
+                        Header="FreeCAD"
+                        IsEnabled="True"
+                        Command="{x:Static cad:CadCommands.PickEdge}"
+                        CommandTarget="{Binding PlacementTarget,
+                            RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                        CommandParameter="{Binding PlacementTarget,
+                            RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+
+                            <MenuItem.Icon>
+                                <Image
+                                Source="/Asset/Logos/FreeCAD.png"
+                                Height="20" />
+                            </MenuItem.Icon>
+
+                        </MenuItem>
+
+
+                        <!-- ============================= -->
+                        <!-- CATIA V5                        -->
+                        <!-- ============================= -->
+
+                        <MenuItem
+                        Header="CATIA V5"
+                        IsEnabled="False">
+
+                            <MenuItem.Icon>
+                                <Image
+                                Source="/Asset/Logos/CATIAV5.png"
+                                Height="20" />
+                            </MenuItem.Icon>
+
+                        </MenuItem>
+
+
+                        <!-- ============================= -->
+                        <!-- SOLIDWORKS                      -->
+                        <!-- ============================= -->
+
+                        <MenuItem
+                        Header="SOLIDWORKS"
+                        IsEnabled="False">
+
+                            <MenuItem.Icon>
+                                <Image
+                                Source="/Asset/Logos/SOLIDWORKS.png"
+                                Height="20" />
+                            </MenuItem.Icon>
+
+                        </MenuItem>
+
+
+                        <!-- ============================= -->
+                        <!-- Siemens NX                      -->
+                        <!-- ============================= -->
+
+                        <MenuItem
+                        Header="Siemens NX"
+                        IsEnabled="False">
+
+                            <MenuItem.Icon>
+                                <Image
+                                Source="/Asset/Logos/Siemens_NX.png"
+                                Height="20" />
+                            </MenuItem.Icon>
+
+                        </MenuItem>
+
+
+                        <!-- ============================= -->
+                        <!-- Inventor                        -->
+                        <!-- ============================= -->
+
+                        <MenuItem
+                        Header="Inventor"
+                        IsEnabled="False">
+
+                            <MenuItem.Icon>
+                                <Image
+                                Source="/Asset/Logos/Inventor.png"
+                                Height="20" />
+                            </MenuItem.Icon>
+
+                        </MenuItem>
+
+                    </MenuItem>
+
+
+                    <!-- ===================================================== -->
+                    <!-- Actions classiques du TextBox                       -->
+                    <!-- ===================================================== -->
+
+                    <Separator />
+
+                    <MenuItem
+                    Header="Copier"
+                    Command="ApplicationCommands.Copy"
+                    CommandTarget="{Binding PlacementTarget,
+                        RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+
+                    <MenuItem
+                    Header="Coller"
+                    Command="ApplicationCommands.Paste"
+                    CommandTarget="{Binding PlacementTarget,
+                        RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+
+                </ContextMenu>
+
+            </Setter.Value>
+        </Setter>
+
     </Style>
 
     <Style x:Key="AlphabeticTextBoxStyle" TargetType="TextBox">

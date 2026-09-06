@@ -7,7 +7,7 @@ using Toltech.App.Services.Logging;
 using Toltech.App.ToltechCalculation.Validation;
 using Toltech.App.Utilities;
 using Toltech.App.Utilities.Result;
-using Toltech.ComputeEngine.Contracts;
+using Toltech.Solver.Contracts;
 
 namespace Toltech.App.ToltechCalculation.Helpers
 {
@@ -200,7 +200,7 @@ namespace Toltech.App.ToltechCalculation.Helpers
         /// <param name="requirements"></param>
         /// <returns></returns>
 
-        public async Task<bool> ValidationCalculsAsync(List<ComputeModelData> modelData, List<ComputeRequirement> requirements)
+        public async Task<bool> ValidationCalculsAsync(List<ComputeLinkage> modelData, List<ComputeRequirement> requirements)
         {
             var errors = new List<string>();
 
@@ -247,7 +247,7 @@ namespace Toltech.App.ToltechCalculation.Helpers
 
 
         // ISOSTATISME INTERNE (sans affichage)
-        public async Task<Dictionary<int, bool>> ComputeIsoForAllPartAsync(List<ComputeModelData> modelData)
+        public async Task<Dictionary<int, bool>> ComputeIsoForAllPartAsync(List<ComputeLinkage> modelData)
         {
             var results = new Dictionary<int, bool>();
 

@@ -1,6 +1,6 @@
 ﻿using Toltech.App.Models;
 using Toltech.App.ToltechCalculation;
-using Toltech.ComputeEngine.Contracts;
+using Toltech.Solver.Contracts;
 
 namespace Toltech.App.Services
 {

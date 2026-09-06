@@ -1,11 +1,22 @@
-﻿using System.Windows;
+﻿using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Net.Http;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Toltech.App.Front;
 using Toltech.App.Models;
+using Toltech.App.Resources.Lang;
 using Toltech.App.Services;
+using Toltech.App.Utilities;
 using Toltech.App.ViewModels;
+using Toltech.App.Views.Controls.CAD;
+using Toltech.Cad.Abstractions;
+using Toltech.Cad.Model;
+using Toltech.Solver.Contracts;
 using static Toltech.App.Models.NodesDefinition;
 using static Toltech.App.Services.EventsManager;
+using static Toltech.App.Utilities.LinkageTypeExtensions;
 
 namespace Toltech.App.FrontEnd.Controls
 {
@@ -16,12 +27,31 @@ namespace Toltech.App.FrontEnd.Controls
     {
         private string currentContextTarget = string.Empty; // "Part1" ou "Part2"
 
+        public ObservableCollection<LinkageTypeItem> AvailableLinkageTypes { get; }
+     = new ObservableCollection<LinkageTypeItem>();
+
+
         #region Constructeur
         public PanelData()
         {
             InitializeComponent();
             EventsManager.NodeChanged += OnNodeChangedAsync;
             EventsManager.PartCrud += OnPartCrudAsync;
+
+            _cadSelectionService.SelectionChanged += OnSelectionChanged;
+
+            Unloaded += OnUnloaded;
+
+            foreach (LinkageType type in Enum.GetValues<LinkageType>())
+            {
+                if (type == LinkageType.Requirement)
+                    continue;
+
+                AvailableLinkageTypes.Add(new LinkageTypeItem
+                {
+                    Value = type
+                });
+            }
 
             #region Click droit
 
@@ -34,6 +64,8 @@ namespace Toltech.App.FrontEnd.Controls
             lienDbMenuItem.Click += LienDbMenuItem_Click;
 
             lienDbContextMenu.Items.Add(lienDbMenuItem);
+
+
 
             // === Zone Pièce 1 ===
             //NameTol1Part1.ContextMenu = lienDbContextMenu;
@@ -100,6 +132,21 @@ namespace Toltech.App.FrontEnd.Controls
 
             #endregion
 
+        }
+
+        private void OnUnloaded(
+    object sender,
+    RoutedEventArgs e)
+        {
+            // Important :
+            // un événement maintenu par un service global peut conserver
+            // une référence vers ce UserControl.
+            //
+            // On se désabonne donc lorsque le contrôle est déchargé.
+            _cadSelectionService.SelectionChanged -=
+                OnSelectionChanged;
+
+            Unloaded -= OnUnloaded;
         }
 
         public DatasViewModel ParentViewModel
@@ -414,6 +461,7 @@ namespace Toltech.App.FrontEnd.Controls
 
         #endregion
 
+        #region CheckBox Events
         // Méthodes pour NExtr
         public void ToggleCheckBoxNExtr_Checked(object sender, EventArgs e) { }
         public void ToggleCheckBoxNExtr_Unchecked(object sender, EventArgs e) { }
@@ -486,31 +534,247 @@ namespace Toltech.App.FrontEnd.Controls
         public void ToggleCheckBoxRT2Ori_Checked(object sender, EventArgs e) { }
         public void ToggleCheckBoxRT2Ori_Unchecked(object sender, EventArgs e) { }
 
-    }
+        #endregion
 
-        public class LiaisonTypeItem
-        {
-            public ModelData.LiaisonType Value { get; set; }
-            public string Label { get; set; }
-        }
 
-        public static class LiaisonTypeProvider
+        // Service CAO générique utilisé pour demander une sélection.
+        private readonly ICadSelectionService _cadSelectionService =
+            ((App)Application.Current).CadSelectionService;
+
+        // TextBox à l'origine de la demande de sélection.
+        private TextBox? _pointTargetTextBox;
+        private TextBox? _directionTargetTextBox;
+
+        // Fenêtre affichée pendant la sélection d'un point.
+        private CadPointSelectionWindow? _cadSelectionWindow;
+
+        private async void PickPointMenuItem_Executed(
+    object sender,
+    ExecutedRoutedEventArgs e)
         {
-           public static List<LiaisonTypeItem> All { get; } = new()
+            if (e.Parameter is not TextBox textBox)
+                return;
+
+            _pointTargetTextBox = textBox;
+
+            _cadSelectionWindow = new CadPointSelectionWindow(_cadSelectionService)
             {
-                new LiaisonTypeItem { Value = ModelData.LiaisonType.PointContact, Label = "Ponctuelle" },
-                new LiaisonTypeItem { Value = ModelData.LiaisonType.PrismaticContact, Label = "Glissière" },
-                new LiaisonTypeItem { Value = ModelData.LiaisonType.SphericalContact, Label = "Rotule" },
-                new LiaisonTypeItem { Value = ModelData.LiaisonType.AnnularContact, Label = "AnnularContact" },
-                new LiaisonTypeItem { Value = ModelData.LiaisonType.PlanarContact, Label = "PlanarContact" },
-                new LiaisonTypeItem { Value = ModelData.LiaisonType.RevoluteContact, Label = "Pivot" },
-                new LiaisonTypeItem { Value = ModelData.LiaisonType.LinearContact, Label = "Linéaire" },
-                new LiaisonTypeItem { Value = ModelData.LiaisonType.CylindricalContact, Label = "Pivot Glissant" },
-                new LiaisonTypeItem { Value = ModelData.LiaisonType.FixedContact, Label = "FixedContact" },
+                Owner = Window.GetWindow(this)
             };
+            _cadSelectionWindow.Show();
+            try
+            {
+                // Demande au logiciel de CAO actif
+                // de commencer une sélection de type Point.
+                await _cadSelectionService.StartSelectionAsync(
+                    CadSelectionType.Point);
+            }
+            catch (HttpRequestException)
+            {
+                // La communication avec le logiciel CAO a échoué.
+                ClosePointSelectionWindow();
+
+                MessageBox.Show(
+                    "Aucun logiciel de CAO n'est actuellement connecté à Toltech.",
+                    "CAO",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                _pointTargetTextBox = null;
+            }
+            catch (NotSupportedException error)
+            {
+                // Le logiciel CAO ne supporte pas ce type de sélection.
+                ClosePointSelectionWindow();
+
+                MessageBox.Show(
+                    error.Message,
+                    "CAO",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                _pointTargetTextBox = null;
+            }
+            catch (Exception error)
+            {
+                // Erreur inattendue.
+                ClosePointSelectionWindow();
+
+                MessageBox.Show(
+                    $"Erreur lors de la sélection du point :\n{error.Message}",
+                    "CAO",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+
+                _pointTargetTextBox = null;
+            }
+        }
+        private async void PickEdgeMenuItem_Executed(
+    object sender,
+    ExecutedRoutedEventArgs e)
+        {
+            if (e.Parameter is not TextBox textBox)
+                return;
+
+            _directionTargetTextBox = textBox;
+
+            _cadSelectionWindow = new CadPointSelectionWindow(_cadSelectionService)
+            {
+                Owner = Window.GetWindow(this)
+            };
+            _cadSelectionWindow.Show();
+            try
+            {
+                // Demande au logiciel de CAO actif
+                // de commencer une sélection de type Point.
+                await _cadSelectionService.StartSelectionAsync(
+                    CadSelectionType.Edge);
+            }
+            catch (HttpRequestException)
+            {
+                // La communication avec le logiciel CAO a échoué.
+                ClosePointSelectionWindow();
+
+                MessageBox.Show(
+                    "Aucun logiciel de CAO n'est actuellement connecté à Toltech.",
+                    "CAO",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+
+                _directionTargetTextBox = null;
+            }
+            catch (NotSupportedException error)
+            {
+                // Le logiciel CAO ne supporte pas ce type de sélection.
+                ClosePointSelectionWindow();
+
+                MessageBox.Show(
+                    error.Message,
+                    "CAO",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                _directionTargetTextBox = null;
+            }
+            catch (Exception error)
+            {
+                // Erreur inattendue.
+                ClosePointSelectionWindow();
+
+                MessageBox.Show(
+                    $"Erreur lors de la sélection du point :\n{error.Message}",
+                    "CAO",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+
+                _directionTargetTextBox = null;
+            }
+        }
+
+        private void OnSelectionChanged(
+            object? sender,
+            CadSelection selection)
+        {
+            switch (selection.Type)
+            {
+                case CadSelectionType.Point:
+                    HandlePointSelection(selection);
+                    break;
+
+                case CadSelectionType.Direction:
+                    HandleDirectionSelection(selection);
+                    break;
+            }
+        }
+
+        private void HandlePointSelection(CadSelection selection)
+        {
+            // Vérifie que la sélection contient bien un point.
+            if (selection.Point is not CadPoint point)
+                return;
+
+            // Vérifie qu'un TextBox attend bien un point.
+            if (_pointTargetTextBox is null)
+                return;
+
+            // Le serveur HTTP peut déclencher l'événement
+            // depuis un thread différent du thread UI.
+            Dispatcher.Invoke(() =>
+            {
+
+
+                // Met à jour les trois coordonnées.
+                PointXText.Text =
+                    point.X.ToString(
+                        CultureInfo.InvariantCulture);
+
+                PointYText.Text =
+                    point.Y.ToString(
+                        CultureInfo.InvariantCulture);
+
+                PointZText.Text =
+                    point.Z.ToString(
+                        CultureInfo.InvariantCulture);
+
+                // Ferme le popup de sélection.
+                ClosePointSelectionWindow();
+
+                // La sélection est terminée.
+                _pointTargetTextBox = null;
+            });
+        }
+
+        private void HandleDirectionSelection(CadSelection selection)
+        {
+            // Vérifie que la sélection contient bien une direction.
+            if (selection.Direction is not CadDirection direction)
+                return;
+
+            // Le serveur HTTP peut déclencher l'événement
+            // depuis un thread différent du thread UI.
+            Dispatcher.Invoke(() =>
+            {
+                // Vérifie qu'un TextBox attend bien une direction.
+                if (_directionTargetTextBox is null)
+                    return;
+
+                // Met à jour les trois composantes.
+                DirectionXText.Text =
+                    direction.U.ToString(
+                        CultureInfo.InvariantCulture);
+
+                DirectionYText.Text =
+                    direction.V.ToString(
+                        CultureInfo.InvariantCulture);
+
+                DirectionZText.Text =
+                    direction.W.ToString(
+                        CultureInfo.InvariantCulture);
+
+                // Ferme le popup de sélection.
+                ClosePointSelectionWindow();
+
+                // La sélection est terminée.
+                _directionTargetTextBox = null;
+            });
+        }
+        private void ClosePointSelectionWindow()
+        {
+            if (_cadSelectionWindow is null)
+                return;
+
+            // Close() doit être appelé sur le thread UI.
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(ClosePointSelectionWindow);
+                return;
+            }
+
+            _cadSelectionWindow.Close();
+
+            _cadSelectionWindow = null;
         }
 
 
-
-
+    }
 }

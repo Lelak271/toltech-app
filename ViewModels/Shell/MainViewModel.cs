@@ -11,7 +11,7 @@ using Toltech.App.ToltechCalculation.Helpers;
 using Toltech.App.ToltechCalculation.Resux;
 using Toltech.App.Utilities;
 using Toltech.App.Views.Controls.TreeView;
-using Toltech.ComputeEngine.Contracts;
+using Toltech.Solver.Contracts;
 using static Toltech.App.Services.EventsManager;
 
 namespace Toltech.App.ViewModels
@@ -148,7 +148,6 @@ namespace Toltech.App.ViewModels
 
 
             LoadVM();
-            LoadPages(); // TODO : A enlever apres refactor de la page VST 3D
 
             ModelsVM.PropertyChanged += OnModelsVMPropertyChanged;
 
@@ -172,10 +171,6 @@ namespace Toltech.App.ViewModels
             ResultsVM = new ResultsViewModel(this, RequirementVM);
             V3DVM = new V3DViewModel(this);
 
-        }
-        private void LoadPages()
-        {
-            //PageVST = new VSTWindow();
         }
 
 

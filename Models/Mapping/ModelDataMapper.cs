@@ -3,16 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Toltech.ComputeEngine.Contracts;
+using Toltech.Solver.Contracts;
 
 namespace Toltech.App.Models.Mapping
 {
     public static class ModelDataToleranceMapper
     {
         #region Linkages
-        public static ComputeModelData ToCompute(this ModelData model)
+        public static ComputeLinkage ToCompute(this ModelData model)
         {
-            return new ComputeModelData
+            return new ComputeLinkage
             {
                 Id = model.Id,
 
@@ -34,7 +34,7 @@ namespace Toltech.App.Models.Mapping
                 CoordV2 = model.CoordV2,
                 CoordW2 = model.CoordW2,
 
-                Model = model.Model,
+                Name = model.Model,
 
                 N = model.GetN(),
                 T1 = model.GetT1(),

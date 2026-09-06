@@ -681,4 +681,34 @@
   <data name="Title_ValidationSuccess" xml:space="preserve">
     <value>Successo</value>
   </data>
+  <data name="Liaison_PointContact" xml:space="preserve">
+    <value>Contatto puntiforme</value>
+  </data>
+  <data name="Liaison_PrismaticContact" xml:space="preserve">
+    <value>Guida prismatica</value>
+  </data>
+  <data name="Liaison_SphericalContact" xml:space="preserve">
+    <value>Giunto sferico</value>
+  </data>
+  <data name="Liaison_AnnularContact" xml:space="preserve">
+    <value>Contatto anulare</value>
+  </data>
+  <data name="Liaison_PlanarContact" xml:space="preserve">
+    <value>Contatto planare</value>
+  </data>
+  <data name="Liaison_RevoluteContact" xml:space="preserve">
+    <value>Giunto rotoidale</value>
+  </data>
+  <data name="Liaison_LinearContact" xml:space="preserve">
+    <value>Contatto lineare</value>
+  </data>
+  <data name="Liaison_CylindricalContact" xml:space="preserve">
+    <value>Giunto cilindrico</value>
+  </data>
+  <data name="Liaison_FixedContact" xml:space="preserve">
+    <value>Incastro</value>
+  </data>
+  <data name="Liaison_Requirement" xml:space="preserve">
+    <value>Requisito</value>
+  </data>
 </root>

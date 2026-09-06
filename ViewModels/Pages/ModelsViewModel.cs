@@ -169,16 +169,15 @@ namespace Toltech.App.ViewModels
             #endregion
 
             #region Command
-            ToggleEditCommand = new TtCore.RelayCommand<PanelModelMeta>(ToggleEdit);
-            OpenCommand = new TtCore.RelayCommand<ModelMeta>(async (model) => await Open(model));
-            OpenFromFileCommand = new TtCore.RelayCommand(async _ => await OpenFromFile());
-            DuplicateCommand = new TtCore.RelayCommand<ModelMeta>(Duplicate);
-            DeleteCommand = new TtCore.RelayCommand<ModelMeta>(Delete);
-
-            CreateCommand = new TtCore.RelayCommand(async _ => await Create());
-            DeleteActiveModelCommand = new TtCore.RelayCommand(async _ => await Delete());
-            DuplicateActiveModelCommand = new TtCore.RelayCommand(async _ => await Duplicate());
-            OpenRegisterWindowCommand = new TtCore.RelayCommand(async _ => OpenRegisterWindow(mainVM));
+            ToggleEditCommand = new TtCore.AsyncRelayCommand<PanelModelMeta>(ToggleEdit);
+            OpenCommand = new TtCore.AsyncRelayCommand<ModelMeta>(Open);
+            OpenFromFileCommand = new TtCore.AsyncRelayCommand(OpenFromFile);
+            DuplicateCommand = new TtCore.AsyncRelayCommand<ModelMeta>(Duplicate);
+            DeleteCommand = new TtCore.AsyncRelayCommand<ModelMeta>(Delete);
+            CreateCommand = new TtCore.AsyncRelayCommand(Create);
+            DeleteActiveModelCommand = new TtCore.AsyncRelayCommand(() => Delete());
+            DuplicateActiveModelCommand = new TtCore.AsyncRelayCommand(Duplicate);
+            OpenRegisterWindowCommand = new TtCore.RelayCommand(() => OpenRegisterWindow(mainVM));
             #endregion
         }
 
@@ -291,7 +290,6 @@ namespace Toltech.App.ViewModels
 
 
         #endregion
-
 
         #region CRUD Helpers
         private async Task SaveModelAsync(ModelMeta meta)
@@ -508,8 +506,6 @@ namespace Toltech.App.ViewModels
         }
 
         #endregion
-
-
 
         #region Private helpers
 

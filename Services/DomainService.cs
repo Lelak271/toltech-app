@@ -82,8 +82,8 @@ namespace Toltech.App.Services
 
             bool isExist = await _databaseService.PartExistsByIdAsync(idPartActif);
 
-                if(!isExist)
-                  return Result<ModelData>.Failure("Pas de pièce valide à la création.", ErrorCode.InvalidInput);
+            if (!isExist)
+                return Result<ModelData>.Failure("Pas de pièce valide à la création.", ErrorCode.InvalidInput);
             try
             {
                 var newDatas = await AddDataOfPartExtremiteAsync(idPartActif, 1);
@@ -1124,7 +1124,7 @@ namespace Toltech.App.Services
             var renamed = await ResolveUniqueNamesAsync(newPart, _databaseService.NumberOfNamePartAsync);
 
             await _databaseService.InsertAsync(newPart);
-            
+
             return newPart.Id;
         }
 
@@ -1353,6 +1353,37 @@ namespace Toltech.App.Services
 
 
         #endregion
+
+        #endregion
+
+        #region Visualization 
+
+        public async Task<Result<List<ModelData>>> GetAllModelDataAsync()
+        {
+            try
+            {
+                var modelDataList = await _databaseService.GetAllModelDataAsync();
+                return Result<List<ModelData>>.Success(modelDataList);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("GetAllModelDataAsync failed", "", ex);
+                return Result<List<ModelData>>.Failure("Erreur lors du chargement des données du modèle.", ErrorCode.Unknown);
+            }
+        }
+        public async Task<Result<List<Requirements>>> GetAllRequirementsAsync()
+        {
+            try
+            {
+                var requirements = await _databaseService.GetAllRequirementsAsync();
+                return Result<List<Requirements>>.Success(requirements);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("GetAllRequirementsAsync failed", "", ex);
+                return Result<List<Requirements>>.Failure("Erreur lors du chargement des données du modèle.", ErrorCode.Unknown);
+            }
+        }
 
         #endregion
 

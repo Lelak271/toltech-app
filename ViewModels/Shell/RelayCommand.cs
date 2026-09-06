@@ -1,59 +1,51 @@
 ﻿using System;
-using System.Windows.Input;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Input;
 
 namespace Toltech.App.ViewModels
 {
-
-    public class RelayCommand : ICommand
+    /// <summary>
+    /// Base commune : gère CanExecuteChanged/RaiseCanExecuteChanged une seule fois
+    /// pour toutes les variantes de commande ci-dessous.
+    /// </summary>
+    public abstract class CommandBase : ICommand
     {
-        private readonly Action<object> _execute;
-        private readonly Func<object, bool> _canExecute;
-
-        // Constructeur
-        public RelayCommand(Action<object> execute, Func<object, bool> canExecute = null)
-        {
-            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            _canExecute = canExecute;
-        }
-
-        // ICommand
-        public bool CanExecute(object parameter) => _canExecute?.Invoke(parameter) ?? true;
-        public void Execute(object parameter) => _execute(parameter);
-
         public event EventHandler CanExecuteChanged
         {
             add => CommandManager.RequerySuggested += value;
             remove => CommandManager.RequerySuggested -= value;
         }
 
-        // Permet de notifier la vue que CanExecute a changé
-        public void RaiseCanExecuteChanged()
-            => CommandManager.InvalidateRequerySuggested();
+        public abstract bool CanExecute(object parameter);
+        public abstract void Execute(object parameter);
 
-        // Méthode helper pour commandes sans paramètre
-        public static RelayCommand FromAction(Action action, Func<bool> canExecute = null)
-        {
-            return new RelayCommand(
-                _ => action(),
-                canExecute != null ? new Func<object, bool>(_ => canExecute()) : (Func<object, bool>)null
-            );
-        }
-
-        // Méthode helper pour commandes async
-        public static RelayCommand FromAsync(Func<Task> asyncAction, Func<bool> canExecute = null)
-        {
-            return new RelayCommand(
-                async _ => await asyncAction(),
-                canExecute != null ? new Func<object, bool>(_ => canExecute()) : (Func<object, bool>)null
-            );
-        }
+        public void RaiseCanExecuteChanged() => CommandManager.InvalidateRequerySuggested();
     }
 
-    public class RelayCommand<T> : ICommand
+    /// <summary>
+    /// Commande synchrone sans paramètre. Cas le plus courant dans les VM de Toltech
+    /// (CadSelectCommand, CadMeasureCommand, ResetSelectedTransformCommand, ...).
+    /// </summary>
+    public sealed class RelayCommand : CommandBase
+    {
+        private readonly Action _execute;
+        private readonly Func<bool> _canExecute;
+
+        public RelayCommand(Action execute, Func<bool> canExecute = null)
+        {
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute;
+        }
+
+        public override bool CanExecute(object parameter) => _canExecute?.Invoke() ?? true;
+        public override void Execute(object parameter) => _execute();
+    }
+
+    /// <summary>
+    /// Commande synchrone avec paramètre typé (ex : CopyPointComponentCommand,
+    /// CommandParameter="X"/"Y"/"Z").
+    /// </summary>
+    public sealed class RelayCommand<T> : CommandBase
     {
         private readonly Action<T> _execute;
         private readonly Func<T, bool> _canExecute;
@@ -64,36 +56,97 @@ namespace Toltech.App.ViewModels
             _canExecute = canExecute;
         }
 
-        public RelayCommand(Func<T, Task> asyncExecute, Func<T, bool> canExecute = null)
+        public override bool CanExecute(object parameter)
         {
-            if (asyncExecute == null) throw new ArgumentNullException(nameof(asyncExecute));
-            _execute = async t => _ = asyncExecute(t); // Fire-and-forget
-            _canExecute = canExecute;
+            if (parameter == null && typeof(T).IsValueType && Nullable.GetUnderlyingType(typeof(T)) == null)
+                return _canExecute?.Invoke(default) ?? true;
+            return parameter is T t && (_canExecute?.Invoke(t) ?? true);
         }
 
-        public bool CanExecute(object parameter)
+        public override void Execute(object parameter)
         {
-            if (_canExecute == null) return true;
-            if (parameter == null && typeof(T).IsValueType) return _canExecute(default!);
-            return parameter is T t && _canExecute(t);
-        }
-
-        public void Execute(object parameter)
-        {
-            if (parameter == null && typeof(T).IsValueType)
-                _execute(default!);
+            if (parameter == null && typeof(T).IsValueType && Nullable.GetUnderlyingType(typeof(T)) == null)
+                _execute(default);
             else if (parameter is T t)
                 _execute(t);
         }
-
-        public event EventHandler CanExecuteChanged
-        {
-            add => CommandManager.RequerySuggested += value;
-            remove => CommandManager.RequerySuggested -= value;
-        }
-
-        public void RaiseCanExecuteChanged()
-            => CommandManager.InvalidateRequerySuggested();
     }
 
+    /// <summary>
+    /// Commande asynchrone sans paramètre. Se désactive automatiquement (CanExecute = false)
+    /// tant qu'une exécution est en cours : empêche le double-clic pendant une mesure,
+    /// un calcul de normale, un déplacement de sommet, etc.
+    /// </summary>
+    public sealed class AsyncRelayCommand : CommandBase
+    {
+        private readonly Func<Task> _execute;
+        private readonly Func<bool> _canExecute;
+        private bool _isRunning;
+
+        public AsyncRelayCommand(Func<Task> execute, Func<bool> canExecute = null)
+        {
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute;
+        }
+
+        public override bool CanExecute(object parameter)
+            => !_isRunning && (_canExecute?.Invoke() ?? true);
+
+        public override async void Execute(object parameter)
+        {
+            _isRunning = true;
+            RaiseCanExecuteChanged();
+            try
+            {
+                await _execute();
+            }
+            finally
+            {
+                _isRunning = false;
+                RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Commande asynchrone avec paramètre typé. Même garde-fou anti double-exécution
+    /// que AsyncRelayCommand.
+    /// </summary>
+    public sealed class AsyncRelayCommand<T> : CommandBase
+    {
+        private readonly Func<T, Task> _execute;
+        private readonly Func<T, bool> _canExecute;
+        private bool _isRunning;
+
+        public AsyncRelayCommand(Func<T, Task> execute, Func<T, bool> canExecute = null)
+        {
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute;
+        }
+
+        public override bool CanExecute(object parameter)
+        {
+            if (_isRunning) return false;
+            if (parameter == null && typeof(T).IsValueType && Nullable.GetUnderlyingType(typeof(T)) == null)
+                return _canExecute?.Invoke(default) ?? true;
+            return parameter is T t && (_canExecute?.Invoke(t) ?? true);
+        }
+
+        public override async void Execute(object parameter)
+        {
+            T value = parameter is T t ? t : default;
+
+            _isRunning = true;
+            RaiseCanExecuteChanged();
+            try
+            {
+                await _execute(value);
+            }
+            finally
+            {
+                _isRunning = false;
+                RaiseCanExecuteChanged();
+            }
+        }
+    }
 }

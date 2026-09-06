@@ -681,4 +681,34 @@
   <data name="Title_ValidationSuccess" xml:space="preserve">
     <value>Success</value>
   </data>
+  <data name="Liaison_PointContact" xml:space="preserve">
+    <value>Point contact</value>
+  </data>
+  <data name="Liaison_PrismaticContact" xml:space="preserve">
+    <value>Prismatic joint</value>
+  </data>
+  <data name="Liaison_SphericalContact" xml:space="preserve">
+    <value>Spherical joint</value>
+  </data>
+  <data name="Liaison_AnnularContact" xml:space="preserve">
+    <value>Annular contact</value>
+  </data>
+  <data name="Liaison_PlanarContact" xml:space="preserve">
+    <value>Planar contact</value>
+  </data>
+  <data name="Liaison_RevoluteContact" xml:space="preserve">
+    <value>Revolute joint</value>
+  </data>
+  <data name="Liaison_LinearContact" xml:space="preserve">
+    <value>Linear contact</value>
+  </data>
+  <data name="Liaison_CylindricalContact" xml:space="preserve">
+    <value>Cylindrical joint</value>
+  </data>
+  <data name="Liaison_FixedContact" xml:space="preserve">
+    <value>Fixed joint</value>
+  </data>
+  <data name="Liaison_Requirement" xml:space="preserve">
+    <value>Requirements</value>
+  </data>
 </root>

@@ -28,7 +28,7 @@ namespace Toltech.App.Services
             public string NameParentFolder { get; init; }
         }
 
-        public enum EventSource { Tree, Data, Req, Part, Model }
+        public enum EventSource { Tree, Data, Req, Part, Model, Arrow }
 
         public enum CrudOperation { Added, Updated, Deleted, Move }
 
@@ -108,6 +108,37 @@ namespace Toltech.App.Services
 
         public static Task RaiseModelOpenedAsync(ModelOpenedEvent e)
     => InvokeAsync(ModelOpened, e);
+
+        /// <summary>
+        /// Pendant de NodeChangedEvent pour les modifications faites depuis la vue 3D
+        /// (VSTWindow / V3DViewModel) sur une flèche, donc sur le ModelData qui lui est lié.
+        ///
+        /// Pour le moment cet event est seulement ENVOYÉ, via
+        /// EventsManager.RaiseArrowChangedAsync(new ArrowChangedEvent { ... }).
+        /// Personne ne l'écoute encore côté services : l'application au ModelData en base
+        /// (SQLite) sera branchée dans un second temps, comme convenu.
+        /// </summary>
+        public class ArrowChangedEvent
+        {
+            /// <summary>Created / Updated / Deleted... même enum CrudOperation que pour NodeChangedEvent.</summary>
+            public CrudOperation Operation { get; set; }
+
+            /// <summary>Id du ModelData impacté (== ArrowVisual3D.LinkedOriginalId).</summary>
+            public int? LinkedOriginalId { get; set; }
+
+            /// <summary>
+            /// Snapshot du ModelData après modification. Volontairement l'objet complet plutôt
+            /// qu'un champ unique façon NodeChangedEvent.NewName : une flèche peut être modifiée
+            /// sur plusieurs axes à la fois (position, vecteur, pièce liée...). Un futur listener
+            /// pourra comparer avec l'existant en base pour ne persister que ce qui a changé.
+            /// </summary>
+            public ModelData NewValue { get; set; } // TODO: adapte au namespace réel de ModelData si besoin d'un using explicite
+
+            /// <summary>TODO: ajoute le membre "Viewer3D" à ton enum EventSource existant (à côté de Tree, etc.).</summary>
+            public EventSource Source { get; set; } = EventSource.Arrow;
+        }
+        public static event Func<ArrowChangedEvent, Task> ArrowChanged;
+        public static Task RaiseArrowChangedAsync(ArrowChangedEvent e) => InvokeAsync(ArrowChanged, e);
 
     }
 

@@ -4,6 +4,7 @@ using System.Windows.Input;
 using OpenTK.Graphics.OpenGL;
 using Toltech.App.Services.Logging;
 using Toltech.App.Services;
+using TtCore = Toltech.App.ViewModels;
 
 namespace Toltech.App.ViewModels
 {
@@ -120,7 +121,7 @@ namespace Toltech.App.ViewModels
 
            _collectionViewSource.Filter += OnFilterLogs;
 
-            EraseCommand = RelayCommand.FromAction(() =>
+            EraseCommand = new TtCore.RelayCommand(() =>
             {
                 System.Diagnostics.Debug.WriteLine("EraseCommand exécuté");
                 _loggerService.Logs.Clear();

@@ -862,6 +862,96 @@ namespace Toltech.App.Resources.Lang {
         }
         
         /// <summary>
+        ///   Recherche une chaîne localisée semblable à Annular contact.
+        /// </summary>
+        public static string Liaison_AnnularContact {
+            get {
+                return ResourceManager.GetString("Liaison_AnnularContact", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Cylindrical joint.
+        /// </summary>
+        public static string Liaison_CylindricalContact {
+            get {
+                return ResourceManager.GetString("Liaison_CylindricalContact", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Fixed joint.
+        /// </summary>
+        public static string Liaison_FixedContact {
+            get {
+                return ResourceManager.GetString("Liaison_FixedContact", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Linear contact.
+        /// </summary>
+        public static string Liaison_LinearContact {
+            get {
+                return ResourceManager.GetString("Liaison_LinearContact", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Planar contact.
+        /// </summary>
+        public static string Liaison_PlanarContact {
+            get {
+                return ResourceManager.GetString("Liaison_PlanarContact", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Point contact.
+        /// </summary>
+        public static string Liaison_PointContact {
+            get {
+                return ResourceManager.GetString("Liaison_PointContact", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Prismatic joint.
+        /// </summary>
+        public static string Liaison_PrismaticContact {
+            get {
+                return ResourceManager.GetString("Liaison_PrismaticContact", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Requirements.
+        /// </summary>
+        public static string Liaison_Requirement {
+            get {
+                return ResourceManager.GetString("Liaison_Requirement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Revolute joint.
+        /// </summary>
+        public static string Liaison_RevoluteContact {
+            get {
+                return ResourceManager.GetString("Liaison_RevoluteContact", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Recherche une chaîne localisée semblable à Spherical joint.
+        /// </summary>
+        public static string Liaison_SphericalContact {
+            get {
+                return ResourceManager.GetString("Liaison_SphericalContact", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Recherche une chaîne localisée semblable à Toltech library.
         /// </summary>
         public static string LibraryToltech {

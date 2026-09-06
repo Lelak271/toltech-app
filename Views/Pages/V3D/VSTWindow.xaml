@@ -4,86 +4,603 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:helix="http://helix-toolkit.org/wpf"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:vm="clr-namespace:Toltech.App.ViewModels"
              xmlns:local="clr-namespace:Toltech.App.Views"
+             xmlns:obj="clr-namespace:Toltech.App.Utilities.Object3D"
+             xmlns:conv="clr-namespace:Toltech.App.Converters"
              mc:Ignorable="d"
              Height="AUTO" Width="AUTO"
-             Background="#f0f2f5">
+             >
 
+    <UserControl.Resources>
+        <conv:IdToNameConverter  x:Key="IdToNameConverter"/>
+        <conv:BoolToVisibilityConverter  x:Key="BoolToVisibilityConverter"/>
 
-    
+        <ObjectDataProvider x:Key="RenderModeValues" MethodName="GetValues" ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="vm:ModelRenderMode"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
 
-    <Border BorderBrush="#C0C0C0" BorderThickness="1" CornerRadius="6" Padding="4" Background="White" Margin="10">
+    </UserControl.Resources>
+
+    <Border Padding="1" Background="White" Margin="0">
         <DockPanel LastChildFill="True">
-
             <!-- Bandeau supérieur -->
-            <Border DockPanel.Dock="Top" Height="40" Background="#2c3e50">
-                <TextBlock Text="Visualiseur 3D Toltech"
-                           VerticalAlignment="Center"
-                           Foreground="White"
-                           FontSize="16"
-                           Margin="10,0,0,0"
-                           FontWeight="SemiBold" />
+            <Border DockPanel.Dock="Top" Visibility="Collapsed" Height="40" Background="Transparent">
+                <Grid>
+                    <TextBlock Text="Visualiseur 3D Toltech" Visibility="Visible"
+                               VerticalAlignment="Center"
+                               Foreground="White"
+                               FontSize="16"
+                               Margin="10,0,0,0"
+                               FontWeight="SemiBold" />
+
+                    <TextBlock Text="{Binding StatusMessage}"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Right"
+                               Foreground="#BDC3C7"
+                               FontSize="12"
+                               Margin="0,0,15,0" />
+                </Grid>
             </Border>
 
             <!-- Contenu principal -->
             <Grid>
-                <helix:HelixViewport3D x:Name="view3D" ZoomExtentsWhenLoaded="True"
-                           ShowCoordinateSystem="True" ShowViewCube="True"
-                           Background="White">
-
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="40" />
+                </Grid.ColumnDefinitions>
+                
+                <!-- ================================================================
+                 Vue 3D — occupe tout l'espace, le panneau flotte par-dessus.
+                 ================================================================ -->
+                <helix:HelixViewport3D
+                        x:Name="view3D"
+                        PreviewMouseLeftButtonDown="View3D_PreviewMouseLeftButtonDown"
+                        PreviewMouseMove="View3D_PreviewMouseMove"
+                        ZoomExtentsWhenLoaded="True"
+                        ShowCoordinateSystem="True"
+                        ShowViewCube="True"
+                        CameraMode="Inspect" 
+                        PreviewMouseRightButtonDown="View3D_MouseRightButtonDown">
+                    <helix:HelixViewport3D.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#AAB4D1" Offset="0"/>
+                            <GradientStop Color="#6E7CA8" Offset="0.5"/>
+                            <GradientStop Color="#333366" Offset="1"/>
+                        </LinearGradientBrush>
+                    </helix:HelixViewport3D.Background>
                     <helix:DefaultLights/>
-
-
-                    <!-- Cube -->
-                    <ModelVisual3D>
-                        <ModelVisual3D.Content>
-                            <GeometryModel3D>
-                                <!--<GeometryModel3D.Geometry>
-                                    <MeshGeometry3D Positions="-0.5,-0.5,-0.5 0.5,-0.5,-0.5 0.5,0.5,-0.5 -0.5,0.5,-0.5 
-                                                   -0.5,-0.5,0.5 0.5,-0.5,0.5 0.5,0.5,0.5 -0.5,0.5,0.5"
-                                        TriangleIndices="0 1 2 0 2 3 1 5 6 1 6 2
-                                                         5 4 7 5 7 6 4 0 3 4 3 7
-                                                         3 2 6 3 6 7 1 0 4 1 4 5"
-                                        Normals="0,0,-1 0,0,-1 0,0,-1 0,0,-1
-                                                 0,0,1 0,0,1 0,0,1 0,0,1" />
-                                </GeometryModel3D.Geometry>-->
-                                <GeometryModel3D.Material>
-                                    <MaterialGroup>
-                                        <DiffuseMaterial Brush="SteelBlue" />
-                                        <SpecularMaterial Brush="White" SpecularPower="500" />
-                                    </MaterialGroup>
-                                </GeometryModel3D.Material>
-                            </GeometryModel3D>
-                        </ModelVisual3D.Content>
-                    </ModelVisual3D>
                 </helix:HelixViewport3D>
 
-                <Button Content="Importer fichier OBJ" Visibility="Collapsed"  Width="200" Height="40"  HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                         Margin="0" />
-                <StackPanel Orientation="Horizontal"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Bottom"
-            Margin="0,10">
+                <StackPanel x:Name="LateralBar" 
+                            Grid.Column="1"
+                            HorizontalAlignment="Stretch" 
+                             Margin="0"
+                             VerticalAlignment="Stretch"
+                             Background="PowderBlue"
+                             >
+                <ToggleButton
+                    x:Name="PanelCollapseToggle"
+                    Grid.Column="1"
+                    Width="40"
+                    Height="40"
+                    Margin="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Cursor="Hand"
+                    ToolTip="Paramètres de la vue V3D">
+                    <TextBlock
+                        Text="&#xE713;"
+                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                        FontSize="18"
+                        Padding="0" 
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        RenderTransformOrigin="0.5,0.5">
+                        <TextBlock.RenderTransform>
+                            <RotateTransform Angle="0"/>
+                        </TextBlock.RenderTransform>
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Style.Triggers>
+                                    <!-- Rotation lorsque le panneau est masqué -->
+                                    <DataTrigger
+                            Binding="{Binding IsChecked, ElementName=PanelCollapseToggle}"
+                            Value="True">
+                                        <DataTrigger.EnterActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <!-- Pas de "From" : part toujours de l'angle courant,
+                                         évite le saut si un clic interrompt l'animation précédente -->
+                                                    <DoubleAnimation
+                                            Storyboard.TargetProperty="RenderTransform.Angle"
+                                            To="90"
+                                            Duration="0:0:0.25"
+                                            AccelerationRatio="0.2"
+                                            DecelerationRatio="0.2"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.EnterActions>
+                                        <DataTrigger.ExitActions>
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation
+                                            Storyboard.TargetProperty="RenderTransform.Angle"
+                                            To="0"
+                                            Duration="0:0:0.25"
+                                            AccelerationRatio="0.2"
+                                            DecelerationRatio="0.2"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </DataTrigger.ExitActions>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </ToggleButton>
 
-                    <Button Content="Importer modèle" Click="OnLoadArrowsClicked"
-            Width="200"
-            Height="40"
-            Margin="10,0"
-             />
+                    <Separator BorderBrush="Black" Margin="2 5"/>
 
-                    <Button Content="Clear View" Click="ClearView_Click"
-            Width="120"
-            Height="40"
-            Margin="10,0"
-            />
+                    <StackPanel>
+                        <!-- Afficher les liaisons / flèches -->
+                        <Button
+                            Width="40"
+                            Height="40"
+                            Margin="0"
+                            Command="{Binding LoadArrowsCommand}"
+                            ToolTip="Afficher les liaisons"
+                            Background="Transparent"
+                            BorderThickness="0">
 
+                            <TextBlock
+                                FontFamily="Segoe MDL2 Assets"
+                                FontSize="18"
+                                Text="&#xE8FD;"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center" />
+
+                        </Button>
+
+                        <!-- Effacer la vue -->
+                        <Button
+                            Width="40"
+                            Height="40"
+                            Margin="0"
+                            Command="{Binding ClearAllModelTolerancingCommand}"
+                            ToolTip="Effacer la vue Tolerancement"
+                            Background="Transparent"
+                            BorderThickness="0">
+
+                            <TextBlock
+                            FontFamily="Segoe MDL2 Assets"
+                            FontSize="18"
+                            Text="&#xE74D;"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                        </Button>
+
+                        <!-- Outils CAO -->
+                        <Button
+                            Width="40"
+                            Height="40"
+                            Margin="0"
+                            Command="{Binding OpenCadToolWindowCommand}"
+                            ToolTip="Outils CAO"
+                            Background="Transparent"
+                            BorderThickness="0">
+
+                            <TextBlock
+                            FontFamily="Segoe UI Symbol"
+                            FontSize="19"
+                            Text="🔧"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                        </Button>
+
+                        <Separator BorderBrush="Black" Margin="2 5"/>
+
+                        <Button
+                            Width="40"
+                            Height="40"
+                            Margin="0"
+                            Command="{Binding ImportObjCommand}"
+                            ToolTip="Import OBJ"
+                            Background="Transparent"
+                            BorderThickness="0">
+
+                            <TextBlock
+                            FontFamily="Segoe UI Symbol"
+                            FontSize="30"
+                            Text="📥"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                        </Button>
+
+                        <Button
+                            Width="40"
+                            Height="40"
+                            Margin="0"
+                            Command="{Binding ClearAllCadObjectCommand}"
+                            ToolTip="Effacer la vue OBJ"
+                            Background="Transparent"
+                            BorderThickness="0">
+
+                            <TextBlock
+                            FontFamily="Segoe MDL2 Assets"
+                            FontSize="18"
+                            Text="&#xE74D;"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                        </Button>
+                        
+                        <Button
+                            Width="40"
+                            Height="40"
+                            Margin="0"
+                            Command="{Binding ImportObjCommand}"
+                            ToolTip="Centrer la vue"
+                            Background="Transparent"
+                            BorderThickness="0">
+
+                            <TextBlock
+                            FontFamily="Segoe UI Symbol"
+                            FontSize="30"
+                            Text="⊕"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                        </Button>
+                        
+                        <!-- Outils Transform -->
+                        <Button
+                            Width="40"
+                            Height="40"
+                            Margin="0"
+                            Command="{Binding OpenCadTransformWindowCommand}"
+                            ToolTip="Outils Transform"
+                            Background="Transparent"
+                            BorderThickness="0">
+
+                            <TextBlock
+                            FontFamily="Segoe UI Symbol"
+                            FontSize="30"
+                            Text="✣"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                        </Button>
+                        
+
+                    </StackPanel>
+
+                    <Separator BorderBrush="Black" Margin="2 5"/>
+
+                    <Button
+                            Width="40"
+                            Height="40"
+                            Margin="0"
+                            Command="{Binding ClearAllSceneCommand}"
+                            ToolTip="Effacer la vue"
+                            Background="Transparent"
+                            BorderThickness="0">
+
+                        <TextBlock
+                            FontFamily="Segoe MDL2 Assets"
+                            FontSize="18"
+                            Text="&#xE74D;"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                    </Button>
+                    
+                    <Button
+                            Width="40"
+                            Height="40"
+                            Margin="0"
+                            Command="{Binding ZoomSelectedCommand}"
+                            ToolTip="Effacer la vue"
+                            Background="Transparent"
+                            BorderThickness="0">
+
+                        <TextBlock
+                            FontSize="10"
+                            Text="zoom"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                    </Button>
+                    
+                    <Button
+                            Width="40"
+                            Height="40"
+                            Margin="0"
+                            Command="{Binding ZoomAllCommand}"
+                            ToolTip="Effacer la vue"
+                            Background="Transparent"
+                            BorderThickness="0">
+
+                        <TextBlock
+                            FontSize="10"
+                            Text="all zoom"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                    </Button>
+                    
+                    <Button
+                            Width="40"
+                            Height="40"
+                            Margin="0"
+                            Command="{Binding ToggleCinematicOrbitCommand}"
+                            ToolTip="Effacer la vue"
+                            Background="Transparent"
+                            BorderThickness="0">
+
+                        <TextBlock
+                            FontSize="10"
+                            Text="nolan"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+
+                    </Button>
+                    
                 </StackPanel>
+                
+                <Border x:Name="PropertiesPanel"
+                        HorizontalAlignment="Right" 
+                        Margin="0 0 0 0"
+                        VerticalAlignment="Stretch"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        BorderThickness="1,0,0,0"
+                        Panel.ZIndex="10">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#000000" Opacity="0.18" BlurRadius="18" ShadowDepth="0"/>
+                    </Border.Effect>
+
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Width" Value="290"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsChecked, ElementName=PanelCollapseToggle}" Value="False">
+                                    <Setter Property="Width" Value="40"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+
+                    <DockPanel LastChildFill="True">
+
+                        <!-- En-tête du panneau : titre + bouton pour replier/déplier
+                 tout le panneau (comportement indépendant de chaque
+                 section, contrairement aux Expander internes). -->
+                        <Grid DockPanel.Dock="Top" Height="44" Background="Transparent">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0"
+                                       Text="Paramètres"
+                                       FontSize="14"
+                                       FontWeight="Bold"
+                                       Foreground="#1F2937"
+                                       VerticalAlignment="Center"
+                                       Margin="14,0,0,0"
+                                       Visibility="{Binding IsChecked, ElementName=PanelCollapseToggle,
+                                                    Converter={StaticResource BoolToVisibilityConverter}}"/>
+
+                        </Grid>
+
+                        <Separator  Margin="0" DockPanel.Dock="Top"/>
+
+                        <!-- Contenu du panneau : masqué quand replié. -->
+                        <ScrollViewer DockPanel.Dock="Top"
+                                      VerticalScrollBarVisibility="Auto"
+                                      Visibility="{Binding IsChecked, ElementName=PanelCollapseToggle,
+                                                   Converter={StaticResource BoolToVisibilityConverter}}"
+                                      Margin="5 0 ">
+                            <StackPanel Margin="0,4,0,10">
+                                <Expander Header="Objets Tolérancement"
+                                          IsExpanded="True">
+                                    <StackPanel>
+                                    <ItemsControl ItemsSource="{Binding PartColors}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid Margin="0,1">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- Case à cocher : affiche/masque toutes les flèches de cette pièce
+                                                         (V3DViewModel.UpdatePartVisibility, déclenché par IsVisible). -->
+                                                    <CheckBox Grid.Column="0"
+                                                              IsChecked="{Binding IsVisible, Mode=TwoWay}"
+                                                              VerticalAlignment="Center"
+                                                              Margin="2,0,4,0"
+                                                              ToolTip="Afficher / masquer cette pièce"/>
+
+                                                    <Button Grid.Column="1"
+                                                            Command="{Binding DataContext.ChangePartColorCommand,
+                                                                      RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            CommandParameter="{Binding}"
+                                                            Background="Transparent" BorderThickness="0"
+                                                            Padding="4,3" Margin="0"
+                                                            HorizontalContentAlignment="Left"
+                                                            Cursor="Hand"
+                                                            ToolTip="Cliquer pour changer la couleur">
+                                                        <Button.Template>
+                                                            <ControlTemplate TargetType="Button">
+                                                                <Border Background="{TemplateBinding Background}"
+                                                                        CornerRadius="4"
+                                                                        Padding="{TemplateBinding Padding}">
+                                                                    <ContentPresenter/>
+                                                                </Border>
+                                                                <ControlTemplate.Triggers>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter Property="Background" Value="#EFF1F5"/>
+                                                                    </Trigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Button.Template>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Rectangle Width="14" Height="14" RadiusX="3" RadiusY="3"
+                                       Fill="{Binding Brush}"
+                                       Stroke="#666666" StrokeThickness="0.5"
+                                       Margin="0,0,8,0" />
+                                                            <TextBlock Text="{Binding PartId, Converter={StaticResource IdToNameConverter}, Mode=OneWay, UpdateSourceTrigger=PropertyChanged}"
+                                       VerticalAlignment="Center"
+                                       FontSize="12"
+                                       Foreground="#374151"/>
+                                                        </StackPanel>
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <StackPanel>
+                                        <TextBlock Text="Taille des liaisons"
+                                                   FontSize="11.5"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#374151"
+                                                   Margin="0,4,0,6" />
+
+                                        <Slider x:Name="SymbolSizeSlider"
+                                                Minimum="5"
+                                                Maximum="200"
+                                                Value="{Binding SymbolSize, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                TickFrequency="5"
+                                                IsSnapToTickEnabled="False"/>
+
+                                        <TextBlock Text="{Binding SymbolSize, StringFormat='{}{0:0} unités'}"
+                                                   FontSize="10.5"
+                                                   Foreground="#9CA3AF"
+                                                   HorizontalAlignment="Right"
+                                                   Margin="0,2,0,10" />
+
+                                        <!-- Opacité des symboles (V3DViewModel.SymbolOpacity). -->
+                                        <TextBlock Text="Opacité des symboles"
+                                                   FontSize="11.5"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#374151"
+                                                   Margin="0,0,0,6" />
+
+                                        <Slider x:Name="SymbolOpacitySlider"
+                                                Minimum="0.1"
+                                                Maximum="1"
+                                                Value="{Binding SymbolOpacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                TickFrequency="0.1"
+                                                IsSnapToTickEnabled="False"/>
+
+                                        <TextBlock Text="{Binding SymbolOpacity, StringFormat='{}{0:P0}'}"
+                                                   FontSize="10.5"
+                                                   Foreground="#9CA3AF"
+                                                   HorizontalAlignment="Right"
+                                                   Margin="0,2,0,10" />
+
+
+                                    </StackPanel>
+                                    </StackPanel>
+                                </Expander>
 
 
 
-            </Grid>
+                                <Separator />
+
+                                <Expander Header="Affichage 3D" IsExpanded="False">
+                                    <StackPanel>
+                                        <CheckBox Content="Repère (axes)"
+                                                  IsChecked="{Binding ElementName=view3D, Path=ShowCoordinateSystem, Mode=TwoWay}"
+                                                  FontSize="12" Margin="0,4"/>
+
+                                        <CheckBox Content="Grille au sol"
+                                                  IsChecked="{Binding ShowGrid, Mode=TwoWay}"
+                                                  FontSize="12" Margin="0,4,0,10"/>
+
+                                        <TextBlock Text="Mode de rendu (modèle importé)"
+                                                   FontSize="11.5"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#374151"
+                                                   Margin="0,0,0,6" />
+
+                                        <ComboBox ItemsSource="{Binding Source={StaticResource RenderModeValues}}"
+                                                  SelectedItem="{Binding CurrentRenderMode, Mode=TwoWay}"
+                                                  FontSize="12" Margin="0,0,0,10"/>
+
+                                        <TextBlock Text="Fond du viewport"
+                                                   FontSize="11.5"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#374151"
+                                                   Margin="0,0,0,6" />
+
+                                        <ComboBox x:Name="BackgroundStyleComboBox"
+                                                  SelectionChanged="BackgroundStyleComboBox_SelectionChanged"
+                                                  SelectedIndex="0"
+                                                  FontSize="12">
+                                            <ComboBoxItem Content="Clair (CATIA)" Tag="catia"/>
+                                            <ComboBoxItem Content="Sombre" Tag="dark"/>
+                                            <ComboBoxItem Content="Blanc uni" Tag="white"/>
+                                            <ComboBoxItem Content="Dégradé gris" Tag="gray"/>
+                                        </ComboBox>
+                                    </StackPanel>
+                                </Expander>
+
+                                <Separator />
+
+                                <Expander Header="ToDo" Visibility="Hidden" IsExpanded="True">
+
+                                </Expander>
+                                
+                            </StackPanel>
+                        </ScrollViewer>
+
+                    </DockPanel>
+                </Border>
+
+                <Border x:Name="CurrentMousePosition"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Bottom"
+                        Background="Transparent"
+                        Panel.ZIndex="10"
+                        Margin="100 0 0 5 ">
+                    <StackPanel Orientation="Horizontal" >
+                        <TextBlock Text="{Binding CurrentMousePositionText}"/>
+                        <TextBlock Text="{Binding CurrentMouseNormaleText}" Margin="15 0 0 0"/>
+                    </StackPanel>
+                </Border>
             
-           
+                <Border x:Name="Status"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Background="Transparent"
+                        Panel.ZIndex="10"
+                        Margin="5 0 0 5 ">
+
+                    <TextBlock Text="{Binding StatusMessage}"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Right"
+                               Foreground="Black"
+                               FontSize="12"
+                               Margin="0,0,0,0" />
+                </Border>
+                <!-- ================================================================
+         Boutons d'action bas — décalés pour ne pas passer sous le
+         panneau replié (marge droite ajoutée).
+         ================================================================ -->
+
+
+               
+            </Grid>
         </DockPanel>
     </Border>
 </UserControl>

@@ -8,9 +8,12 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:localControls="clr-namespace:Toltech.App.FrontEnd.Controls" 
+             xmlns:utilities="clr-namespace:Toltech.App.Utilities" 
              xmlns:localTol="clr-namespace:Toltech.App.Views.Pages.DataPage" 
              xmlns:conv="clr-namespace:Toltech.App.Converters"
              xmlns:lang="clr-namespace:Toltech.App.Resources.Lang"
+             xmlns:cad="clr-namespace:Toltech.App.Services.CAD"
+             xmlns:Contract="clr-namespace:Toltech.Solver.Contracts;assembly=Toltech.ComputeEngine.Contracts"
              mc:Ignorable="d"
              Width="1000" Height="Auto"
              HorizontalAlignment="Stretch"
@@ -31,7 +34,8 @@
         <conv:LinkageAllowedConverter x:Key="LinkageAllowedConverter"/>
         <conv:SelectedGroupToBoolConverter x:Key="SelectedGroupToBoolConverter"/>
         <conv:SelectedGroupToVisibilityConverter x:Key="SelectedGroupToVisibilityConverter"/>
-
+        <conv:LinkageTypeLocalizationConverter x:Key="LinkageTypeLocalizationConverter"/>
+        
         <Style x:Key="ActiveAwareContainer" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource PanelDataPrimaryBrush}" />
             <Setter Property="IsHitTestVisible" Value="True" />
@@ -200,13 +204,27 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <ComboBox Margin="0"
-                                  Grid.Row="1"
-                                  Grid.ColumnSpan="2"
-                                  ItemsSource="{x:Static localControls:LiaisonTypeProvider.All}"
-                                  SelectedValue="{Binding Linkage, Mode=TwoWay}"
-                                  SelectedValuePath="Value"
-                                  DisplayMemberPath="Label"/>
+                        <ComboBox
+                                Grid.Row="1"
+                                Grid.ColumnSpan="2"
+                                Margin="0"
+                                ItemsSource="{Binding AvailableLinkageTypes, ElementName=PanelDataName}"
+                                SelectedValue="{Binding Linkage, Mode=TwoWay}"
+                                SelectedValuePath="Value"
+                                IsEditable="False">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock>
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{StaticResource LinkageTypeLocalizationConverter}">
+                                                <Binding Path="Value" />
+                                                <Binding Path="CurrentCulture" Source="{x:Static lang:LocalizationManager.Instance}" />
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
 
                         <!-- Barre de sélection du type de tolérance -->
                         <StackPanel Orientation="Horizontal"  Grid.Column="0" Grid.Row="2" HorizontalAlignment="Center" Grid.ColumnSpan="2" >
@@ -567,24 +585,42 @@
                                           Grid.Row="1" 
                                           Grid.Column="0"   
                                           HorizontalContentAlignment="Center" 
-                                          Style="{StaticResource NumEditTextBoxStyle}"
+                                          Style="{StaticResource NumericTextBoxCadPointStyle}"
                                           behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_PointX}"
-                                          Text="{Binding CoordX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                          Text="{Binding CoordX, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+
+                                        <TextBox.CommandBindings>
+                                            <CommandBinding Command="{x:Static cad:CadCommands.PickPoint}"
+                                                           Executed="PickPointMenuItem_Executed"/>
+                                        </TextBox.CommandBindings>
+                                    </TextBox>
                                 <TextBox  x:Name="PointYText" 
                                           Grid.Row="1" 
                                           Grid.Column="1"     
                                           HorizontalContentAlignment="Center" 
-                                          Style="{DynamicResource NumEditTextBoxStyle}" 
+                                          Style="{DynamicResource NumericTextBoxCadPointStyle}" 
                                           behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_PointY}"
-                                          Text="{Binding CoordY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                                <TextBox  x:Name="PointZText" 
+                                          Text="{Binding CoordY, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+
+                                        <TextBox.CommandBindings>
+                                            <CommandBinding Command="{x:Static cad:CadCommands.PickPoint}"
+                                                           Executed="PickPointMenuItem_Executed"/>
+                                        </TextBox.CommandBindings>
+                                    </TextBox>
+                                    <TextBox  x:Name="PointZText" 
                                           Grid.Row="1" 
                                           Grid.Column="2"      
                                           HorizontalContentAlignment="Center" 
-                                          Style="{DynamicResource NumEditTextBoxStyle}" 
+                                          Style="{DynamicResource NumericTextBoxCadPointStyle}" 
                                           behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_PointZ}"
-                                          Text="{Binding CoordZ, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                            </Grid>
+                                          Text="{Binding CoordZ, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+
+                                        <TextBox.CommandBindings>
+                                            <CommandBinding Command="{x:Static cad:CadCommands.PickPoint}"
+                                                           Executed="PickPointMenuItem_Executed"/>
+                                        </TextBox.CommandBindings>
+                                    </TextBox>
+                                </Grid>
                         </Border>
 
                         <Border 
@@ -610,24 +646,41 @@
                                          Grid.Row="1" 
                                          Grid.Column="0" 
                                          HorizontalContentAlignment="Center" 
-                                         Style="{DynamicResource NumEditTextBoxStyle}"
+                                         Style="{DynamicResource NumericTextBoxCadEdgetStyle}"
                                          behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_DirX}"
-                                         Text="{Binding CoordU, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                         Text="{Binding CoordU, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
 
+                                        <TextBox.CommandBindings>
+                                            <CommandBinding Command="{x:Static cad:CadCommands.PickEdge}"
+                                                           Executed="PickEdgeMenuItem_Executed"/>
+                                        </TextBox.CommandBindings>
+                                    </TextBox>
                                 <TextBox x:Name="DirectionYText" 
                                          Grid.Row="1"
                                          Grid.Column="1"  
                                          HorizontalContentAlignment="Center" 
-                                         Style="{DynamicResource NumEditTextBoxStyle}"
+                                         Style="{DynamicResource NumericTextBoxCadEdgetStyle}"
                                          behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_DirY}"
-                                         Text="{Binding CoordV, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                         Text="{Binding CoordV, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+
+                                        <TextBox.CommandBindings>
+                                            <CommandBinding Command="{x:Static cad:CadCommands.PickEdge}"
+                                                           Executed="PickEdgeMenuItem_Executed"/>
+                                        </TextBox.CommandBindings>
+                                    </TextBox>
 
                                 <TextBox x:Name="DirectionZText" Grid.Row="1" 
                                          Grid.Column="2"  
                                          HorizontalContentAlignment="Center" 
-                                         Style="{DynamicResource NumEditTextBoxStyle}"
+                                         Style="{DynamicResource NumericTextBoxCadEdgetStyle}"
                                          behaviors:PlaceholderService.Placeholder="{lang:Loc Placeholder_DirZ}"
-                                         Text="{Binding CoordW, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                         Text="{Binding CoordW, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+
+                                        <TextBox.CommandBindings>
+                                            <CommandBinding Command="{x:Static cad:CadCommands.PickEdge}"
+                                                           Executed="PickEdgeMenuItem_Executed"/>
+                                        </TextBox.CommandBindings>
+                                    </TextBox>
                             </Grid>
                         </Border>
 

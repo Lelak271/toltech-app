@@ -1,6 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using SQLite;
 using Toltech.App.ViewModels;
+using Toltech.Solver.Contracts;
 
 namespace Toltech.App.Models
 {
@@ -43,14 +44,14 @@ namespace Toltech.App.Models
         private int _idTolInt;
         private int _idTolExtre;
 
-        private LiaisonType _linkage = LiaisonType.PointContact;
+        private LinkageType _linkage = LinkageType.PointContact;
 
         #endregion
 
         /// <summary>
         /// Types de liaison mécaniques possibles
         /// </summary>
-        public enum LiaisonType
+        public enum OLDLinkageType
         {
             PointContact = 0,       // Liaison ponctuelle
             LinearContact = 1,      // Liaison linéaire rectiligne
@@ -100,23 +101,23 @@ namespace Toltech.App.Models
 
         public static class LinkagePanelMap
         {
-            public static readonly Dictionary<ModelData.LiaisonType, int[]> Map = new()
+            public static readonly Dictionary<LinkageType, int[]> Map = new()
             {
-                [ModelData.LiaisonType.PointContact] = new[] { 1 },
-                [ModelData.LiaisonType.LinearContact] = new[] { 1, 4 },
-                [ModelData.LiaisonType.AnnularContact] = new[] { 2, 3 },
-                [ModelData.LiaisonType.PlanarContact] = new[] { 1, 5, 6 },
-                [ModelData.LiaisonType.RevoluteContact] = new[] { 1, 2, 3, 5, 6 },
-                [ModelData.LiaisonType.PrismaticContact] = new[] { 2, 3, 4, 5, 6 },
-                [ModelData.LiaisonType.CylindricalContact] = new[] { 2, 3, 5, 6 },
-                [ModelData.LiaisonType.SphericalContact] = new[] { 1, 2, 3 },
-                [ModelData.LiaisonType.FixedContact] = new[] { 1, 2, 3, 4, 5, 6 },
+                [LinkageType.PointContact] = new[] { 1 },
+                [LinkageType.LinearContact] = new[] { 1, 4 },
+                [LinkageType.AnnularContact] = new[] { 2, 3 },
+                [LinkageType.PlanarContact] = new[] { 1, 5, 6 },
+                [LinkageType.RevoluteContact] = new[] { 1, 2, 3, 5, 6 },
+                [LinkageType.PrismaticContact] = new[] { 2, 3, 4, 5, 6 },
+                [LinkageType.CylindricalContact] = new[] { 2, 3, 5, 6 },
+                [LinkageType.SphericalContact] = new[] { 1, 2, 3 },
+                [LinkageType.FixedContact] = new[] { 1, 2, 3, 4, 5, 6 },
             };
 
-            public static bool IsPanelAllowed(ModelData.LiaisonType linkage, int panelIndex) =>
+            public static bool IsPanelAllowed(LinkageType linkage, int panelIndex) =>
                 Map.TryGetValue(linkage, out var panels) && panels.Contains(panelIndex);
 
-            public static int FirstAllowedPanel(ModelData.LiaisonType linkage) =>
+            public static int FirstAllowedPanel(LinkageType linkage) =>
                 Map.TryGetValue(linkage, out var panels) && panels.Length > 0 ? panels[0] : 0;
         }
 
@@ -282,7 +283,7 @@ namespace Toltech.App.Models
 
 
 
-        public LiaisonType Linkage
+        public LinkageType Linkage
         {
             get => _linkage;
             set

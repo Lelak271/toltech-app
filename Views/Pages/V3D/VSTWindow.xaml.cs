@@ -1,308 +1,286 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Drawing.Drawing2D;
-using System.IO;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
-using HelixToolkit.Wpf;
 using Microsoft.Win32;
-using Toltech.App.Services;
+using Toltech.App.ViewModels;
+using Toltech.App.Utilities.Object3D;
+using HelixToolkit.Wpf;
 
 namespace Toltech.App.Views
 {
     public partial class VSTWindow : UserControl
     {
+        private V3DViewModel ViewModel => DataContext as V3DViewModel;
 
-        private DatabaseService _databaseServiceInstance;
-
+        private readonly HashSet<Visual3D> _trackedVisuals = new HashSet<Visual3D>();
 
         public VSTWindow()
         {
             InitializeComponent();
-            //LoadObjModel();
-            
-            _databaseServiceInstance = new DatabaseService("TODO");
-            _databaseServiceInstance.Open(ModelManager.ModelActif);
 
+            DataContextChanged += VSTWindow_DataContextChanged;
+            Loaded += VSTWindow_Loaded;
+            Unloaded += VSTWindow_Unloaded;
         }
 
-        #region Chargement obj
-        private void LoadObjModel()
+        private void VSTWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            string objPath = @"C:\Toltech\DataBase_Default\VST\FinalBaseMesh.obj";
+            AttachVisuals();
 
-            if (!File.Exists(objPath))
+            if (DataContext is V3DViewModel vm)
             {
-                MessageBox.Show($"Fichier .obj introuvable : {objPath}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+                view3D.Camera = vm.Camera;
+                vm.RequestSetCameraPivot += OnRequestSetCameraPivot;
+            }
+        }
+
+        private void OnRequestSetCameraPivot(Point3D worldPoint)
+        {
+            var camera = view3D.Camera as ProjectionCamera;
+            if (camera == null)
                 return;
+
+            var screenPoint = view3D.Viewport.Point3DtoPoint2D(worldPoint);
+
+            Point3D pivot = worldPoint;
+            if (ViewModel.CadPicker.TryGetCadHit(view3D, screenPoint, out var hit))
+                pivot = hit.Vertex?.WorldPosition ?? hit.Point;
+
+            view3D.CameraController.FixedRotationPointEnabled = true;
+            view3D.CameraController.FixedRotationPoint = pivot;
+        }
+        private void View3D_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2)
+                ReleaseCameraPivot();
+        }
+        /// <summary>
+        /// Relâche le pivot fixé par un zoom, pour rendre la main au comportement
+        /// natif d'HelixToolkit (recalcul automatique du pivot au double-clic droit).
+        /// </summary>
+        private void ReleaseCameraPivot()
+        {
+            view3D.CameraController.FixedRotationPointEnabled = false;
+        }
+        private void VSTWindow_Unloaded(object sender, RoutedEventArgs e)
+        {
+            DetachVisuals();
+        }
+
+        private void VSTWindow_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (e.OldValue is V3DViewModel oldVm)
+            {
+                oldVm.Visuals.CollectionChanged -= Visuals_CollectionChanged;
+                RemoveTrackedVisuals();
             }
 
-            try
-            {
-                var reader = new ObjReader();
-                Model3DGroup model = reader.Read(objPath);
+            if (ViewModel == null)
+                return;
 
-                ModelVisual3D visual = new ModelVisual3D
-                {
-                    Content = model
-                };
+            ViewModel.RequestObjFilePath = RequestObjFilePath;
+            ViewModel.RequestColorPicker = RequestColorPicker;
+            ViewModel.ShowError = (message, title) =>
+                MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Error);
 
-                view3D.Children.Add(visual);
-            }
-            catch (Exception ex)
+            if (IsLoaded)
+                AttachVisuals();
+        }
+
+        private void AttachVisuals()
+        {
+            if (ViewModel == null)
+                return;
+
+            foreach (var visual in ViewModel.Visuals)
+                AddTrackedVisual(visual);
+
+            ViewModel.Visuals.CollectionChanged -= Visuals_CollectionChanged;
+            ViewModel.Visuals.CollectionChanged += Visuals_CollectionChanged;
+        }
+
+        private void DetachVisuals()
+        {
+            if (ViewModel != null)
+                ViewModel.Visuals.CollectionChanged -= Visuals_CollectionChanged;
+
+            RemoveTrackedVisuals();
+        }
+
+        private void Visuals_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            switch (e.Action)
             {
-                MessageBox.Show($"Erreur lors du chargement du modèle :\n{ex.Message}", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+                case NotifyCollectionChangedAction.Add:
+                    if (e.NewItems != null)
+                        foreach (Visual3D item in e.NewItems)
+                            AddTrackedVisual(item);
+                    break;
+
+                case NotifyCollectionChangedAction.Remove:
+                    if (e.OldItems != null)
+                        foreach (Visual3D item in e.OldItems)
+                            RemoveTrackedVisual(item);
+                    break;
+
+                case NotifyCollectionChangedAction.Replace:
+                    if (e.OldItems != null)
+                        foreach (Visual3D item in e.OldItems)
+                            RemoveTrackedVisual(item);
+                    if (e.NewItems != null)
+                        foreach (Visual3D item in e.NewItems)
+                            AddTrackedVisual(item);
+                    break;
+
+                case NotifyCollectionChangedAction.Reset:
+                    RemoveTrackedVisuals();
+                    break;
             }
         }
 
-
-        private void ImportObj_Click(object sender, RoutedEventArgs e)
+        private void AddTrackedVisual(Visual3D visual)
         {
-            var openFileDialog = new OpenFileDialog
+            if (_trackedVisuals.Add(visual))
+                view3D.Children.Add(visual);
+        }
+
+        private void RemoveTrackedVisual(Visual3D visual)
+        {
+            if (_trackedVisuals.Remove(visual))
+                view3D.Children.Remove(visual);
+        }
+
+        private void RemoveTrackedVisuals()
+        {
+            foreach (var visual in _trackedVisuals)
+                view3D.Children.Remove(visual);
+
+            _trackedVisuals.Clear();
+        }
+
+        /// <summary>
+        /// Intercepte le clic avant le traitement de la caméra/du visuel 3D.
+        /// La recherche géométrique est effectuée uniquement lorsque le clic
+        /// correspond à un objet CAO enregistré dans CadScene.
+        /// </summary>
+        private void View3D_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (ViewModel == null)
+                return;
+
+            Point mousePosition = e.GetPosition(view3D);
+
+            if (!ViewModel.TryPickCad(view3D, mousePosition, out CadHit hit))
+                return;
+
+            ViewModel.HandleCadHit(hit);
+
+            // Empêche le viewport de démarrer une rotation/translation caméra
+            // lorsque l'utilisateur est en train d'utiliser un outil CAO.
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Met à jour la position courante de la souris dans le viewport 3D.
+        /// </summary>
+        private void View3D_PreviewMouseMove(object sender, MouseEventArgs e)
+        {
+            if (ViewModel == null)
+                return;
+
+            // Position de la souris exprimée dans le système de coordonnées
+            // du HelixViewport3D.
+            Point currentPosition = e.GetPosition(view3D);
+
+
+            if (!ViewModel.TryPickCad(view3D, currentPosition, out CadHit hit))
+                return; 
+
+            // Transmet éventuellement la position au ViewModel.
+            ViewModel.UpdateMousePosition(hit);
+        }
+
+
+
+        private string RequestObjFilePath()
+        {
+            var dialog = new OpenFileDialog
             {
                 Filter = "Fichiers OBJ (*.obj)|*.obj"
             };
 
-            if (openFileDialog.ShowDialog() == true)
+            return dialog.ShowDialog() == true ? dialog.FileName : null;
+        }
+
+        private Color? RequestColorPicker(Color initial)
+        {
+            using (var dialog = new System.Windows.Forms.ColorDialog
             {
-                string filePath = openFileDialog.FileName;
+                FullOpen = true,
+                Color = System.Drawing.Color.FromArgb(initial.A, initial.R, initial.G, initial.B)
+            })
+            {
+                var owner = new Win32WindowWrapper(Window.GetWindow(this));
 
-                var reader = new ObjReader();
-                var models = reader.Read(filePath); // retourne un Model3DGroup
+                if (dialog.ShowDialog(owner) != System.Windows.Forms.DialogResult.OK)
+                    return null;
 
-                view3D.Children.Clear();
-                view3D.Children.Add(new DefaultLights());
-                view3D.Children.Add(new ModelVisual3D { Content = models });
+                var c = dialog.Color;
+                return Color.FromArgb(c.A, c.R, c.G, c.B);
             }
         }
 
-        #endregion
-
-        #region Flèches depuis la base
-
-        /// <summary>
-        /// Initialise le service de base de données avec le modèle actif
-        /// </summary>
-        private void InitializeDatabaseService()
+        private sealed class Win32WindowWrapper : System.Windows.Forms.IWin32Window
         {
-            if (string.IsNullOrEmpty(ModelManager.ModelActif))
+            public IntPtr Handle { get; }
+
+            public Win32WindowWrapper(Window window)
             {
-                Debug.WriteLine("Aucun modèle actif défini.");
-                return;
-            }
-
-            // Updated to use the renamed field
-            _databaseServiceInstance.Open(ModelManager.ModelActif);
-            Debug.WriteLine($"Initialisation du DatabaseService avec : {ModelManager.ModelActif}");
-        }
-
-        /// <summary>
-        /// Charge les données de flèches depuis la base de données et les affiche dans la scène 3D
-        /// </summary>
-        public async Task LoadArrowsFromDatabaseAsync()
-        {
-            InitializeDatabaseService();
-
-            // Updated to use the renamed field
-            if (_databaseServiceInstance == null)
-                return;
-
-            var modelDataList = await _databaseServiceInstance.GetAllModelDataAsync();
-
-            foreach (var data in modelDataList)
-            {
-                Point3D origin = new Point3D(data.CoordX, data.CoordY, data.CoordZ);
-                Vector3D direction = new Vector3D(data.CoordU, data.CoordV, data.CoordW);
-
-                // Vérifie que la direction n'est pas nulle
-                if (direction.Length > 0.0001)
-                {
-                    direction.Normalize();      // Unité
-                    AddArrowToViewport(origin, direction, Colors.Blue);
-                }
-                else
-                {
-                    Debug.WriteLine($"Vecteur nul ignoré pour l'élément ID={data.Id}");
-                }
+                Handle = new WindowInteropHelper(window).Handle;
             }
         }
 
-        /// <summary>
-        /// Ajoute une flèche 3D entièrement personnalisable et proportionnelle à la scène.
-        /// </summary>
-        private void AddArrowToViewport(Point3D origin, Vector3D direction, Color color)
+        private void BackgroundStyleComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            double arrowLength = 100;
-            if (direction.Length < 1e-6)
-                return;
-
-            direction.Normalize();
-
-            // Proportions
-            double headRatio = 0.3;         // 30 % pour la tête
-            double bodyRatio = 1.0 - headRatio;
-
-            double headLength = arrowLength * headRatio;
-            double bodyLength = arrowLength * bodyRatio;
-
-            double bodyDiameter = arrowLength * 0.1;
-            double headDiameter = bodyDiameter * 3;
-
-            // Calcul des points
-            Point3D tip = origin; // pointe de la flèche
-            Point3D headBase = tip - direction * headLength;       // base du cône
-            Point3D bodyStart = headBase - direction * bodyLength; // début du cylindre
-
-            var mb = new MeshBuilder(false, false);
-
-            // Corps cylindrique
-            mb.AddCylinder(bodyStart, headBase, bodyDiameter, 24);
-
-            // Tête conique
-            mb.AddCone(
-                origin: headBase,
-                direction: direction,
-                baseRadius: headDiameter / 2,
-                topRadius: 0,             // pointe fine
-                height: headLength,
-                baseCap: true,
-                topCap: false,
-                thetaDiv: 36
-            );
-
-            var geometry = new GeometryModel3D
-            {
-                Geometry = mb.ToMesh(),
-                Material = MaterialHelper.CreateMaterial(color)
-            };
-
-            view3D.Children.Add(new ModelVisual3D { Content = geometry });
+            if (BackgroundStyleComboBox.SelectedItem is ComboBoxItem item && item.Tag is string key)
+                view3D.Background = GetBackgroundBrush(key);
         }
 
-
-
-        private void AddArrowToViewport2(Point3D origin, Vector3D direction, Color color)
+        private static Brush GetBackgroundBrush(string key)
         {
-            // Longueur totale voulue
-            double arrowLength = 100;
-
-            // Proportions
-            double headLengthRatio = 0.2;
-            double diameterRatio = 0.03;
-
-            // Longueurs calculées
-            double headLength = arrowLength * diameterRatio*2;
-            double shaftLength = arrowLength ;
-            double diameter = arrowLength * diameterRatio;
-
-            // Direction mise à l'échelle
-            Vector3D unitDir = direction;
-            unitDir.Normalize();
-            Vector3D shaftVec = unitDir * shaftLength;
-
-            // Points
-            Point3D point2 = origin;                          // Tête
-            Point3D point1 = origin - shaftVec;               // Début du corps
-
-            // Création
-            var arrow = new ArrowVisual3D
+            switch (key)
             {
-                Point1 = point1,
-                Point2 = point2,
-                Diameter = diameter,
-                HeadLength = headLength,
-                Fill = new SolidColorBrush(color)
-            };
+                case "catia":
+                    return new LinearGradientBrush(
+                        new GradientStopCollection
+                        {
+                            new GradientStop(Color.FromRgb(0xAA, 0xB4, 0xD1), 0),
+                            new GradientStop(Color.FromRgb(0x6E, 0x7C, 0xA8), 0.5),
+                            new GradientStop(Color.FromRgb(0x33, 0x33, 0x66), 1)
+                        },
+                        new Point(0, 0), new Point(0, 1));
 
-            view3D.Children.Add(arrow);
+                case "dark":
+                    return new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E));
 
-        }
+                case "white":
+                    return Brushes.White;
 
+                case "gray":
+                    return new LinearGradientBrush(
+                        Colors.White,
+                        Color.FromRgb(0xB0, 0xB0, 0xB0),
+                        90);
 
-
-        private async void OnLoadArrowsClicked(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                await LoadArrowsFromDatabaseAsync();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Erreur lors du chargement des flèches : {ex.Message}",
-                                "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+                default:
+                    return Brushes.White;
             }
         }
-
-
-
-        private void ClearView_Click(object sender, RoutedEventArgs e)
-        {
-            // Supprime tout sauf les lumières
-            var itemsToKeep = view3D.Children.OfType<DefaultLights>().ToList();
-
-            view3D.Children.Clear();
-
-            // Réajoute les lumières par défaut si besoin
-            foreach (var item in itemsToKeep)
-            {
-                view3D.Children.Add(item);
-            }
-        }
-
-
-
-
-        #endregion
-
-        private void AddCustomArrow(Point3D origin, Vector3D direction, Color color)
-        {
-            double totalLength = 50.0;
-            double headRatio = 0.2;
-            double shaftLength = totalLength * (1 - headRatio);
-            double headLength = totalLength * headRatio;
-            double diameter = totalLength * 0.05;
-
-            direction.Normalize();
-
-            Vector3D shaftVec = direction * shaftLength;
-            Vector3D headVec = direction * headLength;
-
-            Point3D shaftStart = origin - shaftVec;
-            Point3D headBase = origin;
-
-            var mb = new MeshBuilder(false, false);
-
-            // Ajoute le cylindre (corps)
-            mb.AddCylinder(shaftStart, headBase, diameter, 20);
-
-            // Ajoute le cône (tête)
-            mb.AddCone(
-                             headBase,            // Point de départ du cône (base)
-                             direction,           // Direction de la flèche
-                             headLength,          // Longueur de la tête
-                             diameter * 1.5,      // Rayon de la base du cône
-                             0,                   // Rayon au sommet (pointe)
-                             true,                // Base cap (fermé à la base)
-                             false,               // Top cap (pointe ouverte, c'est une vraie flèche)
-                             24                   // Nombre de divisions circulaires
-                         );
-
-            var geometry = new GeometryModel3D
-            {
-                Geometry = mb.ToMesh(),
-                Material = MaterialHelper.CreateMaterial(color)
-            };
-
-            var model = new ModelVisual3D { Content = geometry };
-            view3D.Children.Add(model);
-        }
-
-
-
-
-
-
     }
 }

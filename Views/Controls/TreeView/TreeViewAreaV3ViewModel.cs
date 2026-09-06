@@ -154,10 +154,10 @@ namespace Toltech.App.Views.Controls.TreeView
         public ICommand ExportDataCommand { get; }
         public ICommand DesactiveNodePartCommand { get; }
 
-        public RelayCommand CreateRequirementFromTreeCommand { get; }
+        public ICommand CreateRequirementFromTreeCommand { get; }
         public ICommand DeleteRequirementFromTreeCommand { get; }
 
-        public RelayCommand CreatePartFromTreeCommand { get; }
+        public ICommand CreatePartFromTreeCommand { get; }
 
         // Indicateur interne pour éviter reentrancy
         private bool _isLoadingTreeView = false;
@@ -173,7 +173,7 @@ namespace Toltech.App.Views.Controls.TreeView
 
             #region ICommand Initializations
 
-            RefreshCommand = new RelayCommand(async _ => await LoadTreeViewDataAsync(), _ => !_isLoadingTreeView);
+            RefreshCommand = new AsyncRelayCommand(LoadTreeViewDataAsync, () => !_isLoadingTreeView);
             AddSubFolderCommand = new RelayCommand<NodesDefinition>(AddSubFolderAsync);
             DeleteFolderCommand = new RelayCommand<NodesDefinition>(DeleteFolderAsync);
             GroupSelectionIntoSubFolderCommand = new RelayCommand<List<NodesDefinition>>(GroupSelectionIntoSubFolderAsync);
@@ -184,27 +184,27 @@ namespace Toltech.App.Views.Controls.TreeView
 
             #region Datas Commands via TreeView
 
-            CreatePartFromTreeCommand = new RelayCommand(_ =>
+            CreatePartFromTreeCommand = new RelayCommand(() =>
             {
                 if (_mainVM.DataVM?.CreatePartCommand?.CanExecute(null) == true)
                     _mainVM.DataVM.CreatePartCommand.Execute(null);
             });
 
 
-            DeleteNodePartCommand = new RelayCommand<NodesDefinition>(DeleteNodeAsync);
+            DeleteNodePartCommand = new AsyncRelayCommand<NodesDefinition>(DeleteNodeAsync);
 
             #endregion
 
             #region Requirements Commands via TreeView
 
-            CreateRequirementFromTreeCommand = new RelayCommand(async _ =>
+            CreateRequirementFromTreeCommand = new AsyncRelayCommand(async () =>
             {
                 if (_mainVM?.RequirementVM != null)
                     await _mainVM.RequirementVM.CreateRequirementAsync();
             });
 
 
-            DeleteRequirementFromTreeCommand = new RelayCommand<NodesDefinition>(DeleteNodeAsync);
+            DeleteRequirementFromTreeCommand = new AsyncRelayCommand<NodesDefinition>(DeleteNodeAsync);
 
             #endregion
 

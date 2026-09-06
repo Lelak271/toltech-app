@@ -15,7 +15,7 @@ using Toltech.App.Services.Notification;
 using Toltech.App.ToltechCalculation.Helpers;
 using Toltech.App.ToltechCalculation.Resux;
 using Toltech.App.ViewModels;
-using Toltech.ComputeEngine.Contracts;
+using Toltech.Solver.Contracts;
 
 namespace Toltech.App.Views
 {

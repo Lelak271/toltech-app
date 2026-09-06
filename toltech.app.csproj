@@ -27,6 +27,22 @@
     <Content Remove="C:\Users\louis\.nuget\packages\lottiesharp\2.4.3\contentFiles\any\net8.0-windows7.0\lottie_sharp.ico" />
   </ItemGroup>
 
+	<ItemGroup>
+		<!--
+        Les fichiers Python du connecteur FreeCAD sont stockés
+        dans le projet Toltech.FreeCAD.
+
+        Ils sont copiés dans :
+        
+        bin\Debug\net9.0-windows\FreeCAD\
+
+        afin que FreeCadModuleInstaller puisse ensuite
+        les installer dans le profil FreeCAD de l'utilisateur.
+    -->
+
+		<None Include="..\Toltech.FreeCAD\Python\**\*.py" LinkBase="FreeCAD" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+	
   <ItemGroup>
 	<None Remove="Asset\add_model.png" />
 	<None Remove="Asset\add_model2.png" />
@@ -67,6 +83,7 @@
 	<None Remove="Asset\ImageEmptyReqs.png" />
 	<None Remove="Asset\IsFixedPartImg.png" />
 	<None Remove="Asset\LightMode.png" />
+	<None Remove="Asset\LineMeasure.png" />
 	<None Remove="Asset\Linkages\Appui_Plan.png" />
 	<None Remove="Asset\Linkages\encastrement.png" />
 	<None Remove="Asset\Linkages\Glissiere.png" />
@@ -76,6 +93,11 @@
 	<None Remove="Asset\Linkages\Pivot_Glissant.png" />
 	<None Remove="Asset\Linkages\Ponctuelle.png" />
 	<None Remove="Asset\Linkages\Rotule.png" />
+	<None Remove="Asset\Logos\CatiaV5.png" />
+	<None Remove="Asset\Logos\Creo.png" />
+	<None Remove="Asset\Logos\FreeCAD.png" />
+	<None Remove="Asset\Logos\Inventor.png" />
+	<None Remove="Asset\Logos\SOLIDWORKS.png" />
 	<None Remove="Asset\Logo_DB_EXI.png" />
 	<None Remove="Asset\Logo_DB_MODEL.png" />
 	<None Remove="Asset\Logo_DB_tol.png" />
@@ -89,6 +111,8 @@
 	<None Remove="Asset\open_model.png" />
 	<None Remove="Asset\open_model2.png" />
 	<None Remove="Asset\PARTS.png" />
+	<None Remove="Asset\PlaneMeasure.png" />
+	<None Remove="Asset\PointMeasure.png" />
 	<None Remove="Asset\save.png" />
 	<None Remove="Asset\SimpleFolder.png" />
 	<None Remove="Asset\syncDB.png" />
@@ -207,6 +231,9 @@
 	<Resource Include="Asset\LightMode.png">
 	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	</Resource>
+	<Resource Include="Asset\LineMeasure.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
 	<Resource Include="Asset\Linkages\Appui_Plan.png" />
 	<Resource Include="Asset\Linkages\encastrement.png" />
 	<Resource Include="Asset\Linkages\Glissiere.png" />
@@ -216,6 +243,24 @@
 	<Resource Include="Asset\Linkages\Pivot_Glissant.png" />
 	<Resource Include="Asset\Linkages\Ponctuelle.png" />
 	<Resource Include="Asset\Linkages\Rotule.png" />
+	<Resource Include="Asset\Logos\CatiaV5.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Logos\Creo.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Logos\FreeCAD.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Logos\Inventor.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Logos\Siemens_NX.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\Logos\SOLIDWORKS.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
 	<Resource Include="Asset\Logo_DB_EXI.png">
 	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	</Resource>
@@ -300,6 +345,12 @@
 	<Resource Include="Asset\PARTS.png">
 	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	</Resource>
+	<Resource Include="Asset\PlaneMeasure.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
+	<Resource Include="Asset\PointMeasure.png">
+	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	</Resource>
 	<Resource Include="Asset\save.png">
 	  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	</Resource>
@@ -376,12 +427,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Asset\Templates\3D_Linkages\" />
     <Folder Include="ToltechCalculation\ValidationCalculation\" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Toltech.ComputeEngine.Contracts\Toltech.ComputeEngine.Contracts.csproj" />
-    <ProjectReference Include="..\Toltech.Engine\Toltech.ComputeEngine.csproj" />
+    <ProjectReference Include="..\Toltech.Cad\Toltech.Cad.csproj" />
+    <ProjectReference Include="..\Toltech.ComputeEngine.Contracts\Toltech.Solver.Contracts.csproj" />
+    <ProjectReference Include="..\Toltech.Engine\Toltech.Solver.csproj" />
+    <ProjectReference Include="..\Toltech.FreeCAD\Toltech.FreeCAD.csproj" />
   </ItemGroup>
 
 

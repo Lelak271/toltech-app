@@ -247,48 +247,19 @@ namespace Toltech.App.ViewModels
             _mainVM.PropertyChanged += OnMainVMPropertyChanged;
 
             #region Command
-
-            // Commandes avec paramètres async ou sans paramètres
-            LoadCommand = new TtCore.RelayCommand(async _ => await ReloadSafe(), _ => true);
-
-            CreatePartCommand = new TtCore.RelayCommand(async _ => await CreatePartAndDatas());
-            //CreateDataCommand = new TtCore.RelayCommand(async _ => await CreateData());
-            CreateDataCommand = new TtCore.RelayCommand(async param =>
-            {
-                if (param is int partId)
-                {
-                    await CreateData(partId);
-                }
-            });
-            DeletePartCommand = new TtCore.RelayCommand(async _ => await DeletePartActive());
-            ShowWindowDeletePartCommand = new TtCore.RelayCommand(async _ => await ShowWindowDeletePart());
-            CheckIsoPartCommand = new TtCore.RelayCommand(async _ => await CheckIsoPart());
-            SaveAllCommand = new TtCore.RelayCommand(
-                async _ => await SaveAllActiveModelDataAsync(),
-                _ => Datas.Any(r => r.IsDirty && !r.IsSaving)
+            LoadCommand = new TtCore.AsyncRelayCommand(() => ReloadSafe());
+            CreatePartCommand = new TtCore.AsyncRelayCommand(CreatePartAndDatas);
+            CreateDataCommand = new TtCore.AsyncRelayCommand<int>(CreateData);
+            DeletePartCommand = new TtCore.AsyncRelayCommand(DeletePartActive);
+            ShowWindowDeletePartCommand = new TtCore.AsyncRelayCommand(ShowWindowDeletePart);
+            CheckIsoPartCommand = new TtCore.AsyncRelayCommand(CheckIsoPart);
+            SaveAllCommand = new TtCore.AsyncRelayCommand(
+                SaveAllActiveModelDataAsync,
+                () => Datas.Any(r => r.IsDirty && !r.IsSaving)
                 );
-
-            DeletePanelCommand = new TtCore.RelayCommand(async param =>
-            {
-                if (param is ModelData data)
-                    await DeletePanelAsync(data);
-
-            }, param => param is ModelData);
-
-            ClearPanelCommand = new TtCore.RelayCommand(param =>
-            {
-                if (param is ModelData data)
-                    ClearPanel(data);
-
-            }, param => param is ModelData);
-
-            SavePanelCommand = new TtCore.RelayCommand(async param =>
-            {
-                if (param is ModelData data)
-                    await SavePanelAsync(data);
-
-            }, param => param is ModelData);
-
+            DeletePanelCommand = new TtCore.AsyncRelayCommand<ModelData>(DeletePanelAsync);
+            ClearPanelCommand = new TtCore.RelayCommand<ModelData>(ClearPanel);
+            SavePanelCommand = new TtCore.AsyncRelayCommand<ModelData>(SavePanelAsync);
             #endregion
 
             TreeVM = treeVM;

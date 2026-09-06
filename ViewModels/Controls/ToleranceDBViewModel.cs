@@ -5,6 +5,7 @@ using System.Windows.Input;
 using Toltech.App.Models;
 using Toltech.App.Services;
 using Toltech.App.ViewModels;
+using TtCore = Toltech.App.ViewModels;
 
 namespace Toltech.App.ViewModels
 {
@@ -34,11 +35,13 @@ namespace Toltech.App.ViewModels
             _databaseService.Open(ModelManager.ModelActif);
 
             Tolerances = new ObservableCollection<ToleranceRow>();
-            LoadCommand = RelayCommand.FromAsync(LoadTolerancesAsync);
-            SaveCommand = RelayCommand.FromAsync(SaveTolerancesAsync);
-            CreateCommand = RelayCommand.FromAsync(CreateToleranceAsync);
-            DeleteCommand = RelayCommand.FromAsync(DeleteSelectedTolerancesAsync);
 
+            #region ICommand
+            LoadCommand = new TtCore.AsyncRelayCommand(LoadTolerancesAsync);
+            SaveCommand = new TtCore.AsyncRelayCommand(SaveTolerancesAsync);
+            CreateCommand = new TtCore.AsyncRelayCommand(CreateToleranceAsync);
+            DeleteCommand = new TtCore.AsyncRelayCommand(DeleteSelectedTolerancesAsync);
+            #endregion
 
             _ = LoadTolerancesAsync();
         }

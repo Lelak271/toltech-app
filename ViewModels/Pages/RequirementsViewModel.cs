@@ -198,36 +198,20 @@ namespace Toltech.App.ViewModels
             AllRequirements = new ListCollectionView(Requirements);
 
             #region Commandes
-            // Commandes avec paramètres async ou sans paramètres
-            LoadCommand = new TtCore.RelayCommand(async _ => await LoadAsync(), _ => true);
-            SaveCommand = new TtCore.RelayCommand(
-                async _ => await SaveAllReqAsync(),
-                _ => Requirements.Any(r => r.IsDirty && !r.IsSaving)
+            LoadCommand = new TtCore.AsyncRelayCommand(() => LoadAsync());
+            SaveCommand = new TtCore.AsyncRelayCommand(
+                SaveAllReqAsync,
+                () => Requirements.Any(r => r.IsDirty && !r.IsSaving)
             );
 
-            // Commandes qui agissent sur un objet Requirements (cast à l'intérieur)
-            RemoveUniqueCommand = new TtCore.RelayCommand(async param =>
-            {
-                if (param is Requirements req)
-                    await RemoveUniqueAsync(req);
-            }, param => param is Requirements);
-
-            SaveUniqueCommand = new TtCore.RelayCommand(async param =>
-            {
-                if (param is Requirements req)
-                    await SaveUniqueAsync(req);
-            }, param => param is Requirements);
-
-            ClearPanelCommand = new TtCore.RelayCommand(param =>
-            {
-                if (param is Requirements req)
-                    ClearPanel(req);
-            }, param => param is Requirements);
+            // Commandes qui agissent sur un objet Requirements
+            RemoveUniqueCommand = new TtCore.AsyncRelayCommand<Requirements>(RemoveUniqueAsync);
+            SaveUniqueCommand = new TtCore.AsyncRelayCommand<Requirements>(SaveUniqueAsync);
+            ClearPanelCommand = new TtCore.RelayCommand<Requirements>(ClearPanel);
 
             // Commandes sans paramètre
-            //CreateRequirementCommand = new TtCore.RelayCommand(async _ => await CreateRequirementAsync());
-            CreateRequirementCommand = new TtCore.RelayCommand(async _ => await CreateRequirementAsync(), _ => !IsCreating);
-            DeleteRequirementCommand = new TtCore.RelayCommand(async _ => await DeleteRequirementAsync());
+            CreateRequirementCommand = new TtCore.AsyncRelayCommand(CreateRequirementAsync, () => !IsCreating);
+            DeleteRequirementCommand = new TtCore.AsyncRelayCommand(DeleteRequirementAsync);
             #endregion
 
             _mainVM.PropertyChanged += OnMainVMPropertyChanged;

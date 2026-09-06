@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 using Toltech.App.Converters;
 using Toltech.App.Models;
 using Toltech.App.Services;
-using Toltech.ComputeEngine.Contracts;
+using Toltech.Solver.Contracts;
 
 namespace Toltech.App.ToltechCalculation.Resux
 {

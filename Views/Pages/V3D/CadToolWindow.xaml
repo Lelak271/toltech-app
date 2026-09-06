@@ -1,0 +1,577 @@
+﻿<Window x:Class="Toltech.App.Views.CadToolWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        mc:Ignorable="d"
+        Title="Outils CAO"
+        Width="1150"
+        Height="250"
+        MinWidth="850"
+        MinHeight="210"
+        Topmost="True"
+        ResizeMode="CanResizeWithGrip">
+
+    <Window.Resources>
+    </Window.Resources>
+
+
+    <!-- ============================================================= -->
+    <!-- CONTENEUR PRINCIPAL                                           -->
+    <!-- ============================================================= -->
+
+    <Border Margin="0"
+            CornerRadius="0"
+            Style="{DynamicResource BorderThemeStyle}">
+
+        <Border.Effect>
+
+            <DropShadowEffect
+                Color="#000000"
+                Opacity="0.18"
+                BlurRadius="16"
+                ShadowDepth="2"/>
+
+        </Border.Effect>
+
+
+        <DockPanel>
+
+
+            <!-- ===================================================== -->
+            <!-- EN-TÊTE                                                -->
+            <!-- ===================================================== -->
+
+            <Border DockPanel.Dock="Top"
+                    Height="42"
+                    BorderThickness="0,0,0,1"
+                    Padding="14,0">
+
+                <Grid>
+
+                    <Grid.ColumnDefinitions>
+
+                        <ColumnDefinition Width="*"/>
+
+                        <ColumnDefinition Width="Auto"/>
+
+                    </Grid.ColumnDefinitions>
+
+
+                    <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Center">
+
+                        <TextBlock
+                            Text="Outils CAO"
+                            FontSize="14"
+                            FontWeight="SemiBold" />
+
+                        <TextBlock
+                            Text="  •  Sélection et construction géométrique"
+                            FontSize="11"
+                            Foreground="#9CA3AF"
+                            VerticalAlignment="Center"/>
+
+                    </StackPanel>
+
+
+                    <ToggleButton
+                        Grid.Column="1"
+                        Width="28"
+                        Height="28"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        ToolTip="Afficher / masquer les outils"
+                        IsChecked="True">
+
+                        <TextBlock
+                            Text="&#xE70D;"
+                            FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                            FontSize="13"
+                            Foreground="#4B5563"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"/>
+
+                    </ToggleButton>
+
+                </Grid>
+
+            </Border>
+
+
+            <!-- ===================================================== -->
+            <!-- CONTENU HORIZONTAL                                     -->
+            <!-- ===================================================== -->
+
+            <ScrollViewer
+                HorizontalScrollBarVisibility="Auto"
+                VerticalScrollBarVisibility="Disabled"
+                Background="Yellow">
+
+                <Grid Margin="12,12,12,12" >
+
+                    <Grid.ColumnDefinitions>
+
+                        <!-- Sélection -->
+                        <ColumnDefinition Width="Auto"/>
+
+                        <!-- Mesure -->
+                        <ColumnDefinition Width="Auto"/>
+
+                        <!-- Construction -->
+                        <ColumnDefinition Width="*"/>
+
+                        <!-- Sommet -->
+                        <ColumnDefinition Width="Auto"/>
+
+                    </Grid.ColumnDefinitions>
+
+
+                    <!-- ================================================= -->
+                    <!-- 1. SÉLECTION                                      -->
+                    <!-- ================================================= -->
+
+                    <Border
+                        Grid.Column="0"
+                        MinWidth="220">
+
+                        <StackPanel>
+
+                            <TextBlock
+                                Text="SÉLECTION" />
+
+                            <WrapPanel>
+
+                                <!-- Point -->
+                                <Button
+                                    Command="{Binding CadPickPointCommand}">
+                                    <StackPanel Orientation="Vertical" >
+                                        
+                                        <TextBlock Text="Point"/>
+                                        <Image Source="/Asset/PointMeasure.png" Height="30"/>
+                                        
+                                    </StackPanel>
+                                </Button>
+
+                                <!-- Sommet -->
+                                <Button
+                                    Command="{Binding CadPickVertexCommand}">
+
+                                    <StackPanel Orientation="Vertical" >
+
+                                        <TextBlock Text="Sommet"/>
+                                        <Image Source="/Asset/PointMeasure.png" Height="30"/>
+
+                                    </StackPanel>
+                                    
+                                </Button>
+
+
+
+
+                                <Button
+                                Command="{Binding CadMeasureCommand}"
+                                HorizontalAlignment="Stretch">
+                                    <StackPanel Orientation="Vertical" >
+
+                                        <TextBlock Text="2 points"/>
+                                        <Image Source="/Asset/BiPoint.png" Height="30"/>
+
+                                      </StackPanel>
+
+                        </Button>
+
+
+                        <Button
+                                Command="{Binding CadPlaneNormalCommand}"
+                                HorizontalAlignment="Stretch">
+                            
+                                    <StackPanel Orientation="Vertical" >
+
+                                        <TextBlock Text="3 points"/>
+                                        <Image Source="/Asset/PlaneMeasure.png"
+                                               Height="30" 
+                                               RenderTransformOrigin="0.5,0.5"/>
+
+                                    </StackPanel>
+                         </Button>
+                                <!-- Annuler -->
+                                <Button
+                                    Command="{Binding CadCancelCommand}">
+
+                                    <StackPanel Orientation="Vertical" >
+
+                                        <TextBlock Text="Annuler"/>
+                                        <!--<Image Source="/Asset/PointMeasure.png" Height="30"/>-->
+
+                                    </StackPanel>
+                                </Button>
+
+                            </WrapPanel>
+
+                        </StackPanel>
+
+                    </Border>
+
+
+                    <!-- ================================================= -->
+                    <!-- 3. CONSTRUCTION                                    -->
+                    <!-- ================================================= -->
+
+                    <Border
+                        Grid.Column="2"
+                        
+                        MinWidth="430">
+
+                        <Grid ShowGridLines="False">
+
+                            <Grid.RowDefinitions>
+
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+
+                            </Grid.RowDefinitions>
+
+
+                            <Grid.ColumnDefinitions>
+
+                                <ColumnDefinition Width="35"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="30"/>
+
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="250"/>
+
+                            </Grid.ColumnDefinitions>
+
+
+                            <!-- Titre -->
+
+                            <TextBlock
+                                Grid.Row="0"
+                                Grid.ColumnSpan="5"
+                                Text="CONSTRUCTION" />
+
+
+                            <!-- =============================== -->
+                            <!-- P1                                -->
+                            <!-- =============================== -->
+
+                            <TextBlock
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                Text="P1" />
+
+                            <TextBlock
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                HorizontalAlignment="Left"
+                                Text="{Binding Point1Text}"
+                                Margin="4,0,2,4"/>
+
+                            <Button
+                                Grid.Row="1"
+                                Grid.Column="2"
+                                Command="{Binding CopyPointCommand}"
+                                ToolTip="Copier P1">
+
+                                <Button.CommandParameter>
+                                    <sys:Int32>1</sys:Int32>
+                                </Button.CommandParameter>
+
+                                <TextBlock
+                                    Text="&#xE8C8;"
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="12"/>
+
+                            </Button>
+
+
+                            <!-- =============================== -->
+                            <!-- P2                                -->
+                            <!-- =============================== -->
+
+                            <TextBlock
+                                Grid.Row="2"
+                                Grid.Column="0"
+                                Text="P2" />
+
+                            <TextBlock
+                                Grid.Row="2"
+                                Grid.Column="1"
+                                HorizontalAlignment="Left"
+                                Text="{Binding Point2Text}" 
+                                Margin="4,0,2,4"/>
+
+                            <Button
+                                Grid.Row="2"
+                                Grid.Column="2"
+                                Command="{Binding CopyPointCommand}"
+                                ToolTip="Copier P2">
+
+                                <Button.CommandParameter>
+                                    <sys:Int32>2</sys:Int32>
+                                </Button.CommandParameter>
+
+                                <TextBlock
+                                    Text="&#xE8C8;"
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="12"/>
+
+                            </Button>
+
+
+                            <!-- =============================== -->
+                            <!-- P3                                -->
+                            <!-- =============================== -->
+
+                            <TextBlock
+                                Grid.Row="3"
+                                Grid.Column="0"
+                                Text="P3"
+                                />
+
+                            <TextBlock
+                                Grid.Row="3"
+                                Grid.Column="1"
+                                HorizontalAlignment="Left"
+                                Text="{Binding Point3Text}"
+                                Margin="4,0,2,4"/>
+
+                            <Button
+                                Grid.Row="3"
+                                Grid.Column="2"
+                                
+                                Command="{Binding CopyPointCommand}"
+                                ToolTip="Copier P3">
+
+                                <Button.CommandParameter>
+                                    <sys:Int32>3</sys:Int32>
+                                </Button.CommandParameter>
+
+                                <TextBlock
+                                    Text="&#xE8C8;"
+                                    FontFamily="Segoe MDL2 Assets"
+                                    FontSize="12"/>
+
+                            </Button>
+
+                            <Separator BorderThickness="0.2"
+                                       BorderBrush="Gray"
+                                       Grid.Column="2"
+                                       HorizontalAlignment="Left"  
+                                       Grid.Row="1"
+                                       Grid.RowSpan="4"/>
+                            <!-- =============================== -->
+                            <!-- VECTEUR                           -->
+                            <!-- =============================== -->
+
+                            <TextBlock
+                                Grid.Row="1"
+                                Grid.Column="3"
+                                Text="Vecteur"
+                                />
+
+                            <TextBlock
+                                Grid.Row="1"
+                                Grid.Column="4"
+                                Text="{Binding MeasurementVectorText}"
+                                HorizontalAlignment="Left"
+                                Margin="4,0,0,4"/>
+
+                            <Button
+                                  Grid.Row="1"
+                                  Grid.Column="5"
+      
+                                  Command="{Binding CopyVectorCommand}"
+                                  ToolTip="Copier P3">
+
+                                <TextBlock
+                                  Text="&#xE8C8;"
+                                  FontFamily="Segoe MDL2 Assets"
+                                  FontSize="12"/>
+
+                            </Button>
+
+                            <!-- =============================== -->
+                            <!-- DISTANCE                           -->
+                            <!-- =============================== -->
+
+                            <TextBlock
+                                Grid.Row="2"
+                                Grid.Column="3"
+                                Text="Distance"
+                                />
+
+                            <TextBlock
+                                Grid.Row="2"
+                                Grid.Column="4"
+                                HorizontalAlignment="Left"
+                                Text="{Binding MeasurementDistanceText}"
+                                Margin="4,0,0,4"/>
+
+                            <Button
+                                  Grid.Row="2"
+                                  Grid.Column="5"
+      
+                                  Command="{Binding CopyLenghtCommand}"
+                                  ToolTip="Copier P3">
+
+                                <TextBlock
+                                  Text="&#xE8C8;"
+                                  FontFamily="Segoe MDL2 Assets"
+                                  FontSize="12"/>
+
+                            </Button>
+                            <!-- =============================== -->
+                            <!-- NORMALE                            -->
+                            <!-- =============================== -->
+
+                            <TextBlock
+                                Grid.Row="3"
+                                Grid.Column="3"
+                                Text="Normale"
+                                />
+
+                            <TextBlock
+                                Grid.Row="3"
+                                Grid.Column="4"
+                                HorizontalAlignment="Left"
+                                Text="{Binding PlaneNormalText}"
+                                
+                                Margin="4,0,0,4"/>
+
+                            <Button
+                                  Grid.Row="3"
+                                  Grid.Column="5"
+      
+                                  Command="{Binding CopyNormalCommand}"
+                                  ToolTip="Copier P3">
+
+                                <TextBlock
+                                  Text="&#xE8C8;"
+                                  FontFamily="Segoe MDL2 Assets"
+                                  FontSize="12"/>
+
+                            </Button>
+                        </Grid>
+
+                    </Border>
+
+
+                    <!-- ================================================= -->
+                    <!-- 4. ÉDITION SOMMET                                 -->
+                    <!-- ================================================= -->
+
+                    <Border Visibility="Collapsed"
+                        Grid.Column="3"
+                        
+                        MinWidth="245"
+                        Margin="0">
+
+                        <StackPanel>
+
+                            <TextBlock
+                                Text="ÉDITION DU SOMMET"
+                                />
+
+
+                            <TextBlock
+                                Text="{Binding SelectedVertexText}"
+                                FontFamily="Consolas"
+                                FontSize="10"
+                                Foreground="#374151"
+                                Margin="0,0,0,7"
+                                TextTrimming="CharacterEllipsis"/>
+
+
+                            <Grid>
+
+                                <Grid.ColumnDefinitions>
+
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+
+                                </Grid.ColumnDefinitions>
+
+
+                                <!-- X -->
+
+                                <StackPanel Grid.Column="0"
+                                            Margin="0,0,4,0">
+
+                                    <TextBlock
+                                        Text="X"
+                                        />
+
+                                    <TextBox
+                                        Text="{Binding SelectedVertexX,
+                                               UpdateSourceTrigger=PropertyChanged}"
+                                        Padding="5,3"/>
+
+                                </StackPanel>
+
+
+                                <!-- Y -->
+
+                                <StackPanel Grid.Column="1"
+                                            Margin="2,0,2,0">
+
+                                    <TextBlock
+                                        Text="Y"
+                                        />
+
+                                    <TextBox
+                                        Text="{Binding SelectedVertexY,
+                                               UpdateSourceTrigger=PropertyChanged}"
+                                        Padding="5,3"/>
+
+                                </StackPanel>
+
+
+                                <!-- Z -->
+
+                                <StackPanel Grid.Column="2"
+                                            Margin="4,0,0,0">
+
+                                    <TextBlock
+                                        Text="Z"
+                                        />
+
+                                    <TextBox
+                                        Text="{Binding SelectedVertexZ,
+                                               UpdateSourceTrigger=PropertyChanged}"
+                                        Padding="5,3"/>
+
+                                </StackPanel>
+
+                            </Grid>
+
+
+                            <Button
+                                Content="Déplacer le sommet"
+                                
+                                Command="{Binding MoveSelectedVertexCommand}"
+                                HorizontalAlignment="Stretch"
+                                Margin="0,8,0,0"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                </Grid>
+
+            </ScrollViewer>
+
+        </DockPanel>
+
+    </Border>
+
+</Window>

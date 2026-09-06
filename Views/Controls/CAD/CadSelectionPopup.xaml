@@ -1,0 +1,94 @@
+﻿<Window x:Class="Toltech.App.Views.Controls.CAD.CadPointSelectionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Width="360"
+        Height="220"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Title="Toltech — Sélection CAO"
+        Loaded="Window_Loaded">
+
+    <Window.Resources>
+        <Storyboard x:Key="SpinnerStoryboard" RepeatBehavior="Forever">
+            <DoubleAnimation
+                Storyboard.TargetName="SpinnerRotation"
+                Storyboard.TargetProperty="Angle"
+                From="0"
+                To="360"
+                Duration="0:0:1" />
+        </Storyboard>
+    </Window.Resources>
+
+    <Window.Triggers>
+        <EventTrigger RoutedEvent="Window.Loaded">
+            <BeginStoryboard Storyboard="{StaticResource SpinnerStoryboard}" />
+        </EventTrigger>
+    </Window.Triggers>
+
+    <Grid Margin="10,5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+
+
+        <!-- Logo CAO avec spinner superposé -->
+        <Grid Grid.Row="0"
+              Width="60"
+              Height="60"
+              HorizontalAlignment="Center"
+              Margin="0">
+
+            <!-- Anneau qui tourne -->
+            <Ellipse Width="50"
+                     Height="50"
+                     StrokeThickness="3"
+                     Stroke="#3B82F6"
+                     StrokeDashArray="10 100"
+                     RenderTransformOrigin="0.5,0.5">
+                <Ellipse.RenderTransform>
+                    <RotateTransform x:Name="SpinnerRotation" Angle="0" />
+                </Ellipse.RenderTransform>
+            </Ellipse>
+
+            <!-- Logo du logiciel CAO, au centre -->
+            <Image Source="{Binding CadLogoPath}"
+                   Width="25"
+                   Height="25"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center" />
+
+
+        </Grid>
+
+        <TextBlock Grid.Row="1"
+             Text="{Binding CadDisplayName, StringFormat=Cliquer sur un point dans {0}.,UpdateSourceTrigger=PropertyChanged}"
+             HorizontalAlignment="Center"
+             VerticalAlignment="Center"
+             FontSize="16"
+             TextAlignment="Center" />
+
+        <TextBlock
+                x:Name="HintTextBlock"
+                Grid.Row="2"
+                Text="{Binding HintMessage}"
+                Foreground="Red"
+                HorizontalAlignment="Center"
+                TextAlignment="Center"
+                TextWrapping="Wrap"
+                FontSize="13"
+                Margin="0,8,0,0" />
+
+        <!-- Bouton d'annulation -->
+        <Button Grid.Row="3"
+                Content="Annuler"
+                Width="90"
+                HorizontalAlignment="Right"
+                Margin="0,8,0,0"
+                Click="Cancel_Click" />
+    </Grid>
+</Window>

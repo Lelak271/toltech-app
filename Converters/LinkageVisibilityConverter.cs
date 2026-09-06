@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Data;
 using Toltech.App.Models;
 using static Toltech.App.Models.ModelData;
+using Toltech.Solver.Contracts;
 
 namespace Toltech.App.Converters
 {
@@ -17,7 +18,7 @@ namespace Toltech.App.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is not ModelData.LiaisonType linkage) return Visibility.Collapsed;
+            if (value is not LinkageType linkage) return Visibility.Collapsed;
             if (parameter is not string p || !int.TryParse(p, out int idx)) return Visibility.Collapsed;
             return LinkagePanelMap.IsPanelAllowed(linkage, idx) ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -30,7 +31,7 @@ namespace Toltech.App.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            if (value is not ModelData.LiaisonType linkage) return false;
+            if (value is not LinkageType linkage) return false;
             if (parameter is not string p || !int.TryParse(p, out int idx)) return false;
             return LinkagePanelMap.IsPanelAllowed(linkage, idx);
         }

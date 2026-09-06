@@ -35,13 +35,11 @@ namespace Toltech.App.ViewModels
             SelectedParts = new ObservableCollection<Part>();
 
             #region Commandes
-            LoadCommand = new RelayCommand(async _ => await LoadAsync());
-            CreateCommand = new RelayCommand(async _ => await CreateAsync());
-            //CreateCommand = new RelayCommand(async _ => await AddLine());
-            SaveCommand = new RelayCommand(async _ => await SaveAsync());
-            DeleteCommand = new RelayCommand(async _ => await DeleteAsync());
-            InsertImageCommand = new RelayCommand(async _ => await InsertImageAsync(), _ => SelectedParts != null);
-
+            LoadCommand = new AsyncRelayCommand(LoadAsync);
+            CreateCommand = new AsyncRelayCommand(CreateAsync);
+            SaveCommand = new AsyncRelayCommand(SaveAsync);
+            DeleteCommand = new AsyncRelayCommand(DeleteAsync);
+            InsertImageCommand = new AsyncRelayCommand(InsertImageAsync, () => SelectedParts != null);
             #endregion
 
             #region Events
