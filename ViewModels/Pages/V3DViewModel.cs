@@ -362,6 +362,9 @@ namespace Toltech.App.ViewModels
 
         #region Linakges depuis la base
 
+        /// <summary>
+        /// Fonction principale pour l'import de la base de tolérnace
+        /// </summary>
         private async Task Load3DFromDatabaseAsync()
         {
             if (_domainService == null)
@@ -372,7 +375,7 @@ namespace Toltech.App.ViewModels
 
             try
             {
-                var linkages = await _domainService.GetAllModelDataAsync();
+                var linkages = await _domainService.GetActivePartsModelDataAsync();
                 var requirements = await _domainService.GetAllRequirementsAsync();
                 int addedCount = 0;
 

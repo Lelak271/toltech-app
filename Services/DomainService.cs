@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using MathNet.Numerics.LinearAlgebra;
 using Toltech.App.Models;
 using Toltech.App.Services.Logging;
 using Toltech.App.Services.Notification;
@@ -59,7 +60,6 @@ namespace Toltech.App.Services
                 var datas = await AddDataOfPartExtremiteAsync(newPart.Id, 6);
 
                 _ = _notificationService.ShowNotifAsync($"Pièce \"{nomPiece}\" ajoutée avec succès !", false);
-
 
 
                 return Result<PartWithDatasResult>.Success(new PartWithDatasResult
@@ -188,6 +188,7 @@ namespace Toltech.App.Services
                     ErrorCode.Unknown);
             }
         }
+    
         /// <summary>
         /// Supprime une part et ses données associées.
         /// </summary>
@@ -1371,6 +1372,45 @@ namespace Toltech.App.Services
                 return Result<List<ModelData>>.Failure("Erreur lors du chargement des données du modèle.", ErrorCode.Unknown);
             }
         }
+
+        public async Task<Result<List<ModelData>>> GetActivePartsModelDataAsync()
+        {
+            try
+            {
+                // Récupère toutes les pièces du modèle.
+                var parts = await _databaseService.GetAllPartsAsync();
+
+            // Vérifie l'état actif de chaque pièce.
+            var activePartIds = new List<int>();
+
+            foreach (var part in parts)
+            {
+                // Récupère l'état IsActive depuis la base de données.
+                bool isActive = await _databaseService.GetIsActivePartAsync(part);
+
+                // Conserve uniquement les IDs des pièces actives.
+                if (isActive)
+                {
+                    activePartIds.Add(part.Id);
+                }
+            }
+
+            // Aucun part active : inutile d'interroger la base pour les ModelData.
+            if (activePartIds.Count == 0)
+                return Result<List<ModelData>>.Success(new List<ModelData>());  
+
+            // Récupère les ModelData correspondant uniquement aux pièces actives.
+            var existingDatas = await _databaseService.GetModelDataByIdsAsync(activePartIds);
+
+            return Result<List<ModelData>>.Success(existingDatas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("GetActivePartsModelDataAsync failed", "", ex);
+                return Result<List<ModelData>>.Failure("Erreur lors du chargement des données du modèle.", ErrorCode.Unknown);
+            }
+            }
+
         public async Task<Result<List<Requirements>>> GetAllRequirementsAsync()
         {
             try

@@ -250,13 +250,6 @@ namespace Toltech.App.Services
                             .CountAsync(p => p.Id == id) > 0;
         }
 
-        // Check si une exigence du meme nom est deja dans la DB
-        public async Task<bool> NamePartExisteAsync(string namepart)
-        {
-            return await _asyncDb.Table<Part>()
-                           .Where(r => r.NamePart == namepart)
-                           .CountAsync() > 0;
-        }
         public async Task<List<Part>> GetAllPartsAsync()
         {
             return await _asyncDb.Table<Part>()
@@ -317,6 +310,25 @@ namespace Toltech.App.Services
             return part == null ? throw new ArgumentException("Part not found.", nameof(partId)) : part.NamePart;
         }
 
+        public async Task<bool> GetIsActivePartAsync(Part part)
+        {
+            if (part == null)
+                throw new ArgumentNullException(nameof(part));
+
+            // Recherche la pièce correspondante dans la base de données.
+            var dbPart = await _asyncDb
+                .Table<Part>()
+                .Where(p => p.Id == part.Id)
+                .FirstOrDefaultAsync();
+
+            // Si la pièce n'existe pas, on lève une exception.
+            if (dbPart == null)
+                throw new InvalidOperationException(
+                    $"La pièce avec l'ID {part.Id} n'existe pas dans la base de données.");
+
+            // Retourne l'état actuel de la pièce.
+            return dbPart.IsActive;
+        }
         #endregion
 
         #region Operations - Modification de données
@@ -423,14 +435,6 @@ namespace Toltech.App.Services
 
         #region Queries - Lecture des données
 
-        // Check si une exigence du meme nom est deja dans la DB
-        public async Task<bool> NameDataExisteAsync(string nameModelData)
-        {
-            return await _asyncDb.Table<ModelData>()
-                           .Where(r => r.Model == nameModelData)
-                           .CountAsync() >= 1; 
-        }
-
         public async Task<bool> NumberOfNameDataAsync(ModelData data)
         {
             return await _asyncDb.Table<ModelData>()
@@ -486,23 +490,7 @@ namespace Toltech.App.Services
                 .Where(d => ids.Contains(d.Id))
                 .ToListAsync();
         }
-        public async Task<string> GetExtremiteByIdAsync(int? id)
-        {
-            // Cherche l'élément correspondant à l'ID
-            var model = await _asyncDb.Table<ModelData>()
-                                 .Where(m => m.Id == id)
-                                 .FirstOrDefaultAsync();
 
-            // Si trouvé, retourne l'Extremite, sinon null
-            return model?.Extremite;
-        }
-
-        public async Task<List<ModelData>> GetByExtremitePartIdAsync(int partId)
-        {
-            return await _asyncDb.Table<ModelData>()
-                .Where(x => x.ExtremitePartId == partId)
-                .ToListAsync();
-        }
         #endregion
 
         #region Operations - Modification des données
